@@ -52,7 +52,7 @@ viewport_entry:
   end_line: 40
   mtime: 1716500000
   size: 12345
-  mode: buffered
+  mode: buffered [dirty|clean]
 ```
 
 Every viewport operation returns this object. The agent always knows which
