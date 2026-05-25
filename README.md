@@ -6,7 +6,7 @@
 
 **An MCP server that gives AI agents a focused, windowed editing experience — the way a human uses an editor.**
 
-The built-in Read/Edit/Write tools force agents to load entire files, match strings blindly against the full text, and risk ambiguous replacements. viewport-editor replaces this with **viewports**: focused windows into files where every edit is scoped, every change can be staged and reviewed, and the agent always knows exactly what file, range, and mode it is working in.
+Built-in Read/Edit/Write tools force agents to load entire files, match strings blindly against the full text, and risk ambiguous replacements. viewport-editor replaces this with **viewports**: focused windows into files where every edit is scoped, every change can be staged and reviewed, and the agent always knows exactly what file, range, and mode it is working in.
 
 ## Why This Exists
 
@@ -16,7 +16,7 @@ AI agents edit files differently than humans. A human opens a 500-line file, see
 2. Construct a string match against all 500 lines (ambiguous)
 3. Blindly replace and write back (no review)
 
-viewport-editor collapses this to: open a viewport, edit within it, review before saving. The same natural workflow a human editor uses, adapted for how agents process information.
+viewport-editor collapses this to: open a viewport, edit within it, review before saving.
 
 ## How It Works
 
@@ -40,7 +40,7 @@ The agent always knows what it is looking at, where it is, and what mode it is i
 
 Each viewport has a buffer. In **buffered mode** (default), edits stage into the buffer and write to disk only on explicit `save`. The agent can make multiple changes, preview a diff, and decide whether to commit.
 
-In **immediate mode**, each edit writes to disk atomically — for fast, confident changes.
+In **immediate mode**, each edit writes to disk atomically.
 
 ### Session Isolation
 
@@ -60,6 +60,8 @@ All operations are exposed through 6 tools with an `action` parameter. This keep
 | **regex** | test, escape |
 
 ## Quick Start
+
+Add to your OpenCode, Claude, Cursor, or any MCP-compatible client configuration:
 
 ```json
 {
