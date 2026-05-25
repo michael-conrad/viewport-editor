@@ -6,17 +6,38 @@
 
 *This document is written from the perspective of an AI agent using each tool.
 It describes what the agent sees, what it must do to accomplish a task, and where
-each approach creates friction. It is not a feature checklist — it is a user
-experience report from the agent's side of the protocol.*
+each approach creates friction. Links verified as of 2026-05-25.*
 
 ---
 
-## The Built-in Read/Edit/Write Tools
+## Quick Comparison Table
+
+| Dimension | Built-in R/E/W | filesystem MCP | mcp-text-editor | mcp-editor | texted | viewport-editor |
+|-----------|----------------|----------------|-----------------|------------|--------|-----------------|
+| Edit paradigm | string match | string match | line patch | string match | script commands | viewport-scoped edit |
+| Ambiguous match risk | high | high | none | high | medium | none |
+| Edit staging | no | dry-run only | no | no | no | yes (buffered) |
+| Diff preview | no | yes (dry-run) | no | no | no | yes (true delta) |
+| Conflict detection | none | full-file hash | range hash | none | none | mtime+size |
+| Multiple viewports | no | no | no | no | no | yes |
+| Structural navigation | no | no | no | no | no | yes (jump) |
+| Per-viewport modes | no | no | no | no | no | yes |
+| Line operations | no | no | no | no | yes (scripted) | yes (native) |
+| Discoverability | tool list | tool list | tool list | tool list | list_tools + texted_doc | list_tools |
+| Prose+YAML | no | no | no | no | no | yes |
+| Active maintenance | platform | active | active | not maintained | stable | active |
+| Stars / community | — | 86.2k (servers) | 191 | 8 | — | new |
+
+---
+
+## Detailed Analysis
+
+### The Built-in Read/Edit/Write Tools
 
 These are the default tools present in most AI agent environments. The agent has
 three operations: read a file, replace a string in a file, write a file.
 
-### What the Agent Experiences
+#### What the Agent Experiences
 
 When I need to edit a 400-line file, I must:
 
@@ -37,25 +58,34 @@ When I need to edit a 400-line file, I must:
    No staging area. No "discard." If my string match was wrong, the file is
    corrupted and I discover it on the next read.
 
-### When It Works
+#### When It Works
 
 - Simple, one-shot edits to small files (< 50 lines).
 - Situations where the edit target is unique across the entire file.
 - Initial file creation and boilerplate setup.
 
-### Maintained Status
+#### Maintained Status
 
-These are built into the agent platform and maintained by the platform vendor.
-They will always exist. They will not change to accommodate viewport-style editing.
+Built into the agent platform and maintained by the platform vendor.
+They will always exist. [Source](https://opencode.ai)
 
 ---
 
-## Anthropic Filesystem MCP Server (`@modelcontextprotocol/server-filesystem`)
+### `@modelcontextprotocol/server-filesystem`
 
-The official filesystem server from the MCP specification repository. Provides
-file operations including an `edit_file` tool.
+The official filesystem server from the MCP specification repository.
+[GitHub](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) |
+[npm](https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem) |
+Latest: 2026.1.14 (published 2026-01, verified API response).
 
-### What the Agent Experiences
+#### Tools Exposed
+
+`read_text_file`, `read_media_file`, `read_multiple_files`, `write_file`,
+`edit_file`, `create_directory`, `list_directory`, `list_directory_with_sizes`,
+`directory_tree`, `search_files`, `get_file_info`, `move_file`,
+`list_allowed_directories` (npm verified, 13 tools)
+
+#### What the Agent Experiences
 
 The `edit_file` tool accepts an array of edits, each with `oldText` and `newText`.
 It supports dry-run mode and returns a git-style diff.
@@ -74,29 +104,35 @@ It supports dry-run mode and returns a git-style diff.
 4. **No per-viewport mode selection.** No buffered vs immediate. Every edit is
    immediate (with an optional dry-run preview).
 
-5. **Hash-based conflict detection.** The server tracks the content hash at last
-   read. If another process modified the file between my read and my edit, the
-   edit fails. This is good, but the hash covers the entire file — any unrelated
-   change elsewhere in the file blocks my edit.
+5. **Full-file hash for conflict detection.** The `edit_file` tool tracks content
+   state at the file level. If any unrelated change occurs elsewhere in the file,
+   the edit fails.
 
-### When It Works
+#### When It Works
 
 - Edits where the target text is unique in the file.
 - Workflows where the agent can afford the dry-run round trip.
 - File-level operations (copy, move, search, directory tree) are well covered.
 
-### Maintained Status
+#### Maintained Status
 
 Official MCP specification repository. Regular updates, active maintenance.
+86.2k stars, 10.8k forks on the servers monorepo.
 
 ---
 
-## `mcp-text-editor` (tumf/mcp-text-editor)
+### `mcp-text-editor` (tumf/mcp-text-editor)
 
-A line-oriented text editor MCP server. Provides hash-verified line-range reads
-and hash-verified patch operations.
+A line-oriented text editor MCP server.
+[GitHub](https://github.com/tumf/mcp-text-editor) |
+191 stars, 21 forks, 240 commits, Python, MIT.
 
-### What the Agent Experiences
+#### Tools Exposed
+
+`get_text_file_contents` (with line-range + hash), `patch_text_file_contents`
+(with range_hash validation). Two focused tools.
+
+#### What the Agent Experiences
 
 1. **I can read a line range.** I specify `file_path`, `line_start`, `line_end`,
    and I get only those lines. I also get a SHA-256 hash of the content range.
@@ -115,122 +151,198 @@ and hash-verified patch operations.
 4. **No operational modes.** Every operation is immediate. No staging, no diff
    preview, no discard.
 
-5. **Hash at the range level.** If I read lines 10-20 and someone modifies line
-   12 elsewhere, my range hash mismatch blocks my edit. This is more granular
-   than full-file hashes, but more fragile.
+5. **Range-level hash for conflict detection.** More granular than file-level,
+   but also more fragile. Any change in the range invalidates the hash.
 
-### When It Works
+#### When It Works
 
 - Token-efficient reading (line-range reads are excellent).
 - Single-edit operations where the agent can afford the read-hash-edit cycle.
 - Scenarios requiring hash verification for safety.
 
-### Maintained Status
+#### Maintained Status
 
-Python-based project, MIT license, 191 stars, active development (240 commits).
-Well-documented with test coverage at 90%. Appears actively maintained.
+Actively maintained. 191 stars, 240 commits, 90% test coverage per GitHub.
 
 ---
 
-## `mcp-editor` (arathald/mcp-editor)
+### `mcp-editor` (arathald/mcp-editor)
 
 A TypeScript port of Anthropic's computer-use file editing demo.
+[GitHub](https://github.com/arathald/mcp-editor) |
+8 stars, 6 forks, 9 commits, TypeScript, MIT.
 
-### What the Agent Experiences
+#### Tools Exposed
 
-1. **String-replace editing.** Same `view` + `create` + `string_replace` pattern
-   as the Anthropic demo. I view a file, then replace a unique string.
+`view` (read file with optional range), `create` (write new file),
+`string_replace` (find and replace unique string). Three tools.
 
-2. **No access control.** The README explicitly warns: "has no access control and
-   relies entirely on the client's approval mechanism." I can edit any file the
-   process has access to.
+#### What the Agent Experiences
 
-3. **No hash verification.** No conflict detection. If I read a file, then another
-   process modifies it, my edit silently clobbers the change.
+1. **String-replace editing.** Same pattern as the Anthropic demo: view a file,
+   then replace a unique string. Ambiguity risk on repeated text.
 
-4. **Not actively maintained.** The README states: "This MCP server is not actively
-   maintained and is provided only as a reference."
+2. **No access control.** The README states: "This MCP server has NO access
+   controls and relies entirely on your client's approval mechanisms."
 
-### When It Works
+3. **No hash verification.** No conflict detection. If I read a file, then
+   another process modifies it, my edit silently clobbers the change.
+
+4. **Not actively maintained.** The README states: "This MCP server is NOT
+   actively maintained, and is provided for reference."
+
+#### When It Works
 
 - Experimental or reference use.
 - Single-user environments where access control and conflict detection
   are not concerns.
 
-### Maintained Status
+#### Maintained Status
 
 Not actively maintained. Per the author: "provided only as a reference."
 
 ---
 
-## viewport-editor (this project)
+### texted (dhamidi/texted)
 
-An MCP server designed from the ground up for how AI agents edit files.
+A compiled (Go) script-based text editor exposing Emacs Lisp-style editing
+commands via MCP.
+[GitHub](https://github.com/dhamidi/texted) |
+Analysis based on live `tools/list` response from compiled binary
+(commit 2a9d1b04e7ac0e5a98dd648534f438626a9437a1).
 
-### What the Agent Experiences
+#### Tools Exposed
 
-1. **I open a viewport.** I say `viewport:open("src/main.py", 10, 40)` and
-   I get a focused window. I see 30 lines. I know the file, the range, the
-   timestamp, and the mode. I can name this viewport and work within it.
+`edit_file` — applies a script of editing commands to multiple files.
+`texted_doc` — queries function documentation programmatically.
+`texted_eval` — tests scripts on input text before applying.
+
+Three tools total.
+
+#### What the Agent Experiences
+
+The edit paradigm is fundamentally different from line-based or string-match
+editors. I write a **script** — a sequence of Emacs Lisp-style commands — and
+texted applies it to one or more files.
+
+To change line 5 of a file, I must write:
+
+```texted
+goto-line 5
+replace-match "new content\n"
+```
+
+1. **I write code to edit code.** Every edit requires me to compose a script
+   in texted's command language. For a simple replacement, I write:
+   `search-forward "old text"` then `replace-match "new text"`.
+   For a multi-step edit across different locations, the script grows
+   correspondingly. Each step must be correct; if the file doesn't match my
+   script's assumptions (e.g., search-forward can't find the anchor because
+   the file was modified since I last read it), the entire script fails.
+
+2. **I can test scripts before applying.** The `texted_eval` tool lets me run
+   a script against input text and see the result. This is a significant
+   advantage over blind string-replace — I can verify my logic before
+   committing to a file.
+
+3. **I can query available commands.** The `texted_doc` tool lets me look up
+   function signatures and descriptions. This helps me discover what
+   operations are available. However, it is an additional context load
+   compared to tools with self-describing schemas.
+
+4. **No structural awareness.** texted's model is an Emacs-style buffer
+   with a cursor. Commands operate on this cursor position and buffer
+   state. There is no concept of function boundaries, markdown sections,
+   or other file structure.
+
+5. **No conflict detection.** texted applies the script unconditionally.
+   If the file has changed between when I last read it and when I apply
+   the script, texted does not detect this.
+
+6. **No viewport concept.** texted's buffer model is fundamentally
+   different — it loads the entire buffer into an editing context and
+   operates through cursor movement, not scoped windows.
+
+#### When It Works
+
+- Complex multi-file transformations where the script can be verified
+  with `texted_eval` before application.
+- Patterns that benefit from texted's command language (e.g., find a
+  pattern and insert around it).
+- Batch operations across many files.
+
+#### Maintained Status
+
+Stable project. Go-based, compiled binary. 7.3 MB binary size.
+Not frequently updated but functional.
+
+---
+
+### viewport-editor (this project)
+
+[GitHub](https://github.com/michael-conrad/viewport-editor) |
+Designed from the ground up for how AI agents edit files.
+
+#### What the Agent Experiences
+
+1. **I open a viewport.** I use `viewport:open` with a file, line range,
+   and optional mode. I get a focused window with full context — file path,
+   range, timestamp, size, and operational mode.
 
 2. **Every edit is scoped.** When I call `edit:replace`, the match is against
    the viewport content, not the full file. No ambiguous matches. No "found
    in 3 places." The scope is explicit.
 
-3. **I can stage and review.** In buffered mode, my edits accumulate in a buffer.
-   I call `diff:show` and see a true delta against the original file on disk.
-   I review. If it is wrong, I call `file:discard` and start over. If it is
-   right, I call `file:save`.
+3. **I can stage and review.** In buffered mode, my edits accumulate in a
+   buffer. I call `diff:show` and see a true delta against the original file
+   on disk. I review. If it is wrong, I call `file:discard` and start over.
+   If it is right, I call `file:save`.
 
 4. **I can work in immediate mode.** If I am confident, I set the viewport to
-   immediate mode. Every edit writes to disk atomically. No staging overhead.
+   immediate mode. Every edit writes to disk atomically.
 
-5. **I can switch modes per-viewport.** `viewport:switch-mode` changes the mode.
-   If the buffer is dirty, I get a clear message: "buffer has unsaved changes,
-   save or discard before switching mode."
+5. **I can switch modes per-viewport.** `viewport:switch-mode` changes the
+   mode. If the buffer is dirty, I get a clear refusal message.
 
 6. **I can navigate structurally.** `viewport:jump` goes to a line number,
    function name, markdown heading, table, or search result. I do not track
    line numbers manually.
 
-7. **I can search and replace intelligently.** `search:find` returns structured
-   results. `edit:replace-all` operates across a scope I choose. `edit:insert-lines`,
-   `edit:delete-lines`, `edit:swap-lines`, `edit:move-lines` give me line-level
-   operations that avoid string matching entirely.
+7. **I can search and replace with rich operations.** `search:find` returns
+   structured results. `edit:replace-all` operates across a scope I choose.
+   Line-level operations (`insert-lines`, `delete-lines`, `swap-lines`,
+   `move-lines`) avoid string matching entirely.
 
 8. **I can apply diffs safely.** `diff:apply` stages a unified diff into the
-   buffer. The diff is never written directly to disk. I review with `diff:show`,
-   then `file:save`.
+   buffer. The diff is never written directly to disk. I review with
+   `diff:show`, then `file:save`.
 
 9. **I have session isolation.** If another agent session is editing the same
    file, I get a soft warning on every operation. On save, if the file changed,
    I get a hard block (unless I use `force`).
 
 10. **The interface speaks my language.** All tool descriptions, schemas, and
-    responses use natural language prose and YAML. No JSON. I do not parse
-    nested `$ref` schemas to understand a parameter.
+    responses use natural language prose and YAML. No JSON.
 
-### Maintained Status
+#### Maintained Status
 
 New project, actively developed, MIT license.
 
 ---
 
-## Summary
+## Summary Table Notes
 
-| Dimension | Built-in Read/Edit/Write | filesystem MCP | mcp-text-editor | mcp-editor | viewport-editor |
-|-----------|--------------------------|----------------|-----------------|------------|-----------------|
-| Edit scoping | full file | full file | line range | full file | viewport |
-| Ambiguous match risk | high | high | none (line-based) | high | none |
-| Edit staging | no | dry-run only | no | no | buffered mode |
-| Diff preview | no | yes (dry-run) | no | no | yes (true delta) |
-| Conflict detection | none | full-file hash | range hash | none | mtime+size |
-| Multiple viewports | no | no | no | no | yes |
-| Structural navigation | no | no | no | no | yes (jump) |
-| Per-viewport modes | no | no | no | no | yes |
-| Line operations | no | no | no | no | yes (6 actions) |
-| Prose+YAML interface | schema default | JSON | JSON | JSON | designed for |
-| Active maintenance | platform-vendor | active | active | not maintained | active |
+- **Built-in R/E/W**: present in every agent platform. No choice, no change.
+- **filesystem MCP**: the official Anthropic MCP server. Strong for file
+  management, weak for string-match editing.
+- **mcp-text-editor**: best hash-verified approach. Token-efficient reads.
+  High latency on edit cycle (read-hash-patch).
+- **mcp-editor**: reference implementation. Not for production use.
+- **texted**: script-based paradigm. Powerful for batch operations, no
+  conflict detection, no structural awareness.
+- **viewport-editor**: designed for the agent's editing workflow.
+  Viewport-scoping eliminates ambiguous matches. Buffered staging provides
+  safety. Mode selection provides workflow choice.
 
 ---
 
