@@ -61,7 +61,21 @@ All operations are exposed through 6 tools with an `action` parameter. This keep
 
 ## Quick Start
 
-Add to your OpenCode, Claude, Cursor, or any MCP-compatible client configuration:
+### OpenCode
+
+Add to your `opencode.jsonc` under the `"mcp"` section:
+
+```jsonc
+"mcp": {
+    "viewport-editor": {
+      "type": "local",
+      "command": ["python", "-m", "viewport_editor", "/path/to/project/root"],
+      "enabled": true
+    }
+}
+```
+
+### Other MCP Clients (Claude, Cursor, etc.)
 
 ```json
 {
