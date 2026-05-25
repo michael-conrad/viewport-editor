@@ -8,13 +8,20 @@
 
 ## Overview
 
-Built-in Read/Edit/Write tools operate on whole-file granularity. texted uses
-programmed edit scripts that produce errors too often. Both consume excessive
-context, create ambiguous match problems, and offer no safe multi-edit staging.
+The built-in Read/Edit/Write tools operate on whole-file granularity — the agent
+reads an entire file, edits by exact string match, and writes the whole result
+back. This creates three problems:
+
+- **Ambiguous matches**: repeated text in a file causes edit failures.
+- **High context cost**: reading a 500-line file to change 3 lines.
+- **No edit staging**: every edit is immediate, blind, and irreversible.
 
 viewport-editor replaces this with scoped viewports — focused windows into
 files, with per-viewport mode selection, buffered staging with diff review, and
 a consolidated 6-tool MCP surface that minimizes context load.
+
+See [COMPARISON.md](./COMPARISON.md) for an AI agent's perspective on how this
+compares to other editing tools.
 
 ## Discovery Mechanism
 
@@ -186,12 +193,11 @@ The viewport:jump action must support these anchors at minimum:
 - Table (markdown tables)
 - Search result (from a prior search:find)
 
-## Relationship to Existing Tools
+## Relationship to Built-in Tools
 
-| tool | status |
-|------|--------|
-| texted | Will be retired after viewport-editor reaches feature parity |
-| built-in Read/Edit/Write | Coexist. Not deprecated. |
+| tool | relationship |
+|------|-------------|
+| Built-in Read/Edit/Write | Coexist. Use for simple whole-file operations. Use viewport-editor for complex editing. |
 
 ## Roadmap
 
