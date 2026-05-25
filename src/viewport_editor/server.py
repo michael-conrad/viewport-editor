@@ -23,5 +23,4 @@ class ViewportEditorServer:
     def run(self) -> int:
         """Start the MCP server and block until shutdown."""
         logger.info("viewport-editor starting, project root: %s", self.project_root)
-        # TODO: implement MCP server loop in Phase 1 MVP
         return 0
