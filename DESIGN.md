@@ -12,11 +12,24 @@ The built-in Read/Edit/Write tools operate on whole-file granularity — the age
 
 ### Viewport
 
-A viewport is a window into a file defined by `(file_path, start_line, end_line)`. Every viewport operation returns the visible window content along with the file path and current line range. The agent never works on the entire file — always through a focused lens.
+A viewport is a window into a file. It carries full context for the agent:
+
+```
+viewport_entry: {
+  file: "src/main.py",
+  start_line: 10,
+  end_line: 40,
+  mtime: 1716500000,
+  size: 12345,
+  mode: "buffered" | "immediate"
+}
+```
+
+Every viewport operation returns this object so the agent always knows what file, range, and mode it is working in.
 
 ### Buffer
 
-Each file opened in a viewport has an associated buffer holding pending edits. Edits are staged into the buffer and written to disk only on explicit `save`. This allows the agent to make multiple changes, review them with `show-diff`, and decide whether to commit.
+Each file opened in a viewport has an associated buffer holding pending edits. In `buffered` mode, edits are staged into the buffer and written to disk only on explicit `save`. In `immediate` mode, each edit writes to disk atomically with no staging.
 
 ### Session Isolation
 
@@ -28,36 +41,36 @@ Buffer state is scoped to the MCP session (connection). Multiple sessions can ha
 
 | Operation | Description |
 |-----------|-------------|
-| `open` | Open a viewport at `(file, start_line, end_line)` or by structural anchor |
-| `close` | Close a viewport (auto-saves if dirty and `auto_save=true`) |
-| `list` | List all open viewports with file path and line range |
-| `scroll` | Move viewport up/down by N lines |
-| `jump` | Navigate to a line number, function, markdown heading, table, or other structural anchor |
+| `open` | Open a viewport at `(file, start_line, end_line)` or by structural anchor. Accepts optional `mode` parameter (default: `"buffered"`). |
+| `close` | Close a viewport. In buffered mode, auto-saves if dirty and `auto_save=true`. |
+| `list` | List all open viewports with file path, line range, mtime, size, and mode. |
+| `scroll` | Move viewport up/down by N lines. |
+| `jump` | Navigate to a line number, function, markdown heading, table, or other structural anchor. |
 
 ### Editing
 
 | Operation | Description |
 |-----------|-------------|
-| `edit` | Replace text within the current viewport. Staged into buffer. |
-| `replace` | Find-and-replace within the current viewport. Staged into buffer. |
-| `replace-all` | Batch replace across viewport, entire file, or all open files. Staged into buffer. |
+| `edit` | Replace text within the current viewport. Staged into buffer (buffered) or written to disk immediately (immediate). |
+| `replace` | Find-and-replace within the current viewport. Behavior depends on viewport mode. |
+| `replace-all` | Batch replace across viewport, entire file, or all open files. Behavior depends on viewport mode. |
 
 ### File Lifecycle
 
 | Operation | Description |
 |-----------|-------------|
 | `new` | Create a new file at a path, optionally with initial content. Opens in a viewport. |
-| `save` | Write buffer to disk. Checks `mtime+size` for conflicts. `force` flag to overwrite. |
+| `save` | Write buffer to disk. Only meaningful in buffered mode (immediate mode has no pending buffer). Checks `mtime+size` for conflicts. `force` flag to overwrite. |
 | `save-as` | Write buffer to a new path. `force` flag to overwrite existing. Viewport switches to new path. |
 | `delete` | Delete a file on disk. |
-| `discard` | Discard all pending buffer changes, reload from disk. |
+| `discard` | Discard all pending buffer changes, reload from disk. Only meaningful in buffered mode. |
 
 ### Diff & Patch
 
 | Operation | Description |
 |-----------|-------------|
-| `show-diff` | Show pending buffer changes as a unified diff against the original file on disk. |
-| `apply-diff` | Stage a unified diff into the buffer for the target file (auto-loads if not open). |
+| `show-diff` | Show pending buffer changes as a unified diff against the original file on disk. Only meaningful in buffered mode. |
+| `apply-diff` | Stage a unified diff into the buffer for the target file (auto-loads if not open). Behavior depends on viewport mode. |
 | `test-regex` | Test a regex pattern against text or a viewport, returning match positions. |
 | `escape-regex` | Escape regex metacharacters in a literal string for safe use in regex patterns. |
 
@@ -78,13 +91,14 @@ Buffer state is scoped to the MCP session (connection). Multiple sessions can ha
 
 ## Operational Modes
 
-| Mode | Behavior |
-|------|----------|
-| **Immediate** | Edit + auto-save (future, post-MVP) |
-| **Buffered (default)** | Edits staged in buffer; explicit `save` required |
-| **Implicit save** | Auto-save on viewport close (default `true`) |
+Mode is set per-viewport (not global). Each viewport declaration includes a `mode` field.
 
-**MVP ships with buffered mode only.** Immediate mode is a future enhancement.
+| Mode | Behavior | Operations Affected |
+|------|----------|---------------------|
+| **Buffered (default)** | Edits staged in buffer; explicit `save` required | `edit`, `replace`, `replace-all`, `apply-diff` stage into buffer. `save` flushes. `show-diff` previews. `discard` reverts. |
+| **Immediate** | Each edit writes to disk atomically | `edit`, `replace`, `replace-all`, `apply-diff` write directly to file. `save`, `show-diff`, `discard` are no-ops or return empty state. |
+
+The agent selects the mode when opening a viewport via the `mode` parameter on `open`. Default is `"buffered"`.
 
 ## Safety
 
@@ -100,7 +114,7 @@ The `save` operation performs a **hard check**: if `mtime+size` mismatches, the 
 
 ### Diff Safety
 
-`apply-diff` always stages into a buffer. The diff is never applied directly to disk. The agent must review with `show-diff` and then `save` to commit.
+`apply-diff` always stages into a buffer (even in immediate mode, the diff is staged first for review). The agent must review with `show-diff` and then `save` to commit.
 
 ## Session Isolation Model
 
@@ -136,22 +150,19 @@ The MCP server exposes operations as individual tools following the `viewport-ed
 
 ### MVP (Phase 1)
 
-- `open`, `close`, `list`, `scroll`, `jump` (viewport management)
-- `edit` (windowed, buffered)
-- `save`, `discard` (buffer lifecycle)
-- `show-diff` (diff preview)
-- `new`, `save-as`, `delete` (file lifecycle)
-- `search` (substring + regex, viewport/file scope)
-- `replace`, `replace-all` (scoped + batch)
-- `apply-diff` (diff staging)
-- `test-regex`, `escape-regex` (regex utilities)
-- Conflict detection (soft on ops, hard on save)
+- All operations listed above
+- Per-viewport mode selection (buffered default, immediate available)
+- Buffered mode: buffer lifecycle, save, discard, diff preview
+- Immediate mode: atomic write on each edit operation
+- `apply-diff` always stages into buffer (even in immediate mode)
+- `show-diff` for diff preview (meaningful in buffered mode)
+- Conflict detection (soft on ops, hard on buffered save)
 - Multi-viewport support
 - Session isolation
+- `test-regex`, `escape-regex` utilities
 
 ### Phase 2 (Post-MVP)
 
-- Immediate edit mode
 - Structural navigation by language AST
 - Configuration file for defaults
 
