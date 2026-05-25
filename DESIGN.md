@@ -12,6 +12,14 @@ viewport-editor replaces this with scoped viewports — focused windows into
 files, with per-viewport mode selection, buffered staging with diff review, and
 a consolidated 6-tool MCP surface that minimizes context load.
 
+## Discovery Mechanism
+
+The MCP protocol's built-in list_tools call is the sole discovery mechanism.
+Agents call list_tools on connection to enumerate available tools, read their
+descriptions, and inspect action parameter enums. No dedicated help tool is
+exposed. Tool descriptions are written per best practice: front-loaded with
+purpose, concise, and explicit about constraints and side effects.
+
 ## Design Requirements
 
 - All MCP communications use natural language prose and YAML exclusively.
@@ -52,7 +60,7 @@ for the same file without collision. Staleness detection uses mtime + size.
 
 ## Consolidated Tool Surface (6 Tools)
 
-All 18+ operations are exposed through 6 tools with an `action` parameter.
+All operations are exposed through 6 tools with an action parameter.
 This minimizes context load on initial MCP plugin injection. Tool descriptions
 and responses use prose + YAML exclusively.
 
@@ -64,6 +72,8 @@ and responses use prose + YAML exclusively.
 | close | Close a viewport. Auto-saves if dirty and auto_save is true. |
 | list | List all open viewports with file, range, mtime, size, and mode. |
 | scroll | Move viewport up or down by N lines. |
+| page-up | Move viewport up by its own height (previous block of text). |
+| page-down | Move viewport down by its own height (next block of text). |
 | jump | Navigate to a structural anchor: line number, function name, markdown heading, table, or search result. |
 | switch-mode | Switch the viewport between buffered and immediate mode. If buffered with unsaved changes, refuse with message: "buffer has unsaved changes, save or discard before switching mode." |
 
@@ -129,10 +139,10 @@ viewport:open. Default is buffered.
 
 ### Conflict Detection
 
-Every viewport operation (open, scroll, edit) performs a soft check: compare
-current mtime and size against the values at buffer load time. If mismatched,
-a warning field is appended to the response. The buffer is not invalidated —
-the agent can continue or discard and reload.
+Every viewport operation (open, scroll, page-up, page-down, edit) performs a
+soft check: compare current mtime and size against the values at buffer load
+time. If mismatched, a warning field is appended to the response. The buffer
+is not invalidated — the agent can continue or discard and reload.
 
 The file:save operation performs a hard check. If mtime or size mismatches,
 the save is rejected unless the force flag is set. On any successful save, the
@@ -181,7 +191,7 @@ The viewport:jump action must support these anchors at minimum:
 All 6 tools with all actions listed above. Per-viewport mode selection.
 Buffered and immediate modes co-implemented. Conflict detection.
 Multi-viewport support. Session isolation. Prose + YAML throughout.
-File paths relative to project root.
+File paths relative to project root. list_tools as discovery mechanism.
 
 ### Phase 2
 
