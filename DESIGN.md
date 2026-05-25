@@ -4,164 +4,186 @@
 
 ## Overview
 
-The built-in Read/Edit/Write tools operate on whole-file granularity — the agent reads an entire file, edits by exact string match, and writes the whole result back. This creates problems: ambiguous matches on repeated text, massive context consumption for large files, and no safe multi-edit staging.
+Built-in Read/Edit/Write tools operate on whole-file granularity. texted uses
+programmed edit scripts that produce errors too often. Both consume excessive
+context, create ambiguous match problems, and offer no safe multi-edit staging.
 
-`viewport-editor` replaces this paradigm with **scoped viewports** — the agent opens a window into a file, sees only that region, and edits are scoped to that window. Multiple viewports can be open across files simultaneously. Edits can be staged in a buffer and reviewed before saving, with diff preview.
+viewport-editor replaces this with scoped viewports — focused windows into
+files, with per-viewport mode selection, buffered staging with diff review, and
+a consolidated 6-tool MCP surface that minimizes context load.
+
+## Design Requirements
+
+- All MCP communications use natural language prose and YAML exclusively.
+  No JSON in tool descriptions, input schemas, or responses.
+- File paths are relative to a configured project root. The MCP server
+  receives the root path at initialization. No absolute or host-specific
+  paths appear in any agent-facing interface.
 
 ## Core Concepts
 
 ### Viewport
 
-A viewport is a window into a file. It carries full context for the agent:
+A viewport is a window into a file carrying full context:
 
 ```
-viewport_entry: {
-  file: "src/main.py",
-  start_line: 10,
-  end_line: 40,
-  mtime: 1716500000,
-  size: 12345,
-  mode: "buffered" | "immediate"
-}
+viewport_entry:
+  file: src/main.py
+  start_line: 10
+  end_line: 40
+  mtime: 1716500000
+  size: 12345
+  mode: buffered
 ```
 
-Every viewport operation returns this object so the agent always knows what file, range, and mode it is working in.
+Every viewport operation returns this object. The agent always knows which
+file, range, and mode it is working in.
 
 ### Buffer
 
-Each file opened in a viewport has an associated buffer holding pending edits. In `buffered` mode, edits are staged into the buffer and written to disk only on explicit `save`. In `immediate` mode, each edit writes to disk atomically with no staging.
+Each file opened in a viewport has an associated buffer holding pending edits.
+In buffered mode, edits stage into the buffer and write to disk only on
+explicit save. In immediate mode, each edit writes to disk atomically.
 
 ### Session Isolation
 
-Buffer state is scoped to the MCP session (connection). Multiple sessions can have buffers for the same file without collision. Staleness is detected via `mtime + size` tracking.
+Buffer state is scoped to the MCP session. Multiple sessions can have buffers
+for the same file without collision. Staleness detection uses mtime + size.
 
-## Operations
+## Consolidated Tool Surface (6 Tools)
 
-### Viewport Management
+All 18+ operations are exposed through 6 tools with an `action` parameter.
+This minimizes context load on initial MCP plugin injection. Tool descriptions
+and responses use prose + YAML exclusively.
 
-| Operation | Description |
-|-----------|-------------|
-| `open` | Open a viewport at `(file, start_line, end_line)` or by structural anchor. Accepts optional `mode` parameter (default: `"buffered"`). |
-| `close` | Close a viewport. In buffered mode, auto-saves if dirty and `auto_save=true`. |
-| `list` | List all open viewports with file path, line range, mtime, size, and mode. |
-| `scroll` | Move viewport up/down by N lines. |
-| `jump` | Navigate to a line number, function, markdown heading, table, or other structural anchor. |
+### 1. viewport
 
-### Editing
+| action | description |
+|--------|-------------|
+| open | Open a viewport at file:start_line:end_line or by structural anchor. Optional mode: buffered (default) or immediate. |
+| close | Close a viewport. Auto-saves if dirty and auto_save is true. |
+| list | List all open viewports with file, range, mtime, size, and mode. |
+| scroll | Move viewport up or down by N lines. |
+| jump | Navigate to a structural anchor: line number, function name, markdown heading, table, or search result. |
+| switch-mode | Switch the viewport between buffered and immediate mode. If buffered with unsaved changes, refuse with message: "buffer has unsaved changes, save or discard before switching mode." |
 
-| Operation | Description |
-|-----------|-------------|
-| `edit` | Replace text within the current viewport. Staged into buffer (buffered) or written to disk immediately (immediate). |
-| `replace` | Find-and-replace within the current viewport. Behavior depends on viewport mode. |
-| `replace-all` | Batch replace across viewport, entire file, or all open files. Behavior depends on viewport mode. |
+### 2. edit
 
-### File Lifecycle
+| action | description |
+|--------|-------------|
+| replace | Find and replace text within the current viewport. In buffered mode, stages into buffer. In immediate mode, writes to disk atomically. |
+| replace-all | Batch replace across viewport, entire file, or all open files. Scope parameter selects the target. Behavior depends on viewport mode. |
 
-| Operation | Description |
-|-----------|-------------|
-| `new` | Create a new file at a path, optionally with initial content. Opens in a viewport. |
-| `save` | Write buffer to disk. Only meaningful in buffered mode (immediate mode has no pending buffer). Checks `mtime+size` for conflicts. `force` flag to overwrite. |
-| `save-as` | Write buffer to a new path. `force` flag to overwrite existing. Viewport switches to new path. |
-| `delete` | Delete a file on disk. |
-| `discard` | Discard all pending buffer changes, reload from disk. Only meaningful in buffered mode. |
+### 3. file
 
-### Diff & Patch
+| action | description |
+|--------|-------------|
+| new | Create a new file at a path, optionally with initial content. Opens in a viewport in buffered mode. |
+| save | Write buffer to disk. Hard mtime+size conflict check. Force flag to overwrite. No-op in immediate mode. |
+| save-as | Write buffer to a new path. Force flag to overwrite existing. Viewport switches to new path. |
+| delete | Delete a file on disk. |
+| discard | Discard all pending buffer changes and reload from disk. Only meaningful in buffered mode. |
 
-| Operation | Description |
-|-----------|-------------|
-| `show-diff` | Show pending buffer changes as a unified diff against the original file on disk. Only meaningful in buffered mode. |
-| `apply-diff` | Stage a unified diff into the buffer for the target file (auto-loads if not open). Behavior depends on viewport mode. |
-| `test-regex` | Test a regex pattern against text or a viewport, returning match positions. |
-| `escape-regex` | Escape regex metacharacters in a literal string for safe use in regex patterns. |
+### 4. diff
 
-### Search
+| action | description |
+|--------|-------------|
+| show | Show pending buffer changes as a unified diff against the original file on disk. Only meaningful in buffered mode. |
+| apply | Stage a unified diff into the buffer for the target file. Auto-loads the file if not already open. Always stages into buffer, even in immediate mode, so the agent can review before saving. |
 
-| Operation | Description |
-|-----------|-------------|
-| `search` | Search a file for a pattern (substring default, `regex=true` for regex). Scoped to viewport, entire file, or all open files. Returns structured results with line numbers. |
+### 5. search
 
-## Search Modes
+| action | description |
+|--------|-------------|
+| find | Search a file for a pattern. Substring matching by default, regex with a flag. Scope parameter: viewport, file, or all_open. Returns structured results with line numbers. |
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `pattern` | — | The search string or regex pattern |
-| `regex` | `false` | Enable regex matching |
-| `case_sensitive` | `false` | Case-sensitive matching |
-| `scope` | `"viewport"` | `"viewport"`, `"file"`, or `"all_open"` |
+### 6. regex
+
+| action | description |
+|--------|-------------|
+| test | Test a regex pattern against text or a viewport. Returns match positions. |
+| escape | Escape regex metacharacters in a literal string for safe use in regex patterns. |
 
 ## Operational Modes
 
-Mode is set per-viewport (not global). Each viewport declaration includes a `mode` field.
+Modes are set per-viewport. Each viewport entry includes a mode field.
 
-| Mode | Behavior | Operations Affected |
+| mode | behavior | operations affected |
 |------|----------|---------------------|
-| **Buffered (default)** | Edits staged in buffer; explicit `save` required | `edit`, `replace`, `replace-all`, `apply-diff` stage into buffer. `save` flushes. `show-diff` previews. `discard` reverts. |
-| **Immediate** | Each edit writes to disk atomically | `edit`, `replace`, `replace-all`, `apply-diff` write directly to file. `save`, `show-diff`, `discard` are no-ops or return empty state. |
+| buffered (default) | Edits stage into buffer. Explicit save required. | edit:replace, edit:replace-all, diff:apply stage into buffer. file:save flushes. diff:show previews. file:discard reverts. |
+| immediate | Each edit writes to disk atomically. | edit:replace, edit:replace-all write directly. file:save, diff:show, file:discard are no-ops or return empty state. |
 
-The agent selects the mode when opening a viewport via the `mode` parameter on `open`. Default is `"buffered"`.
+The agent selects the mode when opening a viewport via the mode parameter on
+viewport:open. Default is buffered.
+
+## Search Parameters
+
+| parameter | default | description |
+|-----------|---------|-------------|
+| pattern | required | The search string or regex pattern |
+| regex | false | Enable regex matching |
+| case_sensitive | false | Case-sensitive matching |
+| scope | viewport | viewport, file, or all_open |
 
 ## Safety
 
 ### Conflict Detection
 
-Every viewport operation (open, scroll, edit) performs a **soft check**: compare current `mtime+size` against the values at buffer load time. If mismatched, a `warning` field is appended to the response. The buffer is not invalidated — the agent can choose to discard and reload or continue.
+Every viewport operation (open, scroll, edit) performs a soft check: compare
+current mtime and size against the values at buffer load time. If mismatched,
+a warning field is appended to the response. The buffer is not invalidated —
+the agent can continue or discard and reload.
 
-The `save` operation performs a **hard check**: if `mtime+size` mismatches, the save is rejected unless `force=true` is set. On successful save (regardless of `force`), the stored `mtime+size` is updated to the post-save values.
+The file:save operation performs a hard check. If mtime or size mismatches,
+the save is rejected unless the force flag is set. On any successful save, the
+stored mtime and size update to the post-save values.
 
 ### Overwrite Protection
 
-`save-as` with `force=false` (default) returns an error if the target path already exists. `force=true` overwrites.
+file:save-as with force false returns an error if the target path exists.
+Force true overwrites.
 
 ### Diff Safety
 
-`apply-diff` always stages into a buffer (even in immediate mode, the diff is staged first for review). The agent must review with `show-diff` and then `save` to commit.
+diff:apply always stages into a buffer. The diff is never applied directly to
+disk. The agent must review with diff:show and then file:save to commit.
 
 ## Session Isolation Model
 
-| Dimension | Unit |
+| dimension | unit |
 |-----------|------|
-| Session identity | MCP connection |
-| Buffer identity | `(file_path, session)` |
-| Buffer freshness | File `mtime + size` at load time |
-| Conflict detection | On save: reject if file changed since buffer loaded (unless `force`) |
+| session identity | MCP connection |
+| buffer identity | file_path + session |
+| buffer freshness | file mtime + size at load time |
+| conflict detection | on save: reject if file changed since buffer loaded (unless force) |
 
 ## Structural Navigation Targets
 
-The `jump` operation must support the following anchors at minimum:
+The viewport:jump action must support these anchors at minimum:
 
 - Line number
-- Function/method name (by language parser or regex heuristic)
-- Markdown heading (by `#` level)
+- Function or method name (by language parser or regex heuristic)
+- Markdown heading (by hash level)
 - Table (markdown tables)
-- Search result (from a prior `search`)
-
-## Tool Naming
-
-The MCP server exposes operations as individual tools following the `viewport-editor` namespace convention (e.g., `viewport-editor_open`, `viewport-editor_edit`, `viewport-editor_save`).
+- Search result (from a prior search:find)
 
 ## Relationship to Existing Tools
 
-| Tool | Status |
+| tool | status |
 |------|--------|
-| **texted** | Will be retired after viewport-editor reaches feature parity |
-| **Built-in Read/Edit/Write** | Coexist — not deprecated |
+| texted | Will be retired after viewport-editor reaches feature parity |
+| built-in Read/Edit/Write | Coexist. Not deprecated. |
 
 ## Roadmap
 
-### MVP (Phase 1)
+### MVP — Phase 1
 
-- All operations listed above
-- Per-viewport mode selection (buffered default, immediate available)
-- Buffered mode: buffer lifecycle, save, discard, diff preview
-- Immediate mode: atomic write on each edit operation
-- `apply-diff` always stages into buffer (even in immediate mode)
-- `show-diff` for diff preview (meaningful in buffered mode)
-- Conflict detection (soft on ops, hard on buffered save)
-- Multi-viewport support
-- Session isolation
-- `test-regex`, `escape-regex` utilities
+All 6 tools with all actions listed above. Per-viewport mode selection.
+Buffered and immediate modes co-implemented. Conflict detection.
+Multi-viewport support. Session isolation. Prose + YAML throughout.
+File paths relative to project root.
 
-### Phase 2 (Post-MVP)
+### Phase 2
 
 - Structural navigation by language AST
 - Configuration file for defaults
