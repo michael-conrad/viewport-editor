@@ -1,3 +1,7 @@
+<!-- SPDX-FileCopyrightText: 2026 Michael Conrad -->
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Provenance: AI-generated -->
+
 # viewport-editor — Design Document
 
 **MCP server providing a windowed viewport editor for AI agents.**
@@ -206,3 +210,7 @@ File paths relative to project root. list_tools as discovery mechanism.
 ## License
 
 MIT
+
+---
+
+🤖 Co-authored with AI: OpenCode (ollama-cloud/deepseek-v4-flash)
