@@ -22,7 +22,7 @@ viewport-editor collapses this to: open a viewport, edit within it, review befor
 
 ### Viewport
 
-A viewport is a focused window into a file. Every operation returns the full context:
+A viewport is a focused window into a file. The server uses the current working directory as the project root. All file paths are relative to this root — no absolute or host-specific paths in agent-facing interfaces. Every operation returns the full context:
 
 ```yaml
 viewport_entry:
@@ -61,15 +61,15 @@ All operations are exposed through 6 tools with an `action` parameter. This keep
 
 ## Quick Start
 
-### OpenCode
+No setup required. The project root is the current working directory at server start.
 
-Add to your `opencode.jsonc` under the `"mcp"` section:
+### OpenCode
 
 ```jsonc
 "mcp": {
     "viewport-editor": {
       "type": "local",
-      "command": ["python", "-m", "viewport_editor", "/path/to/project/root"],
+      "command": ["uvx", "viewport-editor"],
       "enabled": true
     }
 }
@@ -81,14 +81,18 @@ Add to your `opencode.jsonc` under the `"mcp"` section:
 {
   "mcpServers": {
     "viewport-editor": {
-      "command": "python",
-      "args": ["-m", "viewport_editor", "/path/to/project/root"]
+      "command": "uvx",
+      "args": ["viewport-editor"]
     }
   }
 }
 ```
 
-The server receives a project root path at initialization. All file paths are relative to this root — no absolute or host-specific paths in agent-facing interfaces.
+Alternatively, run directly from the repo checkout:
+
+```
+uv run viewport-editor
+```
 
 ## Design Principles
 
