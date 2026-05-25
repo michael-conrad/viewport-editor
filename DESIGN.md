@@ -83,6 +83,10 @@ and responses use prose + YAML exclusively.
 |--------|-------------|
 | replace | Find and replace text within the current viewport. In buffered mode, stages into buffer. In immediate mode, writes to disk atomically. |
 | replace-all | Batch replace across viewport, entire file, or all open files. Scope parameter selects the target. Behavior depends on viewport mode. |
+| insert-lines | Insert one or more lines at a specified line number within the viewport. Behavior depends on viewport mode. |
+| delete-lines | Delete a range of lines within the viewport. Behavior depends on viewport mode. |
+| swap-lines | Exchange two line positions within the viewport. Behavior depends on viewport mode. |
+| move-lines | Relocate a range of lines to a target line position within the viewport. Behavior depends on viewport mode. |
 
 ### 3. file
 
@@ -120,8 +124,8 @@ Modes are set per-viewport. Each viewport entry includes a mode field.
 
 | mode | behavior | operations affected |
 |------|----------|---------------------|
-| buffered (default) | Edits stage into buffer. Explicit save required. | edit:replace, edit:replace-all, diff:apply stage into buffer. file:save flushes. diff:show previews. file:discard reverts. |
-| immediate | Each edit writes to disk atomically. | edit:replace, edit:replace-all write directly. file:save, diff:show, file:discard are no-ops or return empty state. |
+| buffered (default) | Edits stage into buffer. Explicit save required. | edit actions, diff:apply stage into buffer. file:save flushes. diff:show previews. file:discard reverts. |
+| immediate | Each edit writes to disk atomically. | edit actions, diff:apply write directly. file:save, diff:show, file:discard are no-ops or return empty state. |
 
 The agent selects the mode when opening a viewport via the mode parameter on
 viewport:open. Default is buffered.
@@ -139,10 +143,11 @@ viewport:open. Default is buffered.
 
 ### Conflict Detection
 
-Every viewport operation (open, scroll, page-up, page-down, edit) performs a
-soft check: compare current mtime and size against the values at buffer load
-time. If mismatched, a warning field is appended to the response. The buffer
-is not invalidated — the agent can continue or discard and reload.
+Every viewport operation (open, scroll, page-up, page-down, edit actions)
+performs a soft check: compare current mtime and size against the values
+at buffer load time. If mismatched, a warning field is appended to the
+response. The buffer is not invalidated — the agent can continue or discard
+and reload.
 
 The file:save operation performs a hard check. If mtime or size mismatches,
 the save is rejected unless the force flag is set. On any successful save, the
