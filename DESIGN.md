@@ -69,6 +69,23 @@ explicit save. In immediate mode, each edit writes to disk atomically.
 Buffer state is scoped to the MCP session. Multiple sessions can have buffers
 for the same file without collision. Staleness detection uses mtime + size.
 
+### Session Lifecycle and Rude Disconnect
+
+Sessions are ephemeral — the editing client (typically another AI agent) may
+disconnect without notice (rude disconnect). On any disconnect, the server:
+
+1. Removes the session's viewport registry and buffer state
+2. **Discards all dirty buffers — zero saves on rude disconnect.** An AI agent
+   that vanishes mid-edit cannot verify the consistency of its own edits, so
+   partial edits are unsafe to commit.
+3. Clean buffers (identical to disk) are also released since the session no
+   longer exists.
+
+This is a design property, not a defect. The agent-server contract is:
+connected = working, disconnected = discarded. Autosave=on viewports flush
+per-operation so they are never dirty at disconnect — the property only
+affects autosave=off viewports with staged but unsaved edits.
+
 ## Consolidated Tool Surface (6 Tools)
 
 All operations are exposed through 6 tools with an action parameter.
@@ -86,7 +103,7 @@ and responses use prose + YAML exclusively.
 | page-up | Move viewport up by its own height (previous block of text). |
 | page-down | Move viewport down by its own height (next block of text). |
 | jump | Navigate to a structural anchor: line number, function name, markdown heading, table, or search result. |
-| switch-mode | Switch the viewport between buffered and immediate mode. If buffered with unsaved changes, refuse with message: "buffer has unsaved changes, save or discard before switching mode." |
+| autosave | Toggle autosave on an open viewport. When turning on, flushes dirty buffer immediately. |
 
 ### 2. edit
 
