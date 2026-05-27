@@ -14,6 +14,7 @@ from typing import Any, AsyncIterator, Optional
 
 from mcp.server.fastmcp import FastMCP
 
+from .exceptions import ViewportError
 from .session import create_session, get_session, get_session_ids, remove_session
 from .viewport import ViewportManager
 
@@ -89,38 +90,101 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
                 display_mode=display_mode,
             )
             return result
-        except (PermissionError) as exc:
+        except PermissionError as exc:
             return f"error: {exc}"
 
     @mcp.tool()
     def edit(
         ctx: Any = None,
         action: str = "",
+        session_id: str = "",
+        viewport_id: str = "",
+        file_path: str = "",
+        old_text: str = "",
+        new_text: str = "",
+        line_start: int = 0,
+        line_end: int = 0,
+        lines: Optional[list[str]] = None,
+        target_line_start: int = 0,
+        target_line_end: int = 0,
+        target_line: int = 0,
     ) -> str:
-        """Edit text in a viewport. Not yet implemented.
+        """Edit text content in an open viewport's buffer. All edits stage into buffer; flush to disk only on explicit save (file:save) or if autosave is enabled on the viewport.
 
-        Actions: write, insert, replace, delete"""
-        return "edit tool: not yet implemented"
+        Actions: replace, replace-all, insert-lines, delete-lines, swap-lines, move-lines"""
+        if _manager is None:
+            return "error: server not initialized"
+
+        session = get_session(session_id)
+        if session is None:
+            create_session(session_id)
+
+        return _handle_edit_action(
+            action=action,
+            session_id=session_id,
+            viewport_id=viewport_id,
+            file_path=file_path,
+            old_text=old_text,
+            new_text=new_text,
+            line_start=line_start,
+            line_end=line_end,
+            lines=lines,
+            target_line_start=target_line_start,
+            target_line_end=target_line_end,
+            target_line=target_line,
+        )
 
     @mcp.tool()
     def file(
         ctx: Any = None,
         action: str = "",
+        session_id: str = "",
+        viewport_id: str = "",
+        file_path: str = "",
+        force: bool = False,
     ) -> str:
-        """File system operations for viewport-editor. Not yet implemented.
+        """File system operations for viewport-editor buffers. Persist pending edits to disk or discard them.
 
-        Actions: create, delete, rename, info"""
-        return "file tool: not yet implemented"
+        Actions: save, discard"""
+        if _manager is None:
+            return "error: server not initialized"
+
+        session = get_session(session_id)
+        if session is None:
+            create_session(session_id)
+
+        return _handle_file_action(
+            action=action,
+            session_id=session_id,
+            viewport_id=viewport_id,
+            file_path=file_path,
+            force=force,
+        )
 
     @mcp.tool()
     def diff(
         ctx: Any = None,
         action: str = "",
+        session_id: str = "",
+        viewport_id: str = "",
+        file_path: str = "",
     ) -> str:
-        """Diff operations for viewport-editor. Not yet implemented.
+        """Show unified diff of pending buffer changes vs disk content.
 
-        Actions: staged, unstaged, viewport"""
-        return "diff tool: not yet implemented"
+        Actions: show"""
+        if _manager is None:
+            return "error: server not initialized"
+
+        session = get_session(session_id)
+        if session is None:
+            create_session(session_id)
+
+        return _handle_diff_action(
+            action=action,
+            session_id=session_id,
+            viewport_id=viewport_id,
+            file_path=file_path,
+        )
 
     @mcp.tool()
     def search(
@@ -307,7 +371,9 @@ def _action_open(
     )
     entry_data = result.to_dict()
     visible = _manager.get_visible_lines(session_id, result)
-    content_block = _format_content_block(visible, result.start_line, result.display_mode)
+    content_block = _format_content_block(
+        visible, result.start_line, result.display_mode
+    )
     lines = [
         f"opened viewport for {entry_data['file']}:",
         f"  viewport_id: {entry_data['viewport_id']}",
@@ -515,3 +581,121 @@ def _action_set_display_mode(
     if conflict_msg:
         parts.append(f"  warning:\n{conflict_msg}")
     return "\n".join(parts)
+
+
+def _handle_edit_action(
+    action: str,
+    session_id: str,
+    viewport_id: str,
+    file_path: str = "",
+    old_text: str = "",
+    new_text: str = "",
+    line_start: int = 0,
+    line_end: int = 0,
+    lines: Optional[list[str]] = None,
+    target_line_start: int = 0,
+    target_line_end: int = 0,
+    target_line: int = 0,
+) -> str:
+    if _manager is None:
+        return "error: server not initialized"
+
+    entry = _manager.get_entry(session_id, viewport_id)
+    conflict_warning = _check_file_conflict(entry.file, entry)
+
+    if action == "replace":
+        result = _manager.apply_edit(session_id, viewport_id, old_text, new_text)
+        parts = [
+            f"replaced text in viewport {viewport_id}:",
+            f"  found: {result['found']}",
+            f"  count: {result['count']}",
+        ]
+    elif action == "replace-all":
+        result = _manager.apply_replace_all(session_id, viewport_id, old_text, new_text)
+        parts = [
+            f"replaced all occurrences in viewport {viewport_id}:",
+            f"  found: {result['found']}",
+            f"  count: {result['count']}",
+        ]
+    elif action == "insert-lines":
+        result = _manager.apply_insert_lines(session_id, viewport_id, line_start, lines or [])
+        parts = [
+            f"inserted lines in viewport {viewport_id}:",
+            f"  line_start: {result['line_start']}",
+            f"  line_end: {result['line_end']}",
+            f"  count: {result['count']}",
+        ]
+    elif action == "delete-lines":
+        result = _manager.apply_delete_lines(session_id, viewport_id, line_start, line_end)
+        parts = [
+            f"deleted lines in viewport {viewport_id}:",
+            f"  line_start: {result['line_start']}",
+            f"  line_count: {result['line_count']}",
+        ]
+    elif action == "swap-lines":
+        _manager.apply_swap_lines(
+            session_id, viewport_id, line_start, line_end,
+            target_line_start, target_line_end,
+        )
+        parts = [f"swapped line ranges in viewport {viewport_id}:", "  swapped: True"]
+    elif action == "move-lines":
+        _manager.apply_move_lines(session_id, viewport_id, line_start, line_end, target_line)
+        parts = [f"moved lines in viewport {viewport_id}:", "  moved: True"]
+    else:
+        raise ViewportError(f"unknown edit action: {action}")
+
+    if conflict_warning:
+        parts.append(f"  warning:\n{conflict_warning}")
+
+    return "\n".join(parts)
+
+
+def _handle_file_action(
+    action: str,
+    session_id: str,
+    viewport_id: str,
+    file_path: str = "",
+    force: bool = False,
+) -> str:
+    if _manager is None:
+        return "error: server not initialized"
+
+    if action == "save":
+        entry = _manager.get_entry(session_id, viewport_id)
+        if file_path and entry.file != file_path:
+            raise ViewportError(
+                f"file '{file_path}' does not exist for viewport {viewport_id}"
+            )
+        conflict_warning = _manager.check_conflict(entry.file, entry.mtime, entry.size)
+        if conflict_warning and not force:
+            warning_str = _manager.format_conflict_warning(conflict_warning)
+            raise ViewportError(f"stale mtime/size conflict\n{warning_str}")
+        _manager._flush_entry(session_id, entry)
+        return (
+            f"saved viewport {viewport_id}:"
+            f"\n  mtime: {entry.mtime}"
+            f"\n  size: {entry.size}"
+        )
+    elif action == "discard":
+        _manager.discard_buffer_changes(session_id, viewport_id)
+        return f"discarded pending changes for viewport {viewport_id}"
+    else:
+        raise ViewportError(f"unknown file action: {action}")
+
+
+def _handle_diff_action(
+    action: str,
+    session_id: str,
+    viewport_id: str,
+    file_path: str = "",
+) -> str:
+    if _manager is None:
+        return "error: server not initialized"
+
+    if action == "show":
+        diff_str = _manager.get_buffer_diff(session_id, viewport_id)
+        if not diff_str:
+            return f"no pending changes for viewport {viewport_id}"
+        return f"diff for {file_path}:\n{diff_str}"
+    else:
+        raise ViewportError(f"unknown diff action: {action}")

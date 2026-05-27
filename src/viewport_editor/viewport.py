@@ -13,12 +13,15 @@ import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
+from .diff_engine import generate_unified_diff
 from .exceptions import (
     AbsolutePathError,
+    EditTargetNotFoundError,
     FileNotFoundError_,
     InvalidDisplayModeError,
     JumpLineOutOfRangeError,
     JumpTargetNotFoundError,
+    LineRangeError,
     PathEscapeError,
     SessionNotFoundError,
     ViewportNotFoundError,
@@ -90,7 +93,9 @@ def _detect_line_ending(file_path: str) -> str:
     return dominant.decode("ascii")
 
 
-def _read_file_lines(resolved_path: str) -> Tuple[List[str], Optional[float], Optional[int]]:
+def _read_file_lines(
+    resolved_path: str,
+) -> Tuple[List[str], Optional[float], Optional[int]]:
     st = os.stat(resolved_path)
     mtime = st.st_mtime
     size = st.st_size
@@ -127,16 +132,21 @@ class ViewportManager:
         notices: list[str] = ["discarded stale sessions:"]
         for session_id in stale:
             entries = self._entries.get(session_id, {})
-            summary = ", ".join(
-                f"{e.file} {'[dirty]' if e.dirty else '[clean]'}"
-                for e in entries.values()
-            ) or "no open viewports"
+            summary = (
+                ", ".join(
+                    f"{e.file} {'[dirty]' if e.dirty else '[clean]'}"
+                    for e in entries.values()
+                )
+                or "no open viewports"
+            )
             notices.append(f"  - {session_id}: {summary}")
             self.destroy_session(session_id)
 
         return "\n".join(notices)
 
-    def _get_or_create_buffer(self, session_id: str, file_path: str, resolved_path: str) -> Buffer:
+    def _get_or_create_buffer(
+        self, session_id: str, file_path: str, resolved_path: str
+    ) -> Buffer:
         if session_id not in self._buffers:
             self._buffers[session_id] = {}
         if file_path not in self._buffers[session_id]:
@@ -151,7 +161,9 @@ class ViewportManager:
         buf = self._buffers[session_id][file_path]
         return buf.content.splitlines(keepends=True)
 
-    def _refresh_buffer_if_changed(self, session_id: str, file_path: str, resolved_path: str) -> None:
+    def _refresh_buffer_if_changed(
+        self, session_id: str, file_path: str, resolved_path: str
+    ) -> None:
         if session_id in self._buffers and file_path in self._buffers[session_id]:
             lines, mtime, size = _read_file_lines(resolved_path)
             buf = self._buffers[session_id][file_path]
@@ -209,7 +221,10 @@ class ViewportManager:
         del self._entries[session_id][viewport_id]
 
     def _flush_entry(self, session_id: str, entry: ViewportEntry) -> None:
-        if session_id not in self._buffers or entry.file not in self._buffers[session_id]:
+        if (
+            session_id not in self._buffers
+            or entry.file not in self._buffers[session_id]
+        ):
             return
         buf = self._buffers[session_id][entry.file]
         resolved_path, _ = _resolve_path(entry.file, self.project_root)
@@ -288,14 +303,18 @@ class ViewportManager:
         entry.end_line = min(new_start + height, total)
         return entry
 
-    def set_autosave(self, session_id: str, viewport_id: str, enabled: bool) -> ViewportEntry:
+    def set_autosave(
+        self, session_id: str, viewport_id: str, enabled: bool
+    ) -> ViewportEntry:
         entry = self.get_entry(session_id, viewport_id)
         if enabled and not entry.autosave and entry.dirty:
             self._flush_entry(session_id, entry)
         entry.autosave = enabled
         return entry
 
-    def set_display_mode(self, session_id: str, viewport_id: str, mode: str) -> ViewportEntry:
+    def set_display_mode(
+        self, session_id: str, viewport_id: str, mode: str
+    ) -> ViewportEntry:
         entry = self.get_entry(session_id, viewport_id)
         if mode not in ("hide", "show"):
             raise InvalidDisplayModeError(mode)
@@ -315,11 +334,167 @@ class ViewportManager:
         return self._entries[session_id][viewport_id]
 
     def get_line_ending(self, session_id: str, file_path: str) -> str:
-        if session_id not in self.line_endings or file_path not in self.line_endings[session_id]:
+        if (
+            session_id not in self.line_endings
+            or file_path not in self.line_endings[session_id]
+        ):
             return "\n"
         return self.line_endings[session_id][file_path]
 
-    def check_conflict(self, file_path: str, stored_mtime: Optional[float], stored_size: Optional[int]) -> Optional[dict]:
+    def _maybe_autosave(self, session_id: str, entry: ViewportEntry) -> None:
+        """Flush buffer to disk if autosave is enabled."""
+        entry.dirty = True
+        if entry.autosave:
+            self._flush_entry(session_id, entry)
+
+    def apply_edit(
+        self, session_id: str, viewport_id: str, old_text: str, new_text: str
+    ) -> dict:
+        entry = self.get_entry(session_id, viewport_id)
+        buf = self._buffers[session_id][entry.file]
+        count = buf.content.count(old_text)
+        if count == 0:
+            raise EditTargetNotFoundError(old_text)
+        buf.content = buf.content.replace(old_text, new_text, 1)
+        self._maybe_autosave(session_id, entry)
+        line_idx = buf.content[: buf.content.index(new_text)].splitlines(keepends=True)
+        snippet_line = len(line_idx)
+        lines = buf.content.splitlines(keepends=True)
+        snippet = (
+            lines[snippet_line - 1].rstrip("\n").rstrip("\r")
+            if snippet_line <= len(lines)
+            else ""
+        )
+        return {"found": True, "count": count, "snippet": snippet}
+
+    def apply_replace_all(
+        self, session_id: str, viewport_id: str, old_text: str, new_text: str
+    ) -> dict:
+        entry = self.get_entry(session_id, viewport_id)
+        buf = self._buffers[session_id][entry.file]
+        count = buf.content.count(old_text)
+        if count == 0:
+            raise EditTargetNotFoundError(old_text)
+        buf.content = buf.content.replace(old_text, new_text)
+        self._maybe_autosave(session_id, entry)
+        snippet_start = buf.content[:50].rstrip("\n").rstrip("\r")
+        return {"found": True, "count": count, "snippet": snippet_start}
+
+    def apply_insert_lines(
+        self, session_id: str, viewport_id: str, line_start: int, lines: list[str]
+    ) -> dict:
+        entry = self.get_entry(session_id, viewport_id)
+        buf = self._buffers[session_id][entry.file]
+        file_lines = buf.content.splitlines(keepends=True)
+        total = len(file_lines)
+        if line_start < 1 or line_start > total:
+            raise LineRangeError(f"line_start {line_start} out of range (1-{total})")
+        le = self.get_line_ending(session_id, entry.file)
+        new_lines = [ln if ln.endswith(le) else ln + le for ln in lines]
+        file_lines[line_start:line_start] = new_lines
+        buf.content = "".join(file_lines)
+        self._maybe_autosave(session_id, entry)
+        return {
+            "line_start": line_start + 1,
+            "line_end": line_start + len(new_lines),
+            "count": len(new_lines),
+        }
+
+    def apply_delete_lines(
+        self, session_id: str, viewport_id: str, line_start: int, line_end: int
+    ) -> dict:
+        entry = self.get_entry(session_id, viewport_id)
+        buf = self._buffers[session_id][entry.file]
+        file_lines = buf.content.splitlines(keepends=True)
+        total = len(file_lines)
+        if line_start < 1 or line_end > total or line_start > line_end:
+            raise LineRangeError(
+                f"invalid line range: {line_start}-{line_end} (total {total})"
+            )
+        del file_lines[line_start - 1 : line_end]
+        buf.content = "".join(file_lines)
+        self._maybe_autosave(session_id, entry)
+        return {"line_start": line_start, "line_count": line_end - line_start + 1}
+
+    def apply_swap_lines(
+        self,
+        session_id: str,
+        viewport_id: str,
+        line_start: int,
+        line_end: int,
+        target_line_start: int,
+        target_line_end: int,
+    ) -> dict:
+        entry = self.get_entry(session_id, viewport_id)
+        buf = self._buffers[session_id][entry.file]
+        file_lines = buf.content.splitlines(keepends=True)
+        total = len(file_lines)
+        for a, b in [(line_start, line_end), (target_line_start, target_line_end)]:
+            if a < 1 or b > total or a > b:
+                raise LineRangeError(f"invalid range {a}-{b} (total {total})")
+        range_a = file_lines[line_start - 1 : line_end]
+        range_b = file_lines[target_line_start - 1 : target_line_end]
+        file_lines[line_start - 1 : line_end] = range_b
+        file_lines[target_line_start - 1 : target_line_end] = range_a
+        buf.content = "".join(file_lines)
+        self._maybe_autosave(session_id, entry)
+        return {"swapped": True}
+
+    def apply_move_lines(
+        self,
+        session_id: str,
+        viewport_id: str,
+        line_start: int,
+        line_end: int,
+        target_line: int,
+    ) -> dict:
+        entry = self.get_entry(session_id, viewport_id)
+        buf = self._buffers[session_id][entry.file]
+        file_lines = buf.content.splitlines(keepends=True)
+        total = len(file_lines)
+        if line_start < 1 or line_end > total or line_start > line_end:
+            raise LineRangeError(
+                f"invalid range {line_start}-{line_end} (total {total})"
+            )
+        if target_line < 1 or target_line > total + 1:
+            raise LineRangeError(f"invalid target_line {target_line} (total {total})")
+        moved = file_lines[line_start - 1 : line_end]
+        del file_lines[line_start - 1 : line_end]
+        if target_line > line_start:
+            adjusted_target = target_line - len(moved)
+        else:
+            adjusted_target = target_line
+        file_lines[adjusted_target - 1 : adjusted_target - 1] = moved
+        buf.content = "".join(file_lines)
+        self._maybe_autosave(session_id, entry)
+        return {"moved": True}
+
+    def discard_buffer_changes(
+        self, session_id: str, viewport_id: str
+    ) -> ViewportEntry:
+        entry = self.get_entry(session_id, viewport_id)
+        resolved_path, _ = _resolve_path(entry.file, self.project_root)
+        lines, mtime, size = _read_file_lines(resolved_path)
+        buf = self._buffers[session_id][entry.file]
+        buf.content = "".join(lines)
+        buf.mtime = mtime
+        buf.size = size
+        entry.dirty = False
+        entry.mtime = mtime
+        entry.size = size
+        return entry
+
+    def get_buffer_diff(self, session_id: str, viewport_id: str) -> str:
+        entry = self.get_entry(session_id, viewport_id)
+        buf = self._buffers[session_id][entry.file]
+        resolved_path, _ = _resolve_path(entry.file, self.project_root)
+        lines, _, _ = _read_file_lines(resolved_path)
+        disk_content = "".join(lines)
+        return generate_unified_diff(disk_content, buf.content, entry.file)
+
+    def check_conflict(
+        self, file_path: str, stored_mtime: Optional[float], stored_size: Optional[int]
+    ) -> Optional[dict]:
         resolved_path, _ = _resolve_path(file_path, self.project_root)
         if not os.path.isfile(resolved_path):
             return {"file": file_path, "missing": True}
