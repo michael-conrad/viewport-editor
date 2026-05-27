@@ -69,3 +69,17 @@ class InvalidDisplayModeError(ViewportError):
 
     def __init__(self, mode: str) -> None:
         super().__init__(f"display_mode must be 'hide' or 'show', got {mode!r}")
+
+
+class EditTargetNotFoundError(ViewportError):
+    """Raised when edit old_text not found in buffer."""
+
+    def __init__(self, target: str) -> None:
+        super().__init__(f"Edit target not found: {target}")
+
+
+class LineRangeError(ViewportError):
+    """Raised when line range is invalid."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
