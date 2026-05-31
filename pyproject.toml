@@ -27,6 +27,7 @@ asyncio_default_test_loop_scope = "module"
 markers = [
     "phase1: Phase 1 server foundation + viewport tool tests",
     "phase2: Phase 2 edit/buffer/diff tool tests",
+    "phase3: Phase 3 file operations + autosave integration tests",
 ]
 
 [dependency-groups]
