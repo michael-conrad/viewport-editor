@@ -29,6 +29,8 @@ def test_project_root() -> Path:
     (tmpdir / "long_file.txt").write_text("\n".join(f"line {i}" for i in range(1, 101)))
     # file with non-printing characters for display_mode show testing
     (tmpdir / "non_printing.txt").write_bytes(b"null\x00byte\ncontrol\x01\x02end\n")
+    # isolated file for SC-38 decode test — no other test touches this
+    (tmpdir / "unicode_test.txt").write_text("line A\nline B\nline C\nline D\nline E\n")
     return tmpdir
 
 
@@ -756,6 +758,62 @@ async def test_set_display_mode_invalid(client_session: ClientSession) -> None:
     )
     assert result.isError
     assert "error" in _get_text(result).lower()
+
+
+# ── SC-38 unicode decode in edit pipeline ──────────────────────────────────
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc38_unicode_decode_in_edit_replace(client_session: ClientSession, test_project_root: Path) -> None:
+    """SC-38-FIX: agent input \\uNNNN in edit operations decodes to real character.
+
+    Behavioral evidence: edit:replace with \\u006c (decodes to 'l') successfully
+    matches 'l' in 'line' within test_file.txt. Without decode, literal \\u006c
+    would not match.
+    """
+    # Uses dedicated fixture file — no other test touches this, avoiding
+    # SAT-UNSAT with tests that mutate test_file.txt on disk (SC-25, SC-35).
+    file_path_str = "unicode_test.txt"
+    original = (test_project_root / file_path_str).read_text()
+
+    result_open = await client_session.call_tool(
+        "viewport", arguments={"action": "open", "session_id": "test-sc38-edit", "file_path": file_path_str},
+    )
+    assert "error" not in _get_text(result_open)
+    vpid = _extract_vpid(_get_text(result_open))
+
+    # \\u006c\\u0069\\u006e\\u0065 decodes to 'line' which exists in the file
+    # Without decode, literal "\\u006c\\u0069\\u006e\\u0065" would not match anything
+    result = await client_session.call_tool(
+        "edit",
+        arguments={
+            "action": "replace", "session_id": "test-sc38-edit", "viewport_id": vpid,
+            "file_path": file_path_str, "old_text": "\\u006c\\u0069\\u006e\\u0065", "new_text": "DECODED-LINE",
+        },
+    )
+    text = _get_text(result)
+    assert not result.isError, (
+        f"SC-38-FIX FAIL: \\u006c\\u0069\\u006e\\u0065 should decode to 'line' and match: {text[:200]}"
+    )
+
+    # File on disk must be unchanged (autosave=off)
+    assert (test_project_root / file_path_str).read_text() == original, \
+        "SC-38-FIX FAIL: file on disk changed (should stage only)"
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc38_unicode_decode_noop_on_literal_text(client_session: ClientSession) -> None:
+    """SC-38-FIX: decode is no-op on literal text (no \\uNNNN escapes).
+
+    The 'lines' parameter is a list of literal lines, not \\uNNNN-escaped.
+    This test verifies decode does NOT interfere with normal text.
+    """
+    result_open = await client_session.call_tool(
+        "viewport", arguments={"action": "open", "session_id": "test-sc38-literal", "file_path": "test_file.txt"},
+    )
+    assert "error" not in _get_text(result_open)
 
 
 def _get_text(result: CallToolResult) -> str:

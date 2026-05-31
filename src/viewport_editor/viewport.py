@@ -228,8 +228,17 @@ class ViewportManager:
             return
         buf = self._buffers[session_id][entry.file]
         resolved_path, _ = _resolve_path(entry.file, self.project_root)
-        with open(resolved_path, "w") as f:
-            f.write(buf.content)
+        tmp = resolved_path + ".tmp"
+        try:
+            with open(tmp, "w") as f:
+                f.write(buf.content)
+            os.replace(tmp, resolved_path)
+        except BaseException:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
         st = os.stat(resolved_path)
         buf.mtime = st.st_mtime
         buf.size = st.st_size

@@ -603,15 +603,20 @@ def _handle_edit_action(
     entry = _manager.get_entry(session_id, viewport_id)
     conflict_warning = _check_file_conflict(entry.file, entry)
 
+    # Decode \\uNNNN escapes in text parameters so agents in show mode
+    # can input \\uNNNN to match/insert real characters
+    decoded_old = _decode_unicode_escapes(old_text)
+    decoded_new = _decode_unicode_escapes(new_text)
+
     if action == "replace":
-        result = _manager.apply_edit(session_id, viewport_id, old_text, new_text)
+        result = _manager.apply_edit(session_id, viewport_id, decoded_old, decoded_new)
         parts = [
             f"replaced text in viewport {viewport_id}:",
             f"  found: {result['found']}",
             f"  count: {result['count']}",
         ]
     elif action == "replace-all":
-        result = _manager.apply_replace_all(session_id, viewport_id, old_text, new_text)
+        result = _manager.apply_replace_all(session_id, viewport_id, decoded_old, decoded_new)
         parts = [
             f"replaced all occurrences in viewport {viewport_id}:",
             f"  found: {result['found']}",
