@@ -616,14 +616,18 @@ def _handle_edit_action(
             f"  count: {result['count']}",
         ]
     elif action == "replace-all":
-        result = _manager.apply_replace_all(session_id, viewport_id, decoded_old, decoded_new)
+        result = _manager.apply_replace_all(
+            session_id, viewport_id, decoded_old, decoded_new
+        )
         parts = [
             f"replaced all occurrences in viewport {viewport_id}:",
             f"  found: {result['found']}",
             f"  count: {result['count']}",
         ]
     elif action == "insert-lines":
-        result = _manager.apply_insert_lines(session_id, viewport_id, line_start, lines or [])
+        result = _manager.apply_insert_lines(
+            session_id, viewport_id, line_start, lines or []
+        )
         parts = [
             f"inserted lines in viewport {viewport_id}:",
             f"  line_start: {result['line_start']}",
@@ -631,7 +635,9 @@ def _handle_edit_action(
             f"  count: {result['count']}",
         ]
     elif action == "delete-lines":
-        result = _manager.apply_delete_lines(session_id, viewport_id, line_start, line_end)
+        result = _manager.apply_delete_lines(
+            session_id, viewport_id, line_start, line_end
+        )
         parts = [
             f"deleted lines in viewport {viewport_id}:",
             f"  line_start: {result['line_start']}",
@@ -639,12 +645,18 @@ def _handle_edit_action(
         ]
     elif action == "swap-lines":
         _manager.apply_swap_lines(
-            session_id, viewport_id, line_start, line_end,
-            target_line_start, target_line_end,
+            session_id,
+            viewport_id,
+            line_start,
+            line_end,
+            target_line_start,
+            target_line_end,
         )
         parts = [f"swapped line ranges in viewport {viewport_id}:", "  swapped: True"]
     elif action == "move-lines":
-        _manager.apply_move_lines(session_id, viewport_id, line_start, line_end, target_line)
+        _manager.apply_move_lines(
+            session_id, viewport_id, line_start, line_end, target_line
+        )
         parts = [f"moved lines in viewport {viewport_id}:", "  moved: True"]
     else:
         raise ViewportError(f"unknown edit action: {action}")
@@ -675,7 +687,7 @@ def _handle_file_action(
         if conflict_warning and not force:
             warning_str = _manager.format_conflict_warning(conflict_warning)
             raise ViewportError(f"stale mtime/size conflict\n{warning_str}")
-        _manager._flush_entry(session_id, entry)
+        _manager.flush_entry(session_id, entry)
         return (
             f"saved viewport {viewport_id}:"
             f"\n  mtime: {entry.mtime}"
