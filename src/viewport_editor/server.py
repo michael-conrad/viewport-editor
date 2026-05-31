@@ -764,6 +764,9 @@ def _handle_diff_action(
         return "error: server not initialized"
 
     if action == "show":
+        entry = _manager.get_entry(session_id, viewport_id)
+        if entry.autosave:
+            return "no pending changes (autosave is on)"
         diff_str = _manager.get_buffer_diff(session_id, viewport_id)
         if not diff_str:
             return f"no pending changes for viewport {viewport_id}"
