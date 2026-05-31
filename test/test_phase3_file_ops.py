@@ -11,7 +11,6 @@ Co-authored with AI: OpenCode (ollama-cloud/deepseek-v4-flash)
 
 from __future__ import annotations
 
-import time
 import tempfile
 from pathlib import Path
 from typing import AsyncIterator
@@ -35,12 +34,21 @@ def test_project_root() -> Path:
 def server_params(test_project_root: Path) -> StdioServerParameters:
     return StdioServerParameters(
         command="uv",
-        args=["run", "python", "-m", "viewport_editor", "--project-root", str(test_project_root)],
+        args=[
+            "run",
+            "python",
+            "-m",
+            "viewport_editor",
+            "--project-root",
+            str(test_project_root),
+        ],
     )
 
 
 @pytest.fixture
-async def client_session(server_params: StdioServerParameters) -> AsyncIterator[ClientSession]:
+async def client_session(
+    server_params: StdioServerParameters,
+) -> AsyncIterator[ClientSession]:
     try:
         async with stdio_client(server_params) as (read, write):
             async with ClientSession(read, write) as session:
@@ -74,7 +82,9 @@ def _extract_vpid(text: str) -> str:
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_sc14_autosave_on_file_save_noop(client_session: ClientSession, test_project_root: Path) -> None:
+async def test_sc14_autosave_on_file_save_noop(
+    client_session: ClientSession, test_project_root: Path
+) -> None:
     """SC-14: With autosave=on, file:save returns 'no pending changes'.
 
     RED: file:save always flushes (no autosave gate) — test FAILS (returns success).
@@ -83,7 +93,12 @@ async def test_sc14_autosave_on_file_save_noop(client_session: ClientSession, te
     file_path_str = "close_test.txt"
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "session_id": "test-sc14-save", "file_path": file_path_str, "autosave": True},
+        arguments={
+            "action": "open",
+            "session_id": "test-sc14-save",
+            "file_path": file_path_str,
+            "autosave": True,
+        },
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -91,14 +106,21 @@ async def test_sc14_autosave_on_file_save_noop(client_session: ClientSession, te
     # With autosave=on, file:save should be a no-op (no pending changes to save)
     result = await client_session.call_tool(
         "file",
-        arguments={"action": "save", "session_id": "test-sc14-save", "viewport_id": vpid, "file_path": file_path_str},
+        arguments={
+            "action": "save",
+            "session_id": "test-sc14-save",
+            "viewport_id": vpid,
+            "file_path": file_path_str,
+        },
     )
     text = _get_text(result)
     # GREEN assertion: save reports no-op / empty state
     assert not result.isError, f"RED FAIL: save should not error: {text[:200]}"
-    assert "no pending" in text.lower() or "nothing to save" in text.lower() or "up to date" in text.lower(), (
-        f"RED FAIL: expected no-pending-changes message: {text[:200]}"
-    )
+    assert (
+        "no pending" in text.lower()
+        or "nothing to save" in text.lower()
+        or "up to date" in text.lower()
+    ), f"RED FAIL: expected no-pending-changes message: {text[:200]}"
 
 
 @pytest.mark.phase3
@@ -111,14 +133,24 @@ async def test_sc14_autosave_on_diff_show_empty(client_session: ClientSession) -
     """
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "session_id": "test-sc14-diff", "file_path": "close_test.txt", "autosave": True},
+        arguments={
+            "action": "open",
+            "session_id": "test-sc14-diff",
+            "file_path": "close_test.txt",
+            "autosave": True,
+        },
     )
     vpid = _extract_vpid(_get_text(result_open))
 
     # With autosave=on, diff should show no pending changes
     result = await client_session.call_tool(
         "diff",
-        arguments={"action": "show", "session_id": "test-sc14-diff", "viewport_id": vpid, "file_path": "close_test.txt"},
+        arguments={
+            "action": "show",
+            "session_id": "test-sc14-diff",
+            "viewport_id": vpid,
+            "file_path": "close_test.txt",
+        },
     )
     text = _get_text(result)
     # GREEN assertion: diff shows no pending changes
@@ -138,21 +170,32 @@ async def test_sc14_autosave_on_discard_empty(client_session: ClientSession) -> 
     """
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "session_id": "test-sc14-discard", "file_path": "close_test.txt", "autosave": True},
+        arguments={
+            "action": "open",
+            "session_id": "test-sc14-discard",
+            "file_path": "close_test.txt",
+            "autosave": True,
+        },
     )
     vpid = _extract_vpid(_get_text(result_open))
 
     # With autosave=on, discard should be a no-op
     result = await client_session.call_tool(
         "file",
-        arguments={"action": "discard", "session_id": "test-sc14-discard", "viewport_id": vpid},
+        arguments={
+            "action": "discard",
+            "session_id": "test-sc14-discard",
+            "viewport_id": vpid,
+        },
     )
     text = _get_text(result)
     # GREEN assertion: discard reports no-op / empty state
     assert not result.isError, f"RED FAIL: discard should not error: {text[:200]}"
-    assert "no pending" in text.lower() or "nothing to discard" in text.lower() or "no changes" in text.lower(), (
-        f"RED FAIL: expected no-pending-changes message: {text[:200]}"
-    )
+    assert (
+        "no pending" in text.lower()
+        or "nothing to discard" in text.lower()
+        or "no changes" in text.lower()
+    ), f"RED FAIL: expected no-pending-changes message: {text[:200]}"
 
 
 # ── SC-15: file:new creates file and opens viewport ──────────────────────────
@@ -160,14 +203,18 @@ async def test_sc14_autosave_on_discard_empty(client_session: ClientSession) -> 
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_sc15_file_new_creates_file(client_session: ClientSession, test_project_root: Path) -> None:
+async def test_sc15_file_new_creates_file(
+    client_session: ClientSession, test_project_root: Path
+) -> None:
     """SC-15: file:new creates file on disk and opens viewport with autosave=off.
 
     RED: file tool has no 'new' action — test FAILS with unknown action error.
     GREEN: file:new creates empty file, opens viewport, autosave=off.
     """
     new_file = "brand_new_file.txt"
-    assert not (test_project_root / new_file).exists(), "test fixture: file should not exist yet"
+    assert not (test_project_root / new_file).exists(), (
+        "test fixture: file should not exist yet"
+    )
 
     result = await client_session.call_tool(
         "file",
@@ -176,7 +223,9 @@ async def test_sc15_file_new_creates_file(client_session: ClientSession, test_pr
     text = _get_text(result)
     # GREEN assertion: file created, viewport opened, autosave=off
     assert not result.isError, f"RED FAIL: file:new should succeed: {text[:200]}"
-    assert (test_project_root / new_file).exists(), "RED FAIL: file was not created on disk"
+    assert (test_project_root / new_file).exists(), (
+        "RED FAIL: file was not created on disk"
+    )
     assert "viewport_id:" in text, "RED FAIL: viewport not opened"
     assert "autosave: False" in text, "RED FAIL: autosave should be off for new files"
 
@@ -191,11 +240,17 @@ async def test_sc15_file_new_existing_rejects(client_session: ClientSession) -> 
     """
     result = await client_session.call_tool(
         "file",
-        arguments={"action": "new", "session_id": "test-sc15-existing", "file_path": "close_test.txt"},
+        arguments={
+            "action": "new",
+            "session_id": "test-sc15-existing",
+            "file_path": "close_test.txt",
+        },
     )
     text = _get_text(result)
     # GREEN assertion: isError when file already exists
-    assert result.isError, f"RED FAIL: file:new should reject existing file: {text[:200]}"
+    assert result.isError, (
+        f"RED FAIL: file:new should reject existing file: {text[:200]}"
+    )
     assert "already exists" in text.lower() or "exists" in text.lower(), (
         f"RED FAIL: expected 'already exists' error: {text[:200]}"
     )
@@ -206,7 +261,9 @@ async def test_sc15_file_new_existing_rejects(client_session: ClientSession) -> 
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_sc16_file_save_as_rejects_existing(client_session: ClientSession) -> None:
+async def test_sc16_file_save_as_rejects_existing(
+    client_session: ClientSession,
+) -> None:
     """SC-16: file:save-as with force=false rejects existing target.
 
     RED: file tool has no 'save-as' action — test FAILS.
@@ -214,20 +271,29 @@ async def test_sc16_file_save_as_rejects_existing(client_session: ClientSession)
     """
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "session_id": "test-sc16-reject", "file_path": "close_test.txt"},
+        arguments={
+            "action": "open",
+            "session_id": "test-sc16-reject",
+            "file_path": "close_test.txt",
+        },
     )
     vpid = _extract_vpid(_get_text(result_open))
 
     result = await client_session.call_tool(
         "file",
         arguments={
-            "action": "save-as", "session_id": "test-sc16-reject", "viewport_id": vpid,
-            "file_path": "existing_save_as.txt", "force": False,
+            "action": "save-as",
+            "session_id": "test-sc16-reject",
+            "viewport_id": vpid,
+            "file_path": "existing_save_as.txt",
+            "force": False,
         },
     )
     text = _get_text(result)
     # GREEN assertion: isError when target exists and force=false
-    assert result.isError, f"RED FAIL: save-as should reject existing file: {text[:200]}"
+    assert result.isError, (
+        f"RED FAIL: save-as should reject existing file: {text[:200]}"
+    )
     assert "already exists" in text.lower() or "exists" in text.lower(), (
         f"RED FAIL: expected 'already exists' error: {text[:200]}"
     )
@@ -235,7 +301,9 @@ async def test_sc16_file_save_as_rejects_existing(client_session: ClientSession)
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_sc16_file_save_as_force_overwrites(client_session: ClientSession, test_project_root: Path) -> None:
+async def test_sc16_file_save_as_force_overwrites(
+    client_session: ClientSession, test_project_root: Path
+) -> None:
     """SC-16: file:save-as with force=true overwrites existing target.
 
     RED: file tool has no 'save-as' action — test FAILS.
@@ -243,7 +311,11 @@ async def test_sc16_file_save_as_force_overwrites(client_session: ClientSession,
     """
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "session_id": "test-sc16-force", "file_path": "close_test.txt"},
+        arguments={
+            "action": "open",
+            "session_id": "test-sc16-force",
+            "file_path": "close_test.txt",
+        },
     )
     vpid = _extract_vpid(_get_text(result_open))
 
@@ -252,16 +324,25 @@ async def test_sc16_file_save_as_force_overwrites(client_session: ClientSession,
     result = await client_session.call_tool(
         "file",
         arguments={
-            "action": "save-as", "session_id": "test-sc16-force", "viewport_id": vpid,
-            "file_path": "existing_save_as.txt", "force": True,
+            "action": "save-as",
+            "session_id": "test-sc16-force",
+            "viewport_id": vpid,
+            "file_path": "existing_save_as.txt",
+            "force": True,
         },
     )
     text = _get_text(result)
     # GREEN assertion: force=true overwrites target
-    assert not result.isError, f"RED FAIL: save-as with force=true should succeed: {text[:200]}"
-    assert "saved" in text.lower(), f"RED FAIL: expected save confirmation: {text[:200]}"
+    assert not result.isError, (
+        f"RED FAIL: save-as with force=true should succeed: {text[:200]}"
+    )
+    assert "saved" in text.lower(), (
+        f"RED FAIL: expected save confirmation: {text[:200]}"
+    )
     after = (test_project_root / "existing_save_as.txt").read_text()
-    assert after == buffer_content, "RED FAIL: target file content does not match buffer"
+    assert after == buffer_content, (
+        "RED FAIL: target file content does not match buffer"
+    )
 
 
 # ── SC-30: file:delete removes file on disk ─────────────────────────────────
@@ -269,7 +350,9 @@ async def test_sc16_file_save_as_force_overwrites(client_session: ClientSession,
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_sc30_file_delete_removes_file(client_session: ClientSession, test_project_root: Path) -> None:
+async def test_sc30_file_delete_removes_file(
+    client_session: ClientSession, test_project_root: Path
+) -> None:
     """SC-30: file:delete removes file on disk.
 
     RED: file tool has no 'delete' action — test FAILS.
@@ -277,18 +360,28 @@ async def test_sc30_file_delete_removes_file(client_session: ClientSession, test
     """
     result = await client_session.call_tool(
         "file",
-        arguments={"action": "delete", "session_id": "test-sc30", "file_path": "delete_me.txt"},
+        arguments={
+            "action": "delete",
+            "session_id": "test-sc30",
+            "file_path": "delete_me.txt",
+        },
     )
     text = _get_text(result)
     # GREEN assertion: file removed from disk
     assert not result.isError, f"RED FAIL: file:delete should succeed: {text[:200]}"
-    assert "deleted" in text.lower(), f"RED FAIL: expected deletion confirmation: {text[:200]}"
-    assert not (test_project_root / "delete_me.txt").exists(), "RED FAIL: file still exists on disk"
+    assert "deleted" in text.lower(), (
+        f"RED FAIL: expected deletion confirmation: {text[:200]}"
+    )
+    assert not (test_project_root / "delete_me.txt").exists(), (
+        "RED FAIL: file still exists on disk"
+    )
 
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_sc30_file_delete_dirty_buffer_rejects(client_session: ClientSession) -> None:
+async def test_sc30_file_delete_dirty_buffer_rejects(
+    client_session: ClientSession,
+) -> None:
     """SC-30: file:delete with dirty buffer returns isError.
 
     RED: file tool has no 'delete' action — test FAILS.
@@ -296,7 +389,11 @@ async def test_sc30_file_delete_dirty_buffer_rejects(client_session: ClientSessi
     """
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "session_id": "test-sc30-dirty", "file_path": "close_test.txt"},
+        arguments={
+            "action": "open",
+            "session_id": "test-sc30-dirty",
+            "file_path": "close_test.txt",
+        },
     )
     vpid = _extract_vpid(_get_text(result_open))
 
@@ -304,21 +401,31 @@ async def test_sc30_file_delete_dirty_buffer_rejects(client_session: ClientSessi
     await client_session.call_tool(
         "edit",
         arguments={
-            "action": "replace", "session_id": "test-sc30-dirty", "viewport_id": vpid,
-            "file_path": "close_test.txt", "old_text": "line 1", "new_text": "DIRTY",
+            "action": "replace",
+            "session_id": "test-sc30-dirty",
+            "viewport_id": vpid,
+            "file_path": "close_test.txt",
+            "old_text": "line 1",
+            "new_text": "DIRTY",
         },
     )
 
     result = await client_session.call_tool(
         "file",
-        arguments={"action": "delete", "session_id": "test-sc30-dirty", "file_path": "close_test.txt"},
+        arguments={
+            "action": "delete",
+            "session_id": "test-sc30-dirty",
+            "file_path": "close_test.txt",
+        },
     )
     text = _get_text(result)
     # GREEN assertion: isError because buffer is dirty
     assert result.isError, f"RED FAIL: delete should reject dirty buffer: {text[:200]}"
-    assert "dirty" in text.lower() or "pending" in text.lower() or "unsaved" in text.lower(), (
-        f"RED FAIL: expected dirty-buffer rejection message: {text[:200]}"
-    )
+    assert (
+        "dirty" in text.lower()
+        or "pending" in text.lower()
+        or "unsaved" in text.lower()
+    ), f"RED FAIL: expected dirty-buffer rejection message: {text[:200]}"
 
 
 # ── SC-24: viewport:close with dirty buffer auto-saves ──────────────────────
@@ -326,7 +433,9 @@ async def test_sc30_file_delete_dirty_buffer_rejects(client_session: ClientSessi
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_sc24_viewport_close_dirty_auto_saves(client_session: ClientSession, test_project_root: Path) -> None:
+async def test_sc24_viewport_close_dirty_auto_saves(
+    client_session: ClientSession, test_project_root: Path
+) -> None:
     """SC-24: viewport:close with dirty buffer auto-saves to disk.
 
     RED: close currently auto-saves (already implemented) — this should PASS
@@ -338,7 +447,12 @@ async def test_sc24_viewport_close_dirty_auto_saves(client_session: ClientSessio
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "session_id": "test-sc24", "file_path": file_path_str, "autosave": False},
+        arguments={
+            "action": "open",
+            "session_id": "test-sc24",
+            "file_path": file_path_str,
+            "autosave": False,
+        },
     )
     vpid = _extract_vpid(_get_text(result_open))
 
@@ -346,8 +460,12 @@ async def test_sc24_viewport_close_dirty_auto_saves(client_session: ClientSessio
     await client_session.call_tool(
         "edit",
         arguments={
-            "action": "replace", "session_id": "test-sc24", "viewport_id": vpid,
-            "file_path": file_path_str, "old_text": "line 1", "new_text": "AUTO-SAVED BY CLOSE",
+            "action": "replace",
+            "session_id": "test-sc24",
+            "viewport_id": vpid,
+            "file_path": file_path_str,
+            "old_text": "line 1",
+            "new_text": "AUTO-SAVED BY CLOSE",
         },
     )
 
@@ -360,32 +478,52 @@ async def test_sc24_viewport_close_dirty_auto_saves(client_session: ClientSessio
 
     # File on disk should reflect the edit
     after = (test_project_root / file_path_str).read_text()
-    assert after != original, "RED FAIL: file on disk unchanged after close with dirty buffer"
-    assert "AUTO-SAVED BY CLOSE" in after, "RED FAIL: edited content not in file on disk after close"
+    assert after != original, (
+        "RED FAIL: file on disk unchanged after close with dirty buffer"
+    )
+    assert "AUTO-SAVED BY CLOSE" in after, (
+        "RED FAIL: edited content not in file on disk after close"
+    )
 
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_sc24_viewport_close_already_closed_noop(client_session: ClientSession) -> None:
+async def test_sc24_viewport_close_already_closed_noop(
+    client_session: ClientSession,
+) -> None:
     """SC-24: closing an already-closed viewport returns isError."""
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "session_id": "test-sc24-noop", "file_path": "close_test.txt"},
+        arguments={
+            "action": "open",
+            "session_id": "test-sc24-noop",
+            "file_path": "close_test.txt",
+        },
     )
     vpid = _extract_vpid(_get_text(result_open))
 
     # Close once
     await client_session.call_tool(
         "viewport",
-        arguments={"action": "close", "session_id": "test-sc24-noop", "viewport_id": vpid},
+        arguments={
+            "action": "close",
+            "session_id": "test-sc24-noop",
+            "viewport_id": vpid,
+        },
     )
 
     # Close again — should error
     result = await client_session.call_tool(
         "viewport",
-        arguments={"action": "close", "session_id": "test-sc24-noop", "viewport_id": vpid},
+        arguments={
+            "action": "close",
+            "session_id": "test-sc24-noop",
+            "viewport_id": vpid,
+        },
     )
-    assert result.isError, "RED FAIL: closing already-closed viewport should return isError"
+    assert result.isError, (
+        "RED FAIL: closing already-closed viewport should return isError"
+    )
 
 
 # ── Phase 3 regression guard: tools still present ───────────────────────────

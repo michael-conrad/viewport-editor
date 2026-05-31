@@ -73,9 +73,7 @@ class BufferManager:
         disk_content = "".join(lines)
         return generate_unified_diff(disk_content, buf.content, file_path)
 
-    def get_buffer_ref(
-        self, session_id: str, file_path: str
-    ) -> Buffer:
+    def get_buffer_ref(self, session_id: str, file_path: str) -> Buffer:
         return self._buffers[session_id][file_path]
 
     def destroy_session(self, session_id: str) -> None:

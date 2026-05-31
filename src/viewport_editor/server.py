@@ -699,7 +699,11 @@ def _handle_file_action(
     elif action == "discard":
         entry = _manager.get_entry(session_id, viewport_id)
         if entry.autosave or not entry.dirty:
-            return "no pending changes (autosave is on)" if entry.autosave else "no pending changes"
+            return (
+                "no pending changes (autosave is on)"
+                if entry.autosave
+                else "no pending changes"
+            )
         _manager.discard_buffer_changes(session_id, viewport_id)
         return f"discarded pending changes for viewport {viewport_id}"
     elif action == "new":
@@ -709,7 +713,9 @@ def _handle_file_action(
         with open(resolved_path, "w") as f:
             f.write("")
         return _action_open(
-            session_id=session_id, file_path=file_path, autosave=False,
+            session_id=session_id,
+            file_path=file_path,
+            autosave=False,
         )
     elif action == "save-as":
         entry = _manager.get_entry(session_id, viewport_id)
