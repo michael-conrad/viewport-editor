@@ -35,6 +35,9 @@ def test_project_root() -> Path:
         "zero\none\ntwo\nthree\nfour\nfive\nsix\nseven\neight\nnine\nten\n"
     )
     (tmpdir / "conflict_test.txt").write_text("original content\nline 2\nline 3\n")
+    (tmpdir / "edit_atomic_test.txt").write_text(
+        "line a\nline b\nline c\nline d\nline e\n"
+    )
     return tmpdir
 
 
@@ -514,6 +517,46 @@ async def test_sc25_soft_conflict_warning_on_edit(client_session: ClientSession,
     assert "warning:" in text or "conflict:" in text or "mtime" in text.lower() or "externally" in text.lower(), (
         f"RED FAIL: soft conflict warning missing: {text[:200]}"
     )
+
+
+# ── SC-13 atomic write test ────────────────────────────────────────────────
+
+
+@pytest.mark.phase2
+@pytest.mark.asyncio
+async def test_sc13_atomic_write_integrity(client_session: ClientSession, test_project_root: Path) -> None:
+    """SC-13-FIX: file:save writes fully, no orphaned .tmp files, content correct.
+
+    Behavioral evidence: after save with autosave=on, the file on disk matches
+    buffer content; no .tmp file lingers alongside the target.
+    """
+    file_path_str = "edit_atomic_test.txt"
+    original_content = (test_project_root / file_path_str).read_text()
+    assert "line c" in original_content, "test fixture missing expected content"
+
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "session_id": "test-sc13-atomic", "file_path": file_path_str, "autosave": True},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+
+    # Edit to create new content
+    await client_session.call_tool(
+        "edit",
+        arguments={
+            "action": "replace", "session_id": "test-sc13-atomic", "viewport_id": vpid,
+            "file_path": file_path_str, "old_text": "line c", "new_text": "ATOMIC SAVED",
+        },
+    )
+
+    # File on disk should now reflect edit (autosave=on flushes)
+    after = (test_project_root / file_path_str).read_text()
+    assert original_content != after, "SC-13-FIX FAIL: file on disk unchanged after autosave=on edit"
+    assert "ATOMIC SAVED" in after, "SC-13-FIX FAIL: edited content not in file on disk"
+
+    # No orphaned .tmp file
+    tmp_files = list(test_project_root.glob("*.tmp"))
+    assert len(tmp_files) == 0, f"SC-13-FIX FAIL: orphaned .tmp files found: {tmp_files}"
 
 
 # ── Phase 2 tools regression guard ──────────────────────────────────────────
