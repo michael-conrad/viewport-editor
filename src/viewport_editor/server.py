@@ -15,6 +15,7 @@ from typing import Any, AsyncIterator, Optional
 from mcp.server.fastmcp import FastMCP
 
 from .exceptions import ViewportError
+from .file_ops import _resolve_path
 from .session import create_session, get_session, get_session_ids, remove_session
 from .viewport import ViewportManager
 
@@ -679,6 +680,8 @@ def _handle_file_action(
 
     if action == "save":
         entry = _manager.get_entry(session_id, viewport_id)
+        if entry.autosave:
+            return "no pending changes (autosave is on)"
         if file_path and entry.file != file_path:
             raise ViewportError(
                 f"file '{file_path}' does not exist for viewport {viewport_id}"
@@ -694,8 +697,53 @@ def _handle_file_action(
             f"\n  size: {entry.size}"
         )
     elif action == "discard":
+        entry = _manager.get_entry(session_id, viewport_id)
+        if entry.autosave or not entry.dirty:
+            return "no pending changes (autosave is on)" if entry.autosave else "no pending changes"
         _manager.discard_buffer_changes(session_id, viewport_id)
         return f"discarded pending changes for viewport {viewport_id}"
+    elif action == "new":
+        resolved_path, _ = _resolve_path(file_path, _manager.project_root)
+        if os.path.exists(resolved_path):
+            raise ViewportError(f"file already exists: {file_path}")
+        with open(resolved_path, "w") as f:
+            f.write("")
+        return _action_open(
+            session_id=session_id, file_path=file_path, autosave=False,
+        )
+    elif action == "save-as":
+        entry = _manager.get_entry(session_id, viewport_id)
+        buf = _manager._buffer_mgr.get_buffer_ref(session_id, entry.file)
+        target_resolved, _ = _resolve_path(file_path, _manager.project_root)
+        if os.path.exists(target_resolved) and not force:
+            raise ViewportError(f"target file already exists: {file_path}")
+        tmp = target_resolved + ".tmp"
+        try:
+            with open(tmp, "w") as f:
+                f.write(buf.content)
+            os.replace(tmp, target_resolved)
+        except BaseException:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
+        st = os.stat(target_resolved)
+        return (
+            f"saved viewport {viewport_id} to {file_path}:"
+            f"\n  mtime: {st.st_mtime}"
+            f"\n  size: {st.st_size}"
+        )
+    elif action == "delete":
+        resolved_path, _ = _resolve_path(file_path, _manager.project_root)
+        for sid in list(_manager._entries.keys()):
+            for e in list(_manager._entries[sid].values()):
+                if e.file == file_path and e.dirty:
+                    raise ViewportError(
+                        f"cannot delete: dirty buffer exists for {file_path} in session {sid}"
+                    )
+        os.remove(resolved_path)
+        return f"deleted file: {file_path}"
     else:
         raise ViewportError(f"unknown file action: {action}")
 
