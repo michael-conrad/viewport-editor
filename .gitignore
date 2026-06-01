@@ -1,5 +1,7 @@
 __pycache__/
 *.pyc
+.issues/
+.opencode/
 .tools/
 .worktrees/
 tmp/
