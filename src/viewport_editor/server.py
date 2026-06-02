@@ -10,12 +10,14 @@ from __future__ import annotations
 
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any, AsyncIterator, Optional
 
 from mcp.server.fastmcp import FastMCP
 
 from .clipboard import ClipboardEntry, apply_copy, apply_cut, apply_paste
 from .exceptions import DiffApplyError, ViewportError
+from .file_ops import _resolve_path
 from .session import create_session, get_session, get_session_ids, remove_session
 from .viewport import ViewportManager
 
@@ -224,11 +226,34 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
     def search(
         ctx: Any = None,
         action: str = "",
+        session_id: str = "",
+        pattern: str = "",
+        regex: Optional[bool] = None,
+        scope: Optional[str] = None,
+        file_path: Optional[str] = None,
+        viewport_id: Optional[str] = None,
     ) -> str:
-        """Search across files in the project. Not yet implemented.
+        """Search across files in the project. Find text patterns with line numbers.
 
-        Actions: text, regex, filename"""
-        return "search tool: not yet implemented"
+        Actions: find
+
+        Scopes: file (single file), viewport (open viewport), all_open (all open viewports), or project-wide (default)"""
+        if _manager is None:
+            return "error: server not initialized"
+
+        session = get_session(session_id)
+        if session is None:
+            create_session(session_id)
+
+        return _handle_search_action(
+            action=action,
+            session_id=session_id,
+            pattern=pattern,
+            regex=regex or False,
+            scope=scope or "",
+            file_path=file_path or "",
+            viewport_id=viewport_id or "",
+        )
 
     @mcp.tool()
     def regex(
@@ -1151,3 +1176,193 @@ def _handle_clipboard_action(
 
     else:
         return f"error: unknown clipboard action: {action}"
+
+
+def _handle_search_action(
+    action: str,
+    session_id: str,
+    pattern: str = "",
+    regex: bool = False,
+    scope: str = "",
+    file_path: str = "",
+    viewport_id: str = "",
+) -> str:
+    if _manager is None:
+        return "error: server not initialized"
+
+    if action == "find":
+        return _action_find(
+            session_id=session_id,
+            pattern=pattern,
+            regex=regex,
+            scope=scope,
+            file_path=file_path,
+            viewport_id=viewport_id,
+        )
+    else:
+        return f"error: unknown search action: {action}"
+
+
+def _search_in_content(content: str, pattern: str, use_regex: bool) -> list[dict]:
+    results: list[dict] = []
+    lines = content.splitlines()
+    if use_regex:
+        import re as _re
+
+        try:
+            compiled = _re.compile(pattern)
+        except _re.error as exc:
+            raise ViewportError(f"invalid regex pattern: {exc}")
+        for i, line in enumerate(lines, 1):
+            if compiled.search(line):
+                results.append({"line": i, "text": line})
+    else:
+        for i, line in enumerate(lines, 1):
+            if pattern in line:
+                results.append({"line": i, "text": line})
+    return results
+
+
+def _format_find_results(matches: list[dict], file_label: str) -> list[str]:
+    parts: list[str] = []
+    for m in matches:
+        text_preview = m["text"][:120]
+        parts.append(f"    - line: {m['line']}")
+        parts.append(f"      text: {text_preview}")
+    return parts
+
+
+def _action_find(
+    session_id: str,
+    pattern: str,
+    regex: bool,
+    scope: str,
+    file_path: str,
+    viewport_id: str,
+) -> str:
+    if _manager is None:
+        return "error: server not initialized"
+    if not pattern:
+        return "error: pattern is required for find action"
+
+    if scope == "file":
+        if not file_path:
+            return "error: file_path is required for scope=file"
+        resolved, _ = _resolve_path(file_path, _manager.project_root)
+        if not os.path.isfile(resolved):
+            return f"error: file not found: {file_path}"
+        with open(resolved, "r", newline="") as f:
+            content = f.read()
+        matches = _search_in_content(content, pattern, regex)
+        parts = [f"find results for '{pattern}' in {file_label_from_path(file_path)}:"]
+        if matches:
+            parts.append(f"  matches: {len(matches)}")
+            parts.append(f"  file: {file_path}")
+            for m in matches:
+                text_preview = m["text"][:120]
+                parts.append(f"  - line: {m['line']}")
+                parts.append(f"    text: {text_preview}")
+        else:
+            parts.append("  matches: 0")
+        parts.append("  scope: file")
+        return "\n".join(parts)
+
+    elif scope == "viewport":
+        if not viewport_id:
+            return "error: viewport_id is required for scope=viewport"
+        entry = _manager.get_entry(session_id, viewport_id)
+        content = _manager._buffer_mgr.get_raw_content(session_id, entry.file)
+        matches = _search_in_content(content, pattern, regex)
+        parts = [f"find results for '{pattern}' in viewport {viewport_id}:"]
+        if matches:
+            parts.append(f"  matches: {len(matches)}")
+            parts.append(f"  file: {entry.file}")
+            for m in matches:
+                text_preview = m["text"][:120]
+                parts.append(f"  - line: {m['line']}")
+                parts.append(f"    text: {text_preview}")
+        else:
+            parts.append("  matches: 0")
+        parts.append("  scope: viewport")
+        return "\n".join(parts)
+
+    elif scope == "all_open":
+        if session_id not in _manager._entries or not _manager._entries[session_id]:
+            return f"find results for '{pattern}': no open viewports"
+        total_matches: list[dict] = []
+        file_results: dict[str, list[dict]] = {}
+        for vp_id, vp_entry in _manager._entries[session_id].items():
+            try:
+                content = _manager._buffer_mgr.get_raw_content(
+                    session_id, vp_entry.file
+                )
+            except KeyError:
+                continue
+            file_matches = _search_in_content(content, pattern, regex)
+            if file_matches:
+                file_results[vp_entry.file] = file_matches
+                total_matches.extend(file_matches)
+        parts = [f"find results for '{pattern}' across all open viewports:"]
+        if file_results:
+            parts.append(f"  matches: {len(total_matches)}")
+            for fp, fmatches in file_results.items():
+                parts.append(f"  file: {fp}")
+                for m in fmatches:
+                    text_preview = m["text"][:120]
+                    parts.append(f"  - line: {m['line']}")
+                    parts.append(f"    text: {text_preview}")
+        else:
+            parts.append("  matches: 0")
+        parts.append("  scope: all_open")
+        return "\n".join(parts)
+
+    else:
+        resolved, _ = _resolve_path(
+            file_path if file_path else ".", _manager.project_root
+        )
+        all_files = _collect_project_files(_manager.project_root)
+        total_matches: list[dict] = []
+        file_results: dict[str, list[dict]] = {}
+        for fp in all_files:
+            full_path = os.path.join(_manager.project_root, fp)
+            try:
+                with open(full_path, "r", newline="") as f:
+                    content = f.read()
+            except (OSError, UnicodeDecodeError):
+                continue
+            file_matches = _search_in_content(content, pattern, regex)
+            if file_matches:
+                file_results[fp] = file_matches
+                total_matches.extend(file_matches)
+        parts = [f"find results for '{pattern}':"]
+        if file_results:
+            parts.append(f"  matches: {len(total_matches)}")
+            for fp, fmatches in file_results.items():
+                parts.append(f"  file: {fp}")
+                for m in fmatches:
+                    text_preview = m["text"][:120]
+                    parts.append(f"  - line: {m['line']}")
+                    parts.append(f"    text: {text_preview}")
+        else:
+            parts.append("  matches: 0")
+        return "\n".join(parts)
+
+
+def _collect_project_files(project_root: str) -> list[str]:
+    result: list[str] = []
+    for dirpath, _dirnames, filenames in os.walk(project_root):
+        skip = False
+        for part in Path(dirpath).relative_to(project_root).parts:
+            if part.startswith(".") or part == "__pycache__":
+                skip = True
+                break
+        if skip:
+            continue
+        for fname in filenames:
+            rel = str(Path(dirpath).relative_to(project_root) / fname)
+            result.append(rel)
+    return result
+
+
+def file_label_from_path(fp: str) -> str:
+    return fp
