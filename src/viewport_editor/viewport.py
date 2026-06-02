@@ -152,6 +152,19 @@ class ViewportManager:
         if entry.autosave:
             self.flush_entry(session_id, entry)
 
+    def _autosave_gate(self, session_id: str, entry: ViewportEntry) -> Optional[str]:
+        """Autosave gate for write operations that should switch to buffered mode.
+
+        When autosave is on, switches to buffered mode (autosave off) and
+        returns a notice string. When already buffered, returns None.
+        Marks the entry dirty in either case.
+        """
+        entry.dirty = True
+        if entry.autosave:
+            entry.autosave = False
+            return "autosave gate: switched to buffered mode (autosave off) — changes staged in buffer, not yet saved to disk"
+        return None
+
     def list(self, session_id: str) -> List[dict]:
         if session_id not in self._entries:
             return []

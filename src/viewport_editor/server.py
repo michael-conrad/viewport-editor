@@ -14,6 +14,7 @@ from typing import Any, AsyncIterator, Optional
 
 from mcp.server.fastmcp import FastMCP
 
+from .clipboard import apply_copy, apply_cut, apply_paste
 from .exceptions import ViewportError
 from .session import create_session, get_session, get_session_ids, remove_session
 from .viewport import ViewportManager
@@ -184,6 +185,35 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
             session_id=session_id,
             viewport_id=viewport_id,
             file_path=file_path,
+        )
+
+    @mcp.tool()
+    def clipboard(
+        action: str,
+        session_id: str,
+        viewport_id: Optional[str] = None,
+        start_line: Optional[int] = None,
+        end_line: Optional[int] = None,
+        target_line: Optional[int] = None,
+        ctx: Any = None,
+    ) -> str:
+        """Clipboard tool for copying, cutting, and pasting content from viewports.
+
+        Actions: copy, cut, paste, show"""
+        if _manager is None:
+            return "error: server not initialized"
+
+        session = get_session(session_id)
+        if session is None:
+            create_session(session_id)
+
+        return _handle_clipboard_action(
+            action=action,
+            session_id=session_id,
+            viewport_id=viewport_id or "",
+            start_line=start_line or 0,
+            end_line=end_line or 0,
+            target_line=target_line or 0,
         )
 
     @mcp.tool()
@@ -716,3 +746,193 @@ def _handle_diff_action(
         return f"diff for {file_path}:\n{diff_str}"
     else:
         raise ViewportError(f"unknown diff action: {action}")
+
+
+def _handle_clipboard_action(
+    action: str,
+    session_id: str,
+    viewport_id: str,
+    start_line: int = 0,
+    end_line: int = 0,
+    target_line: int = 0,
+) -> str:
+    if _manager is None:
+        return "error: server not initialized"
+
+    stale_notice = _manager.sweep_stale_sessions()
+    _manager.touch(session_id)
+
+    if action == "copy":
+        if not viewport_id:
+            return "error: viewport_id is required"
+        if start_line <= 0 or end_line <= 0:
+            return "error: start_line and end_line are required"
+        if end_line < start_line:
+            return "error: end_line must be >= start_line"
+
+        entry = _manager.get_entry(session_id, viewport_id)
+        file_lines = _manager._buffer_mgr.get_lines(session_id, entry.file)
+        line_ending = _manager.get_line_ending(session_id, entry.file)
+
+        copied_lines, clip_entry = apply_copy(
+            file_lines=file_lines,
+            line_start=start_line,
+            line_end=end_line,
+            source_file=entry.file,
+            line_ending=line_ending,
+        )
+
+        session = get_session(session_id)
+        if session is not None:
+            session.clipboard = clip_entry
+
+        content_block = _format_content_block(
+            copied_lines, start_line, entry.display_mode
+        )
+        parts = [
+            "copied to clipboard:",
+            f"  source_file: {entry.file}",
+            f"  start_line: {start_line}",
+            f"  end_line: {end_line}",
+            f"  line_range: {start_line}-{end_line}",
+            f"  timestamp: {clip_entry.timestamp}",
+            content_block,
+        ]
+        result = "\n".join(parts)
+        if stale_notice:
+            result = stale_notice + "\n" + result
+        return result
+
+    elif action == "cut":
+        if not viewport_id:
+            return "error: viewport_id is required"
+        if start_line <= 0 or end_line <= 0:
+            return "error: start_line and end_line are required"
+        if end_line < start_line:
+            return "error: end_line must be >= start_line"
+
+        entry = _manager.get_entry(session_id, viewport_id)
+        buf = _manager._buffer_mgr.get_buffer_ref(session_id, entry.file)
+        file_lines = _manager._buffer_mgr.get_lines(session_id, entry.file)
+        line_ending = _manager.get_line_ending(session_id, entry.file)
+
+        remaining_lines, clip_entry = apply_cut(
+            file_lines=file_lines,
+            line_start=start_line,
+            line_end=end_line,
+            source_file=entry.file,
+            line_ending=line_ending,
+        )
+
+        line_ending_str = line_ending
+        new_content = line_ending_str.join(
+            line.rstrip("\n").rstrip("\r") for line in remaining_lines
+        )
+        if remaining_lines:
+            new_content += line_ending_str
+        buf.content = new_content
+
+        session = get_session(session_id)
+        if session is not None:
+            session.clipboard = clip_entry
+
+        gate_notice = _manager._autosave_gate(session_id, entry)
+        diff_str = _manager.get_buffer_diff(session_id, viewport_id)
+
+        content_block = _format_content_block(
+            clip_entry.content, start_line, entry.display_mode
+        )
+        parts = [
+            "cut to clipboard:",
+            f"  source_file: {entry.file}",
+            f"  start_line: {start_line}",
+            f"  end_line: {end_line}",
+            f"  line_range: {start_line}-{end_line}",
+            f"  timestamp: {clip_entry.timestamp}",
+            content_block,
+        ]
+        if gate_notice:
+            parts.append(f"  notice: {gate_notice}")
+        if diff_str:
+            parts.append("  diff:")
+            for dline in diff_str.splitlines():
+                parts.append(f"    {dline}")
+        result = "\n".join(parts)
+        if stale_notice:
+            result = stale_notice + "\n" + result
+        return result
+
+    elif action == "paste":
+        session = get_session(session_id)
+        if session is None or session.clipboard is None:
+            raise ViewportError("clipboard is empty — copy or cut before pasting")
+
+        if not viewport_id:
+            return "error: viewport_id is required for paste"
+        if target_line <= 0:
+            return "error: target_line is required for paste"
+
+        entry = _manager.get_entry(session_id, viewport_id)
+        buf = _manager._buffer_mgr.get_buffer_ref(session_id, entry.file)
+        file_lines = _manager._buffer_mgr.get_lines(session_id, entry.file)
+        line_ending = _manager.get_line_ending(session_id, entry.file)
+
+        new_lines = apply_paste(
+            file_lines=file_lines,
+            target_line=target_line,
+            clipboard_lines=session.clipboard.content,
+            line_ending=line_ending,
+        )
+
+        line_ending_str = line_ending
+        new_content = line_ending_str.join(
+            line.rstrip("\n").rstrip("\r") for line in new_lines
+        )
+        if new_lines:
+            new_content += line_ending_str
+        buf.content = new_content
+
+        gate_notice = _manager._autosave_gate(session_id, entry)
+        diff_str = _manager.get_buffer_diff(session_id, viewport_id)
+
+        clip = session.clipboard
+        content_block = _format_content_block(
+            clip.content, clip.line_range[0], entry.display_mode
+        )
+        parts = [
+            "pasted from clipboard:",
+            f"  source_file: {clip.source_file}",
+            f"  target_line: {target_line}",
+            f"  lines_pasted: {len(clip.content)}",
+            f"  line_range: {target_line}-{target_line + len(clip.content) - 1}",
+            content_block,
+        ]
+        if gate_notice:
+            parts.append(f"  notice: {gate_notice}")
+        if diff_str:
+            parts.append("  diff:")
+            for dline in diff_str.splitlines():
+                parts.append(f"    {dline}")
+        result = "\n".join(parts)
+        if stale_notice:
+            result = stale_notice + "\n" + result
+        return result
+
+    elif action == "show":
+        session = get_session(session_id)
+        if session is None or session.clipboard is None:
+            return "clipboard is empty"
+
+        clip = session.clipboard
+        content_block = _format_content_block(clip.content, clip.line_range[0])
+        parts = [
+            "clipboard:",
+            f"  source_file: {clip.source_file}",
+            f"  line_range: {clip.line_range[0]}-{clip.line_range[1]}",
+            f"  timestamp: {clip.timestamp}",
+            content_block,
+        ]
+        return "\n".join(parts)
+
+    else:
+        return f"error: unknown clipboard action: {action}"
