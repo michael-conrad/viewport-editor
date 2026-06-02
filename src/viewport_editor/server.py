@@ -14,7 +14,7 @@ from typing import Any, AsyncIterator, Optional
 
 from mcp.server.fastmcp import FastMCP
 
-from .clipboard import apply_copy, apply_cut, apply_paste
+from .clipboard import ClipboardEntry, apply_copy, apply_cut, apply_paste
 from .exceptions import ViewportError
 from .session import create_session, get_session, get_session_ids, remove_session
 from .viewport import ViewportManager
@@ -195,11 +195,12 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         start_line: Optional[int] = None,
         end_line: Optional[int] = None,
         target_line: Optional[int] = None,
+        name: Optional[str] = None,
         ctx: Any = None,
     ) -> str:
-        """Clipboard tool for copying, cutting, and pasting content from viewports.
+        """Clipboard tool for copying, cutting, pasting, and stashing content from viewports.
 
-        Actions: copy, cut, paste, show"""
+        Actions: copy, cut, paste, show, stash, pop, swap, stash-list"""
         if _manager is None:
             return "error: server not initialized"
 
@@ -214,6 +215,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
             start_line=start_line or 0,
             end_line=end_line or 0,
             target_line=target_line or 0,
+            name=name or "",
         )
 
     @mcp.tool()
@@ -755,6 +757,7 @@ def _handle_clipboard_action(
     start_line: int = 0,
     end_line: int = 0,
     target_line: int = 0,
+    name: str = "",
 ) -> str:
     if _manager is None:
         return "error: server not initialized"
@@ -933,6 +936,126 @@ def _handle_clipboard_action(
             content_block,
         ]
         return "\n".join(parts)
+
+    elif action == "stash":
+        session = get_session(session_id)
+        if session is None or session.clipboard is None:
+            raise ViewportError("clipboard is empty — copy or cut before stashing")
+        if not name:
+            return "error: name is required for stash"
+
+        clip = session.clipboard
+        session.stash_slots[name] = ClipboardEntry(
+            content=list(clip.content),
+            source_file=clip.source_file,
+            line_range=clip.line_range,
+            timestamp=clip.timestamp,
+            line_ending=clip.line_ending,
+        )
+
+        content_block = _format_content_block(clip.content, clip.line_range[0])
+        parts = [
+            f"stashed clipboard to '{name}':",
+            f"  source_file: {clip.source_file}",
+            f"  line_range: {clip.line_range[0]}-{clip.line_range[1]}",
+            f"  line_count: {len(clip.content)}",
+            content_block,
+        ]
+        result = "\n".join(parts)
+        if stale_notice:
+            result = stale_notice + "\n" + result
+        return result
+
+    elif action == "pop":
+        session = get_session(session_id)
+        if session is None:
+            raise ViewportError(f"stash slot '{name}' not found")
+        if not name:
+            return "error: name is required for pop"
+        slot = session.stash_slots.get(name)
+        if slot is None:
+            raise ViewportError(f"stash slot '{name}' not found")
+
+        session.clipboard = ClipboardEntry(
+            content=list(slot.content),
+            source_file=slot.source_file,
+            line_range=slot.line_range,
+            timestamp=slot.timestamp,
+            line_ending=slot.line_ending,
+        )
+
+        clip = session.clipboard
+        content_block = _format_content_block(clip.content, clip.line_range[0])
+        parts = [
+            f"popped '{name}' to clipboard:",
+            f"  source_file: {clip.source_file}",
+            f"  line_range: {clip.line_range[0]}-{clip.line_range[1]}",
+            f"  line_count: {len(clip.content)}",
+            content_block,
+        ]
+        result = "\n".join(parts)
+        if stale_notice:
+            result = stale_notice + "\n" + result
+        return result
+
+    elif action == "swap":
+        session = get_session(session_id)
+        if session is None or session.clipboard is None:
+            raise ViewportError("clipboard is empty — copy or cut before swapping")
+        if not name:
+            return "error: name is required for swap"
+        slot = session.stash_slots.get(name) if session is not None else None
+        if slot is None:
+            raise ViewportError(f"stash slot '{name}' not found")
+
+        clip = session.clipboard
+        session.stash_slots[name] = ClipboardEntry(
+            content=list(clip.content),
+            source_file=clip.source_file,
+            line_range=clip.line_range,
+            timestamp=clip.timestamp,
+            line_ending=clip.line_ending,
+        )
+        session.clipboard = ClipboardEntry(
+            content=list(slot.content),
+            source_file=slot.source_file,
+            line_range=slot.line_range,
+            timestamp=slot.timestamp,
+            line_ending=slot.line_ending,
+        )
+
+        new_clip = session.clipboard
+        content_block = _format_content_block(new_clip.content, new_clip.line_range[0])
+        parts = [
+            f"swapped clipboard with '{name}':",
+            f"  clipboard now: {new_clip.source_file} lines {new_clip.line_range[0]}-{new_clip.line_range[1]}",
+            f"  slot '{name}' now: {clip.source_file} lines {clip.line_range[0]}-{clip.line_range[1]}",
+            content_block,
+        ]
+        result = "\n".join(parts)
+        if stale_notice:
+            result = stale_notice + "\n" + result
+        return result
+
+    elif action == "stash-list":
+        session = get_session(session_id)
+        if session is None or not session.stash_slots:
+            return "no stash slots"
+
+        parts = [f"stash slots ({len(session.stash_slots)}):"]
+        for slot_name, slot in session.stash_slots.items():
+            first_line = (
+                slot.content[0].rstrip("\n").rstrip("\r") if slot.content else ""
+            )
+            parts.append(f"  - name: {slot_name}")
+            parts.append(f"    source_file: {slot.source_file}")
+            parts.append(f"    line_range: {slot.line_range[0]}-{slot.line_range[1]}")
+            parts.append(f"    line_count: {len(slot.content)}")
+            parts.append(f"    first_line: {first_line}")
+        result = "\n".join(parts)
+        if stale_notice:
+            result = stale_notice + "\n" + result
+        return result
 
     else:
         return f"error: unknown clipboard action: {action}"

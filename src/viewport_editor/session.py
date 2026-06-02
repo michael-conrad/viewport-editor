@@ -19,6 +19,7 @@ class Session:
         self.session_id = session_id
         self.viewports: Dict[str, ViewportEntry] = {}
         self.clipboard: Optional[ClipboardEntry] = None
+        self.stash_slots: Dict[str, ClipboardEntry] = {}
 
 
 _sessions: Dict[str, Session] = {}
