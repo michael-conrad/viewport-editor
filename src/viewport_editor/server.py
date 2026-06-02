@@ -711,6 +711,8 @@ def _handle_file_action(
 
     if action == "save":
         entry = _manager.get_entry(session_id, viewport_id)
+        if entry.autosave:
+            return f"no pending changes for viewport {viewport_id} (autosave: on)"
         if file_path and entry.file != file_path:
             raise ViewportError(
                 f"file '{file_path}' does not exist for viewport {viewport_id}"
@@ -726,6 +728,9 @@ def _handle_file_action(
             f"\n  size: {entry.size}"
         )
     elif action == "discard":
+        entry = _manager.get_entry(session_id, viewport_id)
+        if entry.autosave:
+            return f"no pending changes for viewport {viewport_id} (autosave: on)"
         _manager.discard_buffer_changes(session_id, viewport_id)
         return f"discarded pending changes for viewport {viewport_id}"
     elif action == "new":
@@ -778,6 +783,9 @@ def _handle_diff_action(
         return "error: server not initialized"
 
     if action == "show":
+        entry = _manager.get_entry(session_id, viewport_id)
+        if entry.autosave:
+            return f"no pending changes for viewport {viewport_id} (autosave: on)"
         diff_str = _manager.get_buffer_diff(session_id, viewport_id)
         if not diff_str:
             return f"no pending changes for viewport {viewport_id}"
