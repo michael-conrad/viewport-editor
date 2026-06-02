@@ -153,6 +153,13 @@ def check_conflict(
     return None
 
 
+def delete_file(file_path: str, project_root: str) -> str:
+    """Delete a file from disk after resolving its path within the project root."""
+    resolved_path, _ = _resolve_path(file_path, project_root)
+    os.remove(resolved_path)
+    return resolved_path
+
+
 def format_conflict_warning(warning: dict) -> str:
     """Format a conflict dict into a YAML warning string."""
     if warning.get("missing"):
