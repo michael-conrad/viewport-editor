@@ -9,6 +9,7 @@ Co-authored with AI: OpenCode (deepseek-v4-flash)
 from __future__ import annotations
 
 import os
+import tempfile
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from .buffer import Buffer
@@ -50,7 +51,7 @@ def _read_file_lines(
     st = os.stat(resolved_path)
     mtime = st.st_mtime
     size = st.st_size
-    with open(resolved_path, "r") as f:
+    with open(resolved_path, "r", newline="") as f:
         content = f.read()
     lines = content.splitlines(keepends=True)
     return lines, mtime, size
@@ -59,9 +60,9 @@ def _read_file_lines(
 def flush_entry(buffer: Buffer, entry: "ViewportEntry", project_root: str) -> None:
     """Atomically write buffer content to disk and update entry metadata."""
     resolved_path, _ = _resolve_path(entry.file, project_root)
-    tmp = resolved_path + ".tmp"
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(resolved_path))
     try:
-        with open(tmp, "w") as f:
+        with os.fdopen(fd, "w", newline="") as f:
             f.write(buffer.content)
         os.replace(tmp, resolved_path)
     except BaseException:

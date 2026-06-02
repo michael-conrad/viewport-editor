@@ -137,7 +137,7 @@ class ViewportManager:
         if viewport_id not in self._entries[session_id]:
             raise ViewportNotFoundError(viewport_id)
         entry = self._entries[session_id][viewport_id]
-        if entry.dirty and not entry.autosave:
+        if entry.dirty and entry.autosave:
             self.flush_entry(session_id, entry)
         del self._entries[session_id][viewport_id]
 
@@ -279,7 +279,9 @@ class ViewportManager:
         entry = self.get_entry(session_id, viewport_id)
         buf = self._buffer_mgr.get_buffer_ref(session_id, entry.file)
         le = self.get_line_ending(session_id, entry.file)
-        new_content, result = editor.apply_insert_lines(buf.content, line_start, lines, le)
+        new_content, result = editor.apply_insert_lines(
+            buf.content, line_start, lines, le
+        )
         buf.content = new_content
         self._maybe_autosave(session_id, entry)
         return result
@@ -289,7 +291,9 @@ class ViewportManager:
     ) -> dict:
         entry = self.get_entry(session_id, viewport_id)
         buf = self._buffer_mgr.get_buffer_ref(session_id, entry.file)
-        new_content, result = editor.apply_delete_lines(buf.content, line_start, line_end)
+        new_content, result = editor.apply_delete_lines(
+            buf.content, line_start, line_end
+        )
         buf.content = new_content
         self._maybe_autosave(session_id, entry)
         return result
@@ -346,7 +350,9 @@ class ViewportManager:
     def check_conflict(
         self, file_path: str, stored_mtime: Optional[float], stored_size: Optional[int]
     ) -> Optional[dict]:
-        return file_ops.check_conflict(file_path, self.project_root, stored_mtime, stored_size)
+        return file_ops.check_conflict(
+            file_path, self.project_root, stored_mtime, stored_size
+        )
 
     def format_conflict_warning(self, warning: dict) -> str:
         return file_ops.format_conflict_warning(warning)
