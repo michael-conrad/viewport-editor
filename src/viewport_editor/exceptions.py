@@ -83,3 +83,10 @@ class LineRangeError(ViewportError):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
+
+
+class DiffApplyError(ViewportError):
+    """Raised when a diff patch cannot be applied to the buffer."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
