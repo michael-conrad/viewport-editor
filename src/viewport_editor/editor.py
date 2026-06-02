@@ -13,15 +13,28 @@ from __future__ import annotations
 
 from typing import List, Tuple
 
-from .exceptions import EditTargetNotFoundError, LineRangeError
+from .exceptions import LineRangeError
 
 
 def apply_edit(content: str, old_text: str, new_text: str) -> Tuple[str, dict]:
-    """Single replace: replace first occurrence of old_text with new_text."""
-    count = content.count(old_text)
-    if count == 0:
-        raise EditTargetNotFoundError(old_text)
+    """Single replace: replace first occurrence of old_text with new_text.
+
+    Returns (new_content, result_dict). When old_text is not found, returns
+    the original content unchanged with count=0 and found=False — no exception.
+    When found, count (replacements made) is derived from actual content change.
+    """
+    total_matches = content.count(old_text)
+    if total_matches == 0:
+        return content, {"found": False, "count": 0, "total_matches": 0}
+    original_len = len(content)
     new_content = content.replace(old_text, new_text, 1)
+    delta = len(new_text) - len(old_text)
+    if delta != 0:
+        replacements_made = (len(new_content) - original_len) // delta
+    else:
+        replacements_made = 1
+    if replacements_made < 1:
+        replacements_made = 1
     line_idx = new_content[: new_content.index(new_text)].splitlines(keepends=True)
     snippet_line = len(line_idx)
     lines = new_content.splitlines(keepends=True)
@@ -30,17 +43,35 @@ def apply_edit(content: str, old_text: str, new_text: str) -> Tuple[str, dict]:
         if snippet_line <= len(lines)
         else ""
     )
-    return new_content, {"found": True, "count": count, "snippet": snippet}
+    return new_content, {
+        "found": True,
+        "count": replacements_made,
+        "total_matches": total_matches,
+        "snippet": snippet,
+    }
 
 
 def apply_replace_all(content: str, old_text: str, new_text: str) -> Tuple[str, dict]:
-    """Replace all occurrences of old_text with new_text."""
-    count = content.count(old_text)
-    if count == 0:
-        raise EditTargetNotFoundError(old_text)
+    """Replace all occurrences of old_text with new_text.
+
+    Returns (new_content, result_dict). When old_text is not found, returns
+    the original content unchanged with count=0 and found=False — no exception.
+    When found, count (replacements made) is derived from actual content change.
+    """
+    total_matches = content.count(old_text)
+    if total_matches == 0:
+        return content, {"found": False, "count": 0}
+    original_len = len(content)
     new_content = content.replace(old_text, new_text)
+    delta = len(new_text) - len(old_text)
+    if delta != 0:
+        replacements_made = (len(new_content) - original_len) // delta
+    else:
+        replacements_made = total_matches
+    if replacements_made < 1:
+        replacements_made = total_matches
     snippet_start = new_content[:50].rstrip("\n").rstrip("\r")
-    return new_content, {"found": True, "count": count, "snippet": snippet_start}
+    return new_content, {"found": True, "count": replacements_made, "snippet": snippet_start}
 
 
 def apply_insert_lines(

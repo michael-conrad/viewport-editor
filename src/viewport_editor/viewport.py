@@ -274,8 +274,9 @@ class ViewportManager:
         entry = self.get_entry(session_id, viewport_id)
         buf = self._buffer_mgr.get_buffer_ref(session_id, entry.file)
         new_content, result = editor.apply_edit(buf.content, old_text, new_text)
-        buf.content = new_content
-        self._maybe_autosave(session_id, entry)
+        if result["found"]:
+            buf.content = new_content
+            self._maybe_autosave(session_id, entry)
         return result
 
     def apply_replace_all(
@@ -284,8 +285,9 @@ class ViewportManager:
         entry = self.get_entry(session_id, viewport_id)
         buf = self._buffer_mgr.get_buffer_ref(session_id, entry.file)
         new_content, result = editor.apply_replace_all(buf.content, old_text, new_text)
-        buf.content = new_content
-        self._maybe_autosave(session_id, entry)
+        if result["found"]:
+            buf.content = new_content
+            self._maybe_autosave(session_id, entry)
         return result
 
     def apply_insert_lines(

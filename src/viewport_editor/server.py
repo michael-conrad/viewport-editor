@@ -748,20 +748,38 @@ def _handle_edit_action(
 
     if action == "replace":
         result = _manager.apply_edit(session_id, viewport_id, decoded_old, decoded_new)
-        parts = [
-            f"replaced text in viewport {viewport_id}:",
-            f"  found: {result['found']}",
-            f"  count: {result['count']}",
-        ]
+        if result["found"]:
+            parts = [
+                f"replaced text in viewport {viewport_id}:",
+                f"  found: {result['found']}",
+                f"  count: {result['count']}",
+                f"  total_matches: {result['total_matches']}",
+            ]
+        else:
+            parts = [
+                f"no replacement made in viewport {viewport_id}:",
+                f"  found: {result['found']}",
+                f"  count: {result['count']}",
+                f"  total_matches: {result['total_matches']}",
+                f"  old_text not found in buffer",
+            ]
     elif action == "replace-all":
         result = _manager.apply_replace_all(
             session_id, viewport_id, decoded_old, decoded_new
         )
-        parts = [
-            f"replaced all occurrences in viewport {viewport_id}:",
-            f"  found: {result['found']}",
-            f"  count: {result['count']}",
-        ]
+        if result["found"]:
+            parts = [
+                f"replaced all occurrences in viewport {viewport_id}:",
+                f"  found: {result['found']}",
+                f"  count: {result['count']}",
+            ]
+        else:
+            parts = [
+                f"no replacement made in viewport {viewport_id}:",
+                f"  found: {result['found']}",
+                f"  count: {result['count']}",
+                f"  old_text not found in buffer",
+            ]
     elif action == "insert-lines":
         result = _manager.apply_insert_lines(
             session_id, viewport_id, line_start, lines or []
