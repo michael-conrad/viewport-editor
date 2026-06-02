@@ -192,6 +192,70 @@ cat $VIEWPORT_TEST_REPO/fixtures/frankenstein.txt | head -5
 
 ---
 
+## SC-8: Search and Navigate Workflow (`viewport-search-navigate.sh`)
+
+### Protocol Correctness
+
+| Step | Expected stderr pattern | Notes |
+|------|------------------------|-------|
+| Open config.yaml | `viewport-editor.*open.*config.yaml` | height=30 |
+| Search for 'pool' | `viewport-editor.*search.*find.*pool` | scope=viewport |
+| Jump to 'pool' | `viewport-editor.*viewport.*jump.*pool` | Text target, not line number |
+| Replace max_size | `viewport-editor.*edit.*replace.*max_size.*50` | 20 → 50 in pool section |
+| Regex search for YAML keys | `viewport-editor.*search.*find.*regex.*true` | Pattern `^  \w+:` |
+| Jump to 'viewports:' | `viewport-editor.*viewport.*jump.*viewports` | Section navigation |
+| Replace height | `viewport-editor.*edit.*replace.*height.*80` | 50 → 80 in viewports defaults |
+| Diff show | `viewport-editor.*diff.*show` | Must show both changes |
+| Close viewport | `viewport-editor.*viewport.*close` | |
+
+### Functional Correctness
+
+- `config.yaml` must have `max_size: 50` in the pool section (was 20)
+- `config.yaml` must have `height: 80` in viewports defaults (was 50)
+- YAML indentation must be preserved (no corruption of nested structure)
+- Both changes must appear in diff output
+
+### Fixtures
+
+- `fixtures/config.yaml` — LF line endings (YAML with section headers)
+- `fixtures/chapter.md` — CRLF line endings (Markdown with header hierarchy)
+
+---
+
+## SC-9: Code and Config Navigation (`viewport-code-navigation.sh`)
+
+### Protocol Correctness
+
+| Step | Expected stderr pattern | Notes |
+|------|------------------------|-------|
+| Open example.py | `viewport-editor.*open.*example.py` | height=30 |
+| Jump to 'def apply_edit' | `viewport-editor.*viewport.*jump.*def apply_edit` | Function definition navigation |
+| Search for 'class ' | `viewport-editor.*search.*find.*class ` | scope=viewport |
+| Jump to 'class SessionManager' | `viewport-editor.*viewport.*jump.*class SessionManager` | Class definition navigation |
+| Regex test | `viewport-editor.*regex.*test.*def \\w+\\(` | Pattern verification |
+| Regex escape | `viewport-editor.*regex.*escape.*file.txt` | Metachar escaping |
+| Replace max_sessions | `viewport-editor.*edit.*replace.*max_sessions.*25` | 10 → 25 |
+| Replace error message | `viewport-editor.*edit.*replace.*duplicate rejected` | Error msg update |
+| Jump to 'VERSION' | `viewport-editor.*viewport.*jump.*VERSION` | Module constant navigation |
+| Replace version | `viewport-editor.*edit.*replace.*0.2.0` | 0.1.0 → 0.2.0 |
+| Diff show | `viewport-editor.*diff.*show` | Must show all 3 changes |
+| File save | `viewport-editor.*file.*save` | Write to disk |
+| Close viewport | `viewport-editor.*viewport.*close` | |
+
+### Functional Correctness
+
+- `example.py` must have `max_sessions: int = 25` (was 10)
+- `example.py` must have the updated error message with "duplicate rejected" suffix
+- `example.py` must have `VERSION = "0.2.0"` (was "0.1.0")
+- File must be saved to disk with all changes
+- Python syntax must remain valid (no corruption)
+
+### Fixtures
+
+- `fixtures/example.py` — LF line endings (Python with def/class/constant targets)
+
+---
+
 ## Co-authored With AI
 
 OpenCode (ollama-cloud/glm-5.1)
