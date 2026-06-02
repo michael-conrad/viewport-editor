@@ -118,7 +118,13 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
         All edits stage into the buffer — they do not write to disk until you explicitly save (file:save) or autosave is enabled on the viewport. Use this instead of built-in file editing when you want targeted line-level changes without rewriting the whole file. Every edit returns the updated visible lines so you can verify changes immediately.
 
-        Actions: replace, replace-all, insert-lines, delete-lines, swap-lines, move-lines"""
+        Actions:
+          replace: replaces the FIRST occurrence of old_text with new_text in the buffer. Finds the first occurrence automatically — do NOT pre-search for the text location before calling this. Just pass old_text and new_text directly.
+          replace-all: replaces ALL occurrences of old_text with new_text in the buffer.
+          insert-lines: inserts lines at a specific 1-based line position.
+          delete-lines: deletes a range of lines (1-based).
+          swap-lines: swaps two line ranges.
+          move-lines: moves a line range to a target position."""
         if _manager is None:
             return "error: server not initialized"
 
@@ -237,11 +243,24 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         file_path: Optional[str] = None,
         viewport_id: Optional[str] = None,
     ) -> str:
-        """Search across files in the project. Find text patterns with line numbers.
+        """Search across files in the project. Find text patterns with line numbers and context.
 
-        Actions: find
+        The primary action is `find` — it locates all occurrences of a pattern in the specified scope and returns line numbers with surrounding context. Use this when you need to know WHERE text appears (for jumping to a location, understanding context, or counting matches). You do NOT need to call this before edit:replace — replace finds the first occurrence automatically.
 
-        Scopes: file (single file), viewport (open viewport), all_open (all open viewports), or project-wide (default)"""
+        Actions:
+          find: locate all matches of pattern in the specified scope. Returns matching lines with line numbers and surrounding context lines.
+
+        Scopes (where to search):
+          file: search a single file by path
+          viewport: search within an open viewport
+          all_open: search across all currently open viewports
+          project: search the entire project tree (default)
+
+        Parameters:
+          pattern: the text to find (plain string by default)
+          regex: set to true to interpret pattern as a regular expression
+          file_path: required when scope=file
+          viewport_id: required when scope=viewport"""
         if _manager is None:
             return "error: server not initialized"
 
