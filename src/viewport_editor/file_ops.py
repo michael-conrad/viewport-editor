@@ -30,6 +30,45 @@ def _resolve_path(file_path: str, project_root: str) -> Tuple[str, str]:
     return resolved_str, file_path
 
 
+def create_new_file(file_path: str, project_root: str) -> str:
+    resolved_path, _ = _resolve_path(file_path, project_root)
+    if os.path.exists(resolved_path):
+        raise FileExistsError(f"file already exists: {file_path}")
+    parent = os.path.dirname(resolved_path)
+    if parent and not os.path.isdir(parent):
+        os.makedirs(parent, exist_ok=True)
+    with open(resolved_path, "w", newline=""):
+        pass
+    return resolved_path
+
+
+def save_as_file(
+    source_file: str,
+    target_file: str,
+    project_root: str,
+    buffer_content: str,
+    force: bool = False,
+) -> str:
+    resolved_target, _ = _resolve_path(target_file, project_root)
+    if os.path.exists(resolved_target) and not force:
+        raise FileExistsError(f"target file already exists: {target_file}")
+    parent = os.path.dirname(resolved_target)
+    if parent and not os.path.isdir(parent):
+        os.makedirs(parent, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(resolved_target))
+    try:
+        with os.fdopen(fd, "w", newline="") as f:
+            f.write(buffer_content)
+        os.replace(tmp, resolved_target)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+    return resolved_target
+
+
 def _detect_line_ending(file_path: str) -> str:
     """Scan the first 100 lines in binary mode and return the dominant line terminator."""
     with open(file_path, "rb") as f:
@@ -41,7 +80,7 @@ def _detect_line_ending(file_path: str) -> str:
     present = {k: v for k, v in counts.items() if v > 0}
     if not present:
         return "\n"
-    dominant = max(present, key=present.get)
+    dominant = max(present, key=lambda k: present[k])
     return dominant.decode("ascii")
 
 
