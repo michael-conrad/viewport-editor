@@ -66,7 +66,9 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         display_mode: Optional[str] = None,
         ctx: Any = None,
     ) -> str:
-        """Viewport text editor tool. Opens, navigates, and manages file viewports.
+        """Open a focused window into a file and navigate it without loading the entire file into context.
+
+        Unlike reading the whole file, a viewport shows only the visible line range (cat -n format). Each navigation action (scroll, page-up, page-down, jump) returns only the visible lines, keeping context usage proportional to window size, not file size. Use this when working with large files or when you need targeted editing without rewriting the entire file.
 
         Actions: open, close, list, scroll, page-up, page-down, jump, autosave, set-display-mode
 
@@ -112,7 +114,9 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         target_line_end: int = 0,
         target_line: int = 0,
     ) -> str:
-        """Edit text content in an open viewport's buffer. All edits stage into buffer; flush to disk only on explicit save (file:save) or if autosave is enabled on the viewport.
+        """Edit text inside a viewport's buffer without loading or rewriting the entire file.
+
+        All edits stage into the buffer — they do not write to disk until you explicitly save (file:save) or autosave is enabled on the viewport. Use this instead of built-in file editing when you want targeted line-level changes without rewriting the whole file. Every edit returns the updated visible lines so you can verify changes immediately.
 
         Actions: replace, replace-all, insert-lines, delete-lines, swap-lines, move-lines"""
         if _manager is None:
