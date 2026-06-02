@@ -26,6 +26,7 @@ from .exceptions import (
     JumpLineOutOfRangeError,
     JumpTargetNotFoundError,
     SessionNotFoundError,
+    ViewportError,
     ViewportNotFoundError,
 )
 from . import file_ops
@@ -422,6 +423,31 @@ class ViewportManager:
         entry.size = st.st_size
         entry.dirty = False
         return entry
+
+    def delete_entry(self, session_id: str, viewport_id: str) -> str:
+        """Delete the file on disk and close the viewport.
+
+        Rejects if the buffer has uncommitted changes (dirty).
+        Returns the resolved file path on success.
+        """
+        if session_id not in self._entries:
+            raise SessionNotFoundError(session_id)
+        if viewport_id not in self._entries[session_id]:
+            raise ViewportNotFoundError(viewport_id)
+        entry = self._entries[session_id][viewport_id]
+        if entry.dirty:
+            raise ViewportError(
+                f"cannot delete file with uncommitted changes: {entry.file}"
+            )
+        file_ops.delete_file(entry.file, self.project_root)
+        self._buffer_mgr.destroy_buffer(session_id, entry.file)
+        del self._entries[session_id][viewport_id]
+        if (
+            session_id in self.line_endings
+            and entry.file in self.line_endings[session_id]
+        ):
+            del self.line_endings[session_id][entry.file]
+        return entry.file
 
     def format_conflict_warning(self, warning: dict) -> str:
         return file_ops.format_conflict_warning(warning)

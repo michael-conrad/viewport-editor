@@ -76,5 +76,10 @@ class BufferManager:
     def get_buffer_ref(self, session_id: str, file_path: str) -> Buffer:
         return self._buffers[session_id][file_path]
 
+    def destroy_buffer(self, session_id: str, file_path: str) -> None:
+        """Remove a single buffer entry for a file in a session."""
+        if session_id in self._buffers and file_path in self._buffers[session_id]:
+            del self._buffers[session_id][file_path]
+
     def destroy_session(self, session_id: str) -> None:
         self._buffers.pop(session_id, None)

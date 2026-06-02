@@ -759,6 +759,11 @@ def _handle_file_action(
             f"  file: {entry_data['file']}",
         ]
         return "\n".join(lines)
+    elif action == "delete":
+        if not viewport_id:
+            raise ViewportError("viewport_id is required for delete action")
+        deleted_file = _manager.delete_entry(session_id, viewport_id)
+        return f"deleted file: {deleted_file}"
     else:
         raise ViewportError(f"unknown file action: {action}")
 
