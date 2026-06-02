@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import Dict, Optional
 
+from .clipboard import ClipboardEntry
 from .viewport import ViewportEntry
 
 
@@ -17,6 +18,7 @@ class Session:
     def __init__(self, session_id: str) -> None:
         self.session_id = session_id
         self.viewports: Dict[str, ViewportEntry] = {}
+        self.clipboard: Optional[ClipboardEntry] = None
 
 
 _sessions: Dict[str, Session] = {}

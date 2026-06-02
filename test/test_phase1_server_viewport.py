@@ -79,8 +79,8 @@ async def client_session(
 async def test_sc1_exactly_6_tools(client_session: ClientSession) -> None:
     result = await client_session.list_tools()
     names = [t.name for t in result.tools]
-    assert len(names) == 6, f"Expected 6 tools, got {len(names)}: {names}"
-    expected = {"viewport", "edit", "file", "diff", "search", "regex"}
+    assert len(names) == 7, f"Expected 7 tools, got {len(names)}: {names}"
+    expected = {"viewport", "edit", "file", "diff", "search", "regex", "clipboard"}
     assert set(names) == expected, f"Tool mismatch: {set(names) ^ expected}"
 
 
