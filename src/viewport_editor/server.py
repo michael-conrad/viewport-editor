@@ -15,7 +15,7 @@ from typing import Any, AsyncIterator, Optional
 from mcp.server.fastmcp import FastMCP
 
 from .clipboard import ClipboardEntry, apply_copy, apply_cut, apply_paste
-from .exceptions import ViewportError
+from .exceptions import DiffApplyError, ViewportError
 from .session import create_session, get_session, get_session_ids, remove_session
 from .viewport import ViewportManager
 
@@ -169,10 +169,11 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         session_id: str = "",
         viewport_id: str = "",
         file_path: str = "",
+        patch: str = "",
     ) -> str:
-        """Show unified diff of pending buffer changes vs disk content.
+        """Show unified diff of pending buffer changes, or apply a diff patch.
 
-        Actions: show"""
+        Actions: show, apply"""
         if _manager is None:
             return "error: server not initialized"
 
@@ -185,6 +186,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
             session_id=session_id,
             viewport_id=viewport_id,
             file_path=file_path,
+            patch=patch,
         )
 
     @mcp.tool()
@@ -778,6 +780,7 @@ def _handle_diff_action(
     session_id: str,
     viewport_id: str,
     file_path: str = "",
+    patch: str = "",
 ) -> str:
     if _manager is None:
         return "error: server not initialized"
@@ -790,6 +793,51 @@ def _handle_diff_action(
         if not diff_str:
             return f"no pending changes for viewport {viewport_id}"
         return f"diff for {file_path}:\n{diff_str}"
+    elif action == "apply":
+        if not patch:
+            raise ViewportError("patch is required for apply action")
+
+        vpid = viewport_id
+        if vpid:
+            entry = _manager.get_entry(session_id, vpid)
+        elif file_path:
+            entry = _manager.find_viewport_for_file(session_id, file_path)
+            if entry is None:
+                new_entry = _manager.open(
+                    session_id=session_id,
+                    file_path=file_path,
+                )
+                vpid = new_entry.viewport_id
+                entry = new_entry
+            else:
+                vpid = entry.viewport_id
+        else:
+            raise ViewportError("viewport_id or file_path is required for apply action")
+
+        try:
+            result = _manager.apply_diff(session_id, vpid, patch)
+        except DiffApplyError as exc:
+            raise ViewportError(exc.message)
+
+        entry_after = _manager.get_entry(session_id, vpid)
+        diff_str = _manager.get_buffer_diff(session_id, vpid)
+        visible = _manager.get_visible_lines(session_id, entry_after)
+        content_block = _format_content_block(
+            visible, entry_after.start_line, entry_after.display_mode
+        )
+
+        parts = [
+            f"applied diff to viewport {vpid}:",
+            f"  hunks_applied: {result['hunks_applied']}",
+        ]
+        if result.get("gate_notice"):
+            parts.append(f"  notice: {result['gate_notice']}")
+        if diff_str:
+            parts.append("  diff:")
+            for dline in diff_str.splitlines():
+                parts.append(f"    {dline}")
+        parts.append(content_block)
+        return "\n".join(parts)
     else:
         raise ViewportError(f"unknown diff action: {action}")
 

@@ -451,3 +451,37 @@ class ViewportManager:
 
     def format_conflict_warning(self, warning: dict) -> str:
         return file_ops.format_conflict_warning(warning)
+
+    def apply_diff(self, session_id: str, viewport_id: str, patch: str) -> dict:
+        """Apply a unified diff patch to the buffer for the given viewport.
+
+        Uses autosave gate: switches to buffered mode on autosave=on viewports
+        so the agent can review before saving.
+        """
+        from .diff_engine import apply_diff_to_content
+
+        entry = self.get_entry(session_id, viewport_id)
+        buf = self._buffer_mgr.get_buffer_ref(session_id, entry.file)
+        new_content = apply_diff_to_content(buf.content, patch)
+        buf.content = new_content
+        gate_notice = self._autosave_gate(session_id, entry)
+
+        hunks_count = len(
+            [line for line in patch.splitlines() if line.startswith("@@")]
+        )
+
+        return {
+            "hunks_applied": hunks_count,
+            "gate_notice": gate_notice,
+        }
+
+    def find_viewport_for_file(
+        self, session_id: str, file_path: str
+    ) -> Optional[ViewportEntry]:
+        """Find a viewport for the given file in the session."""
+        if session_id not in self._entries:
+            return None
+        for entry in self._entries[session_id].values():
+            if entry.file == file_path:
+                return entry
+        return None

@@ -28,6 +28,7 @@ markers = [
     "phase1: Phase 1 server foundation + viewport tool tests",
     "phase2: Phase 2 edit/buffer/diff tool tests",
     "phase3: Phase 3 file:new and file:save-as tool tests",
+    "phase4: Phase 4 diff:apply, search, regex tool tests",
 ]
 
 [dependency-groups]
