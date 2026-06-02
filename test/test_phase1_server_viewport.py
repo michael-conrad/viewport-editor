@@ -38,12 +38,21 @@ def test_project_root() -> Path:
 def server_params(test_project_root: Path) -> StdioServerParameters:
     return StdioServerParameters(
         command="uv",
-        args=["run", "python", "-m", "viewport_editor", "--project-root", str(test_project_root)],
+        args=[
+            "run",
+            "python",
+            "-m",
+            "viewport_editor",
+            "--project-root",
+            str(test_project_root),
+        ],
     )
 
 
 @pytest.fixture
-async def client_session(server_params: StdioServerParameters) -> AsyncIterator[ClientSession]:
+async def client_session(
+    server_params: StdioServerParameters,
+) -> AsyncIterator[ClientSession]:
     """Fixture that creates a client session for testing.
 
     Note: RuntimeError from anyio cancel scope mismatch during teardown is
@@ -85,7 +94,9 @@ async def test_sc2_no_dedicated_help_tool(client_session: ClientSession) -> None
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc3_tool_descriptions_use_prose_yaml_no_json(client_session: ClientSession) -> None:
+async def test_sc3_tool_descriptions_use_prose_yaml_no_json(
+    client_session: ClientSession,
+) -> None:
     # SC-3 behavioral evidence: tool descriptions are prose+YAML, not JSON
     result = await client_session.list_tools()
     for t in result.tools:
@@ -104,9 +115,15 @@ async def test_sc3_tool_descriptions_use_prose_yaml_no_json(client_session: Clie
         },
     )
     response_text = _get_text(open_result)
-    assert "viewport_id:" in response_text, "Response not in YAML format (missing colon-separated kv)"
-    assert "{" not in response_text, f"Response uses JSON instead of YAML: {response_text[:200]}"
-    assert "}" not in response_text, f"Response uses JSON instead of YAML: {response_text[:200]}"
+    assert "viewport_id:" in response_text, (
+        "Response not in YAML format (missing colon-separated kv)"
+    )
+    assert "{" not in response_text, (
+        f"Response uses JSON instead of YAML: {response_text[:200]}"
+    )
+    assert "}" not in response_text, (
+        f"Response uses JSON instead of YAML: {response_text[:200]}"
+    )
 
 
 @pytest.mark.phase1
@@ -122,8 +139,14 @@ async def test_sc4_absolute_paths_rejected(client_session: ClientSession) -> Non
         },
     )
     text = _get_text(result)
-    assert result.isError, f"Expected isError=true for absolute path, got isError={result.isError}"
-    assert "error" in text.lower() or "AbsolutePathError" in text or "PathEscapeError" in text
+    assert result.isError, (
+        f"Expected isError=true for absolute path, got isError={result.isError}"
+    )
+    assert (
+        "error" in text.lower()
+        or "AbsolutePathError" in text
+        or "PathEscapeError" in text
+    )
 
 
 @pytest.mark.phase1
@@ -138,14 +161,18 @@ async def test_sc4_relative_paths_accepted(client_session: ClientSession) -> Non
         },
     )
     text = _get_text(result)
-    assert not result.isError, f"Expected isError=false for relative path, got isError={result.isError}"
+    assert not result.isError, (
+        f"Expected isError=false for relative path, got isError={result.isError}"
+    )
     assert "error" not in text.lower()
     assert "opened viewport" in text.lower()
 
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc5_open_returns_entry_with_all_fields(client_session: ClientSession) -> None:
+async def test_sc5_open_returns_entry_with_all_fields(
+    client_session: ClientSession,
+) -> None:
     result = await client_session.call_tool(
         "viewport",
         arguments={
@@ -172,7 +199,9 @@ async def test_sc5_open_returns_entry_with_all_fields(client_session: ClientSess
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc6_open_accepts_autosave_param_defaults_off(client_session: ClientSession) -> None:
+async def test_sc6_open_accepts_autosave_param_defaults_off(
+    client_session: ClientSession,
+) -> None:
     result_on = await client_session.call_tool(
         "viewport",
         arguments={
@@ -196,7 +225,9 @@ async def test_sc6_open_accepts_autosave_param_defaults_off(client_session: Clie
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc7_page_up_moves_by_viewport_height(client_session: ClientSession) -> None:
+async def test_sc7_page_up_moves_by_viewport_height(
+    client_session: ClientSession,
+) -> None:
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
@@ -229,7 +260,9 @@ async def test_sc7_page_up_moves_by_viewport_height(client_session: ClientSessio
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc8_page_down_moves_by_viewport_height(client_session: ClientSession) -> None:
+async def test_sc8_page_down_moves_by_viewport_height(
+    client_session: ClientSession,
+) -> None:
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
@@ -292,7 +325,9 @@ async def test_sc25_soft_conflict_warning_on_viewport_operations(
         },
     )
     scroll_text = _get_text(result_scroll)
-    assert "warning:" in scroll_text, f"Expected soft conflict warning in scroll response: {scroll_text}"
+    assert "warning:" in scroll_text, (
+        f"Expected soft conflict warning in scroll response: {scroll_text}"
+    )
 
 
 @pytest.mark.phase1
@@ -300,7 +335,11 @@ async def test_sc25_soft_conflict_warning_on_viewport_operations(
 async def test_sc26_session_isolation(client_session: ClientSession) -> None:
     await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "session_id": "sess-a", "file_path": "test_file.txt"},
+        arguments={
+            "action": "open",
+            "session_id": "sess-a",
+            "file_path": "test_file.txt",
+        },
     )
     list_b = await client_session.call_tool(
         "viewport",
@@ -312,7 +351,9 @@ async def test_sc26_session_isolation(client_session: ClientSession) -> None:
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc27_jump_returns_is_error_on_target_not_found(client_session: ClientSession) -> None:
+async def test_sc27_jump_returns_is_error_on_target_not_found(
+    client_session: ClientSession,
+) -> None:
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
@@ -471,7 +512,9 @@ async def test_sc34_relative_paths_only(client_session: ClientSession) -> None:
             "file_path": "/etc/hostname",
         },
     )
-    assert result_abs.isError, f"Expected isError=true for absolute path, got isError={result_abs.isError}"
+    assert result_abs.isError, (
+        f"Expected isError=true for absolute path, got isError={result_abs.isError}"
+    )
     assert "error" in _get_text(result_abs).lower()
     result_rel = await client_session.call_tool(
         "viewport",
@@ -481,7 +524,9 @@ async def test_sc34_relative_paths_only(client_session: ClientSession) -> None:
             "file_path": "test_file.txt",
         },
     )
-    assert not result_rel.isError, f"Expected isError=false for relative path, got isError={result_rel.isError}"
+    assert not result_rel.isError, (
+        f"Expected isError=false for relative path, got isError={result_rel.isError}"
+    )
     assert "error" not in _get_text(result_rel).lower()
 
 
@@ -545,7 +590,11 @@ async def test_sc35_dirty_buffers_never_flushed(
     # Open viewport, locking in a snapshot of the file
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "session_id": "test-sess-35", "file_path": file_path},
+        arguments={
+            "action": "open",
+            "session_id": "test-sess-35",
+            "file_path": file_path,
+        },
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -592,14 +641,18 @@ async def test_sc35_dirty_buffers_never_flushed(
     )
 
     # File on disk MUST be unchanged — dirty buffers are never flushed
-    assert (
-        test_project_root / file_path
-    ).read_text() == original_content, "SC-35 FAIL: dirty buffer was flushed to disk"
+    assert (test_project_root / file_path).read_text() == original_content, (
+        "SC-35 FAIL: dirty buffer was flushed to disk"
+    )
 
     # Same file in another session reads from disk, not from first session's buffer
     result_fresh = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "session_id": "test-sess-35-fresh", "file_path": file_path},
+        arguments={
+            "action": "open",
+            "session_id": "test-sess-35-fresh",
+            "file_path": file_path,
+        },
     )
     text_fresh = _get_text(result_fresh)
     assert "error" not in text_fresh
@@ -765,7 +818,9 @@ async def test_set_display_mode_invalid(client_session: ClientSession) -> None:
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc38_unicode_decode_in_edit_replace(client_session: ClientSession, test_project_root: Path) -> None:
+async def test_sc38_unicode_decode_in_edit_replace(
+    client_session: ClientSession, test_project_root: Path
+) -> None:
     """SC-38-FIX: agent input \\uNNNN in edit operations decodes to real character.
 
     Behavioral evidence: edit:replace with \\u006c (decodes to 'l') successfully
@@ -778,7 +833,12 @@ async def test_sc38_unicode_decode_in_edit_replace(client_session: ClientSession
     original = (test_project_root / file_path_str).read_text()
 
     result_open = await client_session.call_tool(
-        "viewport", arguments={"action": "open", "session_id": "test-sc38-edit", "file_path": file_path_str},
+        "viewport",
+        arguments={
+            "action": "open",
+            "session_id": "test-sc38-edit",
+            "file_path": file_path_str,
+        },
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -788,8 +848,12 @@ async def test_sc38_unicode_decode_in_edit_replace(client_session: ClientSession
     result = await client_session.call_tool(
         "edit",
         arguments={
-            "action": "replace", "session_id": "test-sc38-edit", "viewport_id": vpid,
-            "file_path": file_path_str, "old_text": "\\u006c\\u0069\\u006e\\u0065", "new_text": "DECODED-LINE",
+            "action": "replace",
+            "session_id": "test-sc38-edit",
+            "viewport_id": vpid,
+            "file_path": file_path_str,
+            "old_text": "\\u006c\\u0069\\u006e\\u0065",
+            "new_text": "DECODED-LINE",
         },
     )
     text = _get_text(result)
@@ -798,20 +862,28 @@ async def test_sc38_unicode_decode_in_edit_replace(client_session: ClientSession
     )
 
     # File on disk must be unchanged (autosave=off)
-    assert (test_project_root / file_path_str).read_text() == original, \
+    assert (test_project_root / file_path_str).read_text() == original, (
         "SC-38-FIX FAIL: file on disk changed (should stage only)"
+    )
 
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc38_unicode_decode_noop_on_literal_text(client_session: ClientSession) -> None:
+async def test_sc38_unicode_decode_noop_on_literal_text(
+    client_session: ClientSession,
+) -> None:
     """SC-38-FIX: decode is no-op on literal text (no \\uNNNN escapes).
 
     The 'lines' parameter is a list of literal lines, not \\uNNNN-escaped.
     This test verifies decode does NOT interfere with normal text.
     """
     result_open = await client_session.call_tool(
-        "viewport", arguments={"action": "open", "session_id": "test-sc38-literal", "file_path": "test_file.txt"},
+        "viewport",
+        arguments={
+            "action": "open",
+            "session_id": "test-sc38-literal",
+            "file_path": "test_file.txt",
+        },
     )
     assert "error" not in _get_text(result_open)
 
@@ -857,7 +929,9 @@ async def test_content_block_format_cat_n(client_session: ClientSession) -> None
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_navigation_chain_content_consistency(client_session: ClientSession) -> None:
+async def test_navigation_chain_content_consistency(
+    client_session: ClientSession,
+) -> None:
     """Chain open → page-up → page-down → scroll → jump, verify visible content at each step."""
     # Open at lines 5-15
     result_open = await client_session.call_tool(
