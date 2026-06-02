@@ -1,0 +1,104 @@
+# Z3 Contract v2: Decomposed single-concern issues
+# Variable names use underscores (Z3 doesn't handle hyphens)
+# SAT ordering proven by Z3 constraint model
+
+variables:
+  # Issue #18: Bug fixes
+  BUG_1: {type: bool}   # SC-24: inverted close auto-save logic
+  BUG_2: {type: bool}   # SC-LF-1, SC-TMP-1: CRLF preservation + mkstemp in flush_entry
+  BUG_3: {type: bool}   # SC-36: CRLF round-trip end-to-end
+  SC_38: {type: bool}    # SC-38: unicode decode behavioral test
+  SC_24: {type: bool}    # SC-24: close dirty buffer auto-saves (full behavioral test)
+  SC_TEST_ATOMIC: {type: bool}  # enhanced atomic write test
+  SC_TEST_UNICODE: {type: bool}  # unicode decode test
+  SC_REG: {type: bool}   # all 51 tests pass
+
+  # Issue #17: Clipboard Core
+  SC_39: {type: bool}   # copy with provenance
+  SC_40: {type: bool}   # cut + stages deletion
+  SC_41: {type: bool}   # paste insert-before
+  SC_42: {type: bool}   # cut/paste autosave gate + diff response
+  SC_46: {type: bool}   # paste never reads from stash
+  SC_48: {type: bool}   # line-aligned ranges only
+
+  # Issue #22: Clipboard Stash
+  SC_43: {type: bool}   # stash
+  SC_44: {type: bool}   # pop
+  SC_45: {type: bool}   # swap
+  SC_47: {type: bool}   # stash list
+
+  # Issue #23: File New + Save-As
+  SC_15: {type: bool}   # file:new
+  SC_16: {type: bool}   # file:save-as
+  SC_LF_2: {type: bool} # save-as CRLF preservation
+  SC_TMP_2: {type: bool} # save-as mkstemp
+  SC_LF_3: {type: bool} # file:new newline="" consistency
+
+  # Issue #24: File Delete
+  SC_30: {type: bool}   # file:delete
+
+  # Issue #25: Autosave Integration
+  SC_14: {type: bool}   # autosave=on no-op for save/diff/discard
+  # SC-24 behavioral tests already in #18, #25 adds integration verification
+
+  # Issue #26: Diff Apply
+  SC_23: {type: bool}   # diff:apply stages diff
+
+  # Issue #27: Search Find
+  SC_17: {type: bool}   # search:find structured results
+
+  # Issue #28: Regex Tools
+  SC_28: {type: bool}   # regex:test
+  SC_29: {type: bool}   # regex:escape
+
+invariants:
+  # Issue #18: Bug fixes (no prerequisites)
+  # BUG_1, BUG_2, BUG_3, SC_38, SC_24, SC_TEST_ATOMIC, SC_TEST_UNICODE, SC_REG are all independently satisfiable
+
+  # Issue #17: Clipboard Core requires #18
+  - "z3.Implies(SC_39, BUG_2)"
+  - "z3.Implies(SC_40, BUG_1)"
+  - "z3.Implies(SC_41, BUG_2)"
+  - "z3.Implies(SC_42, BUG_1)"
+
+  # Issue #22: Clipboard Stash requires #17
+  - "z3.Implies(SC_43, SC_39)"
+  - "z3.Implies(SC_44, SC_39)"
+  - "z3.Implies(SC_45, SC_39)"
+  - "z3.Implies(SC_47, SC_43)"
+
+  # Issue #23: File New + Save-As requires #18
+  - "z3.Implies(SC_15, BUG_2)"
+  - "z3.Implies(SC_16, BUG_2)"
+  - "z3.Implies(SC_LF_2, BUG_2)"
+  - "z3.Implies(SC_TMP_2, BUG_2)"
+  - "z3.Implies(SC_LF_3, BUG_2)"
+
+  # Issue #24: File Delete requires #18
+  - "z3.Implies(SC_30, BUG_2)"
+
+  # Issue #25: Autosave Integration requires #18 and #17
+  - "z3.Implies(SC_14, BUG_1)"
+  - "z3.Implies(SC_14, SC_42)"
+
+  # Issue #26: Diff Apply requires #25 (autosave gate)
+  - "z3.Implies(SC_23, SC_14)"
+
+  # Issue #27: Search Find requires #18
+  # No functional dependency beyond #18 but logically follows
+
+  # Issue #28: Regex Tools requires #18
+  # No functional dependency beyond #18
+
+  # Issue #6: Integration Tests requires ALL prior issues
+  # Not modeled as variables — integration tests are pure validation
+
+# SAT ordering (linear, proven by Z3):
+# #18 (bug fixes) → #17 (clipboard core) → #22 (clipboard stash) →
+# #23 (file new + save-as) → #24 (file delete) → #25 (autosave integration) →
+# #26 (diff apply) → #27 (search find) → #28 (regex tools) → #6 (integration)
+#
+# Parallel opportunities (Z3 permits):
+# #23, #24 can proceed in parallel after #18 (no cross-dependency)
+# #27, #28 can proceed in parallel after #18 (no cross-dependency)
+# #27 and #28 can also proceed in parallel with #25 (no cross-dependency)
