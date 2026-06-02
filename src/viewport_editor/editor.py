@@ -49,7 +49,7 @@ def apply_insert_lines(
     """Insert lines at the specified 1-based line position."""
     file_lines = content.splitlines(keepends=True)
     total = len(file_lines)
-    if line_start < 1 or line_start > total:
+    if line_start < 1 or line_start > max(total + 1, 1):
         raise LineRangeError(f"line_start {line_start} out of range (1-{total})")
     new_lines = [ln if ln.endswith(line_ending) else ln + line_ending for ln in lines]
     file_lines[line_start:line_start] = new_lines

@@ -146,7 +146,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
     ) -> str:
         """File system operations for viewport-editor buffers. Persist pending edits to disk or discard them.
 
-        Actions: save, discard"""
+        Actions: save, discard, new, save-as"""
         if _manager is None:
             return "error: server not initialized"
 
@@ -728,6 +728,37 @@ def _handle_file_action(
     elif action == "discard":
         _manager.discard_buffer_changes(session_id, viewport_id)
         return f"discarded pending changes for viewport {viewport_id}"
+    elif action == "new":
+        if not file_path:
+            raise ViewportError("file_path is required for new action")
+        try:
+            entry = _manager.open_new(session_id, file_path)
+        except FileExistsError as exc:
+            raise ViewportError(str(exc))
+        entry_data = entry.to_dict()
+        lines = [
+            "created new file and opened viewport:",
+            f"  viewport_id: {entry_data['viewport_id']}",
+            f"  file: {entry_data['file']}",
+            f"  autosave: {entry_data['autosave']}",
+        ]
+        return "\n".join(lines)
+    elif action == "save-as":
+        if not viewport_id:
+            raise ViewportError("viewport_id is required for save-as action")
+        if not file_path:
+            raise ViewportError("file_path is required for save-as action")
+        try:
+            entry = _manager.save_as(session_id, viewport_id, file_path, force=force)
+        except FileExistsError as exc:
+            raise ViewportError(str(exc))
+        entry_data = entry.to_dict()
+        lines = [
+            f"saved as new file for viewport {viewport_id}:",
+            f"  viewport_id: {entry_data['viewport_id']}",
+            f"  file: {entry_data['file']}",
+        ]
+        return "\n".join(lines)
     else:
         raise ViewportError(f"unknown file action: {action}")
 

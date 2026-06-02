@@ -13,6 +13,7 @@ Co-authored with AI: OpenCode (deepseek-v4-flash)
 
 from __future__ import annotations
 
+import os
 import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
@@ -366,6 +367,61 @@ class ViewportManager:
         return file_ops.check_conflict(
             file_path, self.project_root, stored_mtime, stored_size
         )
+
+    def open_new(
+        self,
+        session_id: str,
+        file_path: str,
+    ) -> ViewportEntry:
+        resolved_path = file_ops.create_new_file(file_path, self.project_root)
+        if session_id not in self._entries:
+            self._entries[session_id] = {}
+        buffer = self._buffer_mgr.get_or_create(session_id, file_path, resolved_path)
+        if session_id not in self.line_endings:
+            self.line_endings[session_id] = {}
+        self.line_endings[session_id][file_path] = "\n"
+        entry = ViewportEntry(
+            file=file_path,
+            start_line=1,
+            end_line=0,
+            mtime=buffer.mtime,
+            size=0,
+            autosave=False,
+            line_ending="\n",
+            display_mode="hide",
+        )
+        self._entries[session_id][entry.viewport_id] = entry
+        return entry
+
+    def save_as(
+        self,
+        session_id: str,
+        viewport_id: str,
+        target_file: str,
+        force: bool = False,
+    ) -> ViewportEntry:
+        entry = self.get_entry(session_id, viewport_id)
+        buf = self._buffer_mgr.get_buffer_ref(session_id, entry.file)
+        resolved_target = file_ops.save_as_file(
+            entry.file, target_file, self.project_root, buf.content, force=force
+        )
+        old_file = entry.file
+        self.line_endings[session_id][target_file] = self.get_line_ending(
+            session_id, old_file
+        )
+        self._buffer_mgr._buffers[session_id][target_file] = self._buffer_mgr._buffers[
+            session_id
+        ].pop(old_file)
+        self._buffer_mgr._buffers[session_id][target_file].path = target_file
+        st = os.stat(resolved_target)
+        buf = self._buffer_mgr._buffers[session_id][target_file]
+        buf.mtime = st.st_mtime
+        buf.size = st.st_size
+        entry.file = target_file
+        entry.mtime = st.st_mtime
+        entry.size = st.st_size
+        entry.dirty = False
+        return entry
 
     def format_conflict_warning(self, warning: dict) -> str:
         return file_ops.format_conflict_warning(warning)
