@@ -259,13 +259,88 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
     def regex(
         ctx: Any = None,
         action: str = "",
+        pattern: Optional[str] = None,
+        text: Optional[str] = None,
+        ctx_pattern: Optional[str] = None,
     ) -> str:
-        """Regex operations for viewport-editor. Not yet implemented.
+        """Regex operations for viewport-editor.
 
-        Actions: match, replace, match-multi"""
-        return "regex tool: not yet implemented"
+        Actions: test (match pattern against text), escape (escape metacharacters)"""
+        if _manager is None:
+            return "error: server not initialized"
+
+        return _handle_regex_action(
+            action=action,
+            pattern=pattern or "",
+            text=text or "",
+        )
 
     return mcp
+
+
+def _handle_regex_action(action: str, pattern: str, text: str) -> str:
+    actions = {
+        "test": _action_regex_test,
+        "escape": _action_regex_escape,
+    }
+    handler = actions.get(action)
+    if handler is None:
+        raise ViewportError(f"unknown regex action: {action}")
+    return handler(pattern=pattern, text=text)
+
+
+def _action_regex_test(pattern: str, text: str) -> str:
+    import re as _re
+
+    if not pattern:
+        raise ViewportError("pattern is required for test action")
+
+    try:
+        compiled = _re.compile(pattern)
+    except _re.error as exc:
+        raise ViewportError(f"invalid regex pattern: {exc}")
+
+    matches: list[dict] = []
+    for m in compiled.finditer(text):
+        groups = {}
+        if m.groups():
+            groups = {f"group_{i}": g for i, g in enumerate(m.groups(), 1)}
+        matches.append(
+            {
+                "start": m.start(),
+                "end": m.end(),
+                "matched": m.group(0),
+                **groups,
+            }
+        )
+
+    parts = [f"regex test results for pattern '{pattern}':"]
+    parts.append(f"  matches: {len(matches)}")
+    if matches:
+        for i, m in enumerate(matches):
+            parts.append(f"  match {i}:")
+            parts.append(f"    start: {m['start']}")
+            parts.append(f"    end: {m['end']}")
+            parts.append(f"    matched: {m['matched']}")
+            for gk, gv in m.items():
+                if gk.startswith("group_") and gv is not None:
+                    parts.append(f"    {gk}: {gv}")
+    else:
+        parts.append("  (no matches found)")
+    return "\n".join(parts)
+
+
+def _action_regex_escape(pattern: str, text: str) -> str:
+    import re as _re
+
+    if not text:
+        raise ViewportError("text is required for escape action")
+
+    escaped = _re.escape(text)
+    parts = ["regex escape results:"]
+    parts.append(f"  original: {text}")
+    parts.append(f"  escaped: {escaped}")
+    return "\n".join(parts)
 
 
 def _handle_viewport_action(
