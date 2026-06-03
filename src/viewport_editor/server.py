@@ -49,7 +49,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
     root = project_root or _get_project_root()
     _manager = ViewportManager(project_root=root)
 
-    mcp = FastMCP("viewport-editor", lifespan=_server_lifespan)
+    mcp = FastMCP("viewport_editor", lifespan=_server_lifespan)
 
     @mcp.tool()
     def viewport(
