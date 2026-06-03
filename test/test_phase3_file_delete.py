@@ -102,7 +102,6 @@ async def test_file_delete_removes_file(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc30-delete",
             "file_path": "delete_target.txt",
         },
     )
@@ -114,7 +113,6 @@ async def test_file_delete_removes_file(
         "file",
         arguments={
             "action": "delete",
-            "session_id": "test-sc30-delete",
             "viewport_id": vpid,
         },
     )
@@ -150,7 +148,6 @@ async def test_file_delete_dirty_buffer_rejects(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc30-dirty",
             "file_path": "dirty_delete_target.txt",
         },
     )
@@ -162,7 +159,6 @@ async def test_file_delete_dirty_buffer_rejects(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": "test-sc30-dirty",
             "viewport_id": vpid,
             "old_text": "original content",
             "new_text": "modified content",
@@ -173,7 +169,6 @@ async def test_file_delete_dirty_buffer_rejects(
         "file",
         arguments={
             "action": "delete",
-            "session_id": "test-sc30-dirty",
             "viewport_id": vpid,
         },
     )

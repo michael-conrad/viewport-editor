@@ -108,7 +108,6 @@ async def test_sc15_file_new_creates_file_and_opens_viewport(
         "file",
         arguments={
             "action": "new",
-            "session_id": "test-sc15",
             "file_path": new_file,
         },
     )
@@ -127,7 +126,7 @@ async def test_sc15_file_new_creates_file_and_opens_viewport(
 
     list_result = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": "test-sc15"},
+        arguments={"action": "list"},
     )
     list_text = _get_text(list_result)
     assert "autosave: False" in list_text or "autosave: false" in list_text.lower(), (
@@ -152,7 +151,6 @@ async def test_sc15_file_new_rejects_existing_file(
         "file",
         arguments={
             "action": "new",
-            "session_id": "test-sc15-exists",
             "file_path": "existing_file.txt",
         },
     )
@@ -183,7 +181,6 @@ async def test_sc16_save_as_rejects_existing_target_without_force(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc16-nf",
             "file_path": "saveas_source.txt",
         },
     )
@@ -193,7 +190,6 @@ async def test_sc16_save_as_rejects_existing_target_without_force(
         "file",
         arguments={
             "action": "save-as",
-            "session_id": "test-sc16-nf",
             "viewport_id": vpid,
             "file_path": "existing_file.txt",
             "force": False,
@@ -231,7 +227,6 @@ async def test_sc16_save_as_overwrites_existing_target_with_force(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc16-force",
             "file_path": "saveas_source.txt",
         },
     )
@@ -241,7 +236,6 @@ async def test_sc16_save_as_overwrites_existing_target_with_force(
         "file",
         arguments={
             "action": "save-as",
-            "session_id": "test-sc16-force",
             "viewport_id": vpid,
             "file_path": "overwrite_target.txt",
             "force": True,
@@ -280,7 +274,6 @@ async def test_sc16_save_as_creates_new_file(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc16-new",
             "file_path": "saveas_source.txt",
         },
     )
@@ -290,7 +283,6 @@ async def test_sc16_save_as_creates_new_file(
         "file",
         arguments={
             "action": "save-as",
-            "session_id": "test-sc16-new",
             "viewport_id": vpid,
             "file_path": "saveas_new_target.txt",
         },
@@ -332,7 +324,6 @@ async def test_sc_lf2_save_as_preserves_crlf(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc-lf2",
             "file_path": "crlf_source.txt",
         },
     )
@@ -342,7 +333,6 @@ async def test_sc_lf2_save_as_preserves_crlf(
         "file",
         arguments={
             "action": "save-as",
-            "session_id": "test-sc-lf2",
             "viewport_id": vpid,
             "file_path": "crlf_saveas_target.txt",
         },
@@ -383,7 +373,6 @@ async def test_sc_tmp2_save_as_uses_mkstemp(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc-tmp2",
             "file_path": "saveas_source.txt",
         },
     )
@@ -393,7 +382,6 @@ async def test_sc_tmp2_save_as_uses_mkstemp(
         "file",
         arguments={
             "action": "save-as",
-            "session_id": "test-sc-tmp2",
             "viewport_id": vpid,
             "file_path": "mkstemp_saveas_target.txt",
         },
@@ -450,7 +438,6 @@ async def test_sc_lf3_file_new_opens_with_newline_empty(
         "file",
         arguments={
             "action": "new",
-            "session_id": "test-sc-lf3",
             "file_path": new_file,
         },
     )
@@ -472,7 +459,7 @@ async def test_sc_lf3_file_new_opens_with_newline_empty(
 
     list_result = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": "test-sc-lf3"},
+        arguments={"action": "list"},
     )
     list_text = _get_text(list_result)
     assert "autosave: False" in list_text or "autosave: false" in list_text.lower(), (
@@ -503,7 +490,6 @@ async def test_sc_lf3_file_new_crlf_write_preserved(
         "file",
         arguments={
             "action": "new",
-            "session_id": "test-sc-lf3-crlf",
             "file_path": new_file,
         },
     )
@@ -516,7 +502,6 @@ async def test_sc_lf3_file_new_crlf_write_preserved(
         "edit",
         arguments={
             "action": "insert-lines",
-            "session_id": "test-sc-lf3-crlf",
             "viewport_id": vpid,
             "file_path": new_file,
             "line_start": 1,
@@ -528,7 +513,6 @@ async def test_sc_lf3_file_new_crlf_write_preserved(
         "viewport",
         arguments={
             "action": "autosave",
-            "session_id": "test-sc-lf3-crlf",
             "viewport_id": vpid,
             "enabled": True,
         },
@@ -538,7 +522,6 @@ async def test_sc_lf3_file_new_crlf_write_preserved(
         "file",
         arguments={
             "action": "save",
-            "session_id": "test-sc-lf3-crlf",
             "viewport_id": vpid,
             "file_path": new_file,
         },
@@ -567,7 +550,6 @@ async def test_sc16_save_as_updates_viewport_file_reference(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc16-ref",
             "file_path": "saveas_source.txt",
         },
     )
@@ -577,7 +559,6 @@ async def test_sc16_save_as_updates_viewport_file_reference(
         "file",
         arguments={
             "action": "save-as",
-            "session_id": "test-sc16-ref",
             "viewport_id": vpid,
             "file_path": "saveas_ref_target.txt",
         },
@@ -588,7 +569,7 @@ async def test_sc16_save_as_updates_viewport_file_reference(
 
     list_result = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": "test-sc16-ref"},
+        arguments={"action": "list"},
     )
     list_text = _get_text(list_result)
     assert "saveas_ref_target.txt" in list_text, (

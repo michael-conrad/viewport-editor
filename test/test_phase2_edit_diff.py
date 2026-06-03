@@ -106,7 +106,6 @@ async def test_sc9_edit_replace_stages_in_buffer_autosave_off(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc9",
             "file_path": file_path_str,
             "autosave": False,
         },
@@ -118,7 +117,6 @@ async def test_sc9_edit_replace_stages_in_buffer_autosave_off(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": "test-sc9",
             "viewport_id": vpid,
             "file_path": file_path_str,
             "old_text": "line 3",
@@ -136,7 +134,7 @@ async def test_sc9_edit_replace_stages_in_buffer_autosave_off(
     # Viewport list should show dirty=True
     list_result = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": "test-sc9"},
+        arguments={"action": "list"},
     )
     assert "dirty: True" in _get_text(list_result), (
         "RED FAIL: dirty flag not set after edit"
@@ -160,7 +158,6 @@ async def test_sc10_diff_show_returns_unified_diff(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc10",
             "file_path": "edit_test.txt",
         },
     )
@@ -171,7 +168,6 @@ async def test_sc10_diff_show_returns_unified_diff(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": "test-sc10",
             "viewport_id": vpid,
             "file_path": "edit_test.txt",
             "old_text": "line 3",
@@ -183,7 +179,6 @@ async def test_sc10_diff_show_returns_unified_diff(
         "diff",
         arguments={
             "action": "show",
-            "session_id": "test-sc10",
             "viewport_id": vpid,
             "file_path": "edit_test.txt",
         },
@@ -213,7 +208,6 @@ async def test_sc11_file_save_rejects_stale_mtime(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc11",
             "file_path": "save_test.txt",
         },
     )
@@ -226,7 +220,6 @@ async def test_sc11_file_save_rejects_stale_mtime(
         "file",
         arguments={
             "action": "save",
-            "session_id": "test-sc11",
             "viewport_id": vpid,
             "file_path": "save_test.txt",
         },
@@ -251,7 +244,6 @@ async def test_sc11_file_save_rejects_missing_file(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc11b",
             "file_path": "save_test.txt",
         },
     )
@@ -261,7 +253,6 @@ async def test_sc11_file_save_rejects_missing_file(
         "file",
         arguments={
             "action": "save",
-            "session_id": "test-sc11b",
             "viewport_id": vpid,
             "file_path": "nonexistent.txt",
         },
@@ -285,7 +276,6 @@ async def test_sc11_file_save_force_overrides_stale(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc11c",
             "file_path": "save_test.txt",
         },
     )
@@ -298,7 +288,6 @@ async def test_sc11_file_save_force_overrides_stale(
         "file",
         arguments={
             "action": "save",
-            "session_id": "test-sc11c",
             "viewport_id": vpid,
             "file_path": "save_test.txt",
             "force": True,
@@ -312,7 +301,6 @@ async def test_sc11_file_save_force_overrides_stale(
         "diff",
         arguments={
             "action": "show",
-            "session_id": "test-sc11c",
             "viewport_id": vpid,
             "file_path": "save_test.txt",
         },
@@ -338,7 +326,6 @@ async def test_sc12_file_discard_reverts_buffer(client_session: ClientSession) -
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc12",
             "file_path": "edit_test.txt",
             "autosave": False,
         },
@@ -350,7 +337,6 @@ async def test_sc12_file_discard_reverts_buffer(client_session: ClientSession) -
         "edit",
         arguments={
             "action": "replace",
-            "session_id": "test-sc12",
             "viewport_id": vpid,
             "file_path": "edit_test.txt",
             "old_text": "line 3",
@@ -360,14 +346,14 @@ async def test_sc12_file_discard_reverts_buffer(client_session: ClientSession) -
 
     result = await client_session.call_tool(
         "file",
-        arguments={"action": "discard", "session_id": "test-sc12", "viewport_id": vpid},
+        arguments={"action": "discard", "viewport_id": vpid},
     )
     text = _get_text(result)
     # GREEN assertion: discard reports success, dirty flag cleared
     assert not result.isError, f"RED FAIL: discard should succeed: {text[:200]}"
     list_result = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": "test-sc12"},
+        arguments={"action": "list"},
     )
     assert "dirty: True" not in _get_text(list_result), (
         "RED FAIL: discard should clear dirty flag"
@@ -377,7 +363,6 @@ async def test_sc12_file_discard_reverts_buffer(client_session: ClientSession) -
         "diff",
         arguments={
             "action": "show",
-            "session_id": "test-sc12",
             "viewport_id": vpid,
             "file_path": "edit_test.txt",
         },
@@ -408,7 +393,6 @@ async def test_sc13_edit_replace_autosave_on_writes_to_disk(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc13",
             "file_path": file_path_str,
             "autosave": True,
         },
@@ -419,7 +403,6 @@ async def test_sc13_edit_replace_autosave_on_writes_to_disk(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": "test-sc13",
             "viewport_id": vpid,
             "file_path": file_path_str,
             "old_text": "line 3",
@@ -445,7 +428,6 @@ async def test_sc18_replace_all_multi_occurrence(client_session: ClientSession) 
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc18",
             "file_path": "multi.txt",
         },
     )
@@ -455,7 +437,6 @@ async def test_sc18_replace_all_multi_occurrence(client_session: ClientSession) 
         "edit",
         arguments={
             "action": "replace-all",
-            "session_id": "test-sc18",
             "viewport_id": vpid,
             "file_path": "multi.txt",
             "old_text": "apple",
@@ -469,7 +450,6 @@ async def test_sc18_replace_all_multi_occurrence(client_session: ClientSession) 
         "diff",
         arguments={
             "action": "show",
-            "session_id": "test-sc18",
             "viewport_id": vpid,
             "file_path": "multi.txt",
         },
@@ -495,7 +475,6 @@ async def test_sc19_insert_lines_at_position(client_session: ClientSession) -> N
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc19",
             "file_path": "lines.txt",
         },
     )
@@ -505,7 +484,6 @@ async def test_sc19_insert_lines_at_position(client_session: ClientSession) -> N
         "edit",
         arguments={
             "action": "insert-lines",
-            "session_id": "test-sc19",
             "viewport_id": vpid,
             "file_path": "lines.txt",
             "line_start": 3,
@@ -519,7 +497,6 @@ async def test_sc19_insert_lines_at_position(client_session: ClientSession) -> N
         "viewport",
         arguments={
             "action": "scroll",
-            "session_id": "test-sc19",
             "viewport_id": vpid,
             "lines": 0,
         },
@@ -544,7 +521,6 @@ async def test_sc20_delete_lines_at_position(client_session: ClientSession) -> N
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc20",
             "file_path": "lines.txt",
         },
     )
@@ -554,7 +530,6 @@ async def test_sc20_delete_lines_at_position(client_session: ClientSession) -> N
         "edit",
         arguments={
             "action": "delete-lines",
-            "session_id": "test-sc20",
             "viewport_id": vpid,
             "file_path": "lines.txt",
             "line_start": 2,
@@ -568,7 +543,6 @@ async def test_sc20_delete_lines_at_position(client_session: ClientSession) -> N
         "diff",
         arguments={
             "action": "show",
-            "session_id": "test-sc20",
             "viewport_id": vpid,
             "file_path": "lines.txt",
         },
@@ -596,7 +570,6 @@ async def test_sc21_swap_lines(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc21",
             "file_path": "lines.txt",
         },
     )
@@ -606,7 +579,6 @@ async def test_sc21_swap_lines(client_session: ClientSession) -> None:
         "edit",
         arguments={
             "action": "swap-lines",
-            "session_id": "test-sc21",
             "viewport_id": vpid,
             "file_path": "lines.txt",
             "line_start": 1,
@@ -622,7 +594,6 @@ async def test_sc21_swap_lines(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "scroll",
-            "session_id": "test-sc21",
             "viewport_id": vpid,
             "lines": 0,
         },
@@ -650,7 +621,6 @@ async def test_sc22_move_lines(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc22",
             "file_path": "lines.txt",
         },
     )
@@ -660,7 +630,6 @@ async def test_sc22_move_lines(client_session: ClientSession) -> None:
         "edit",
         arguments={
             "action": "move-lines",
-            "session_id": "test-sc22",
             "viewport_id": vpid,
             "file_path": "lines.txt",
             "line_start": 5,
@@ -675,7 +644,6 @@ async def test_sc22_move_lines(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "scroll",
-            "session_id": "test-sc22",
             "viewport_id": vpid,
             "lines": 0,
         },
@@ -715,7 +683,6 @@ async def test_sc25_soft_conflict_warning_on_edit(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc25",
             "file_path": "conflict_test.txt",
         },
     )
@@ -730,7 +697,6 @@ async def test_sc25_soft_conflict_warning_on_edit(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": "test-sc25",
             "viewport_id": vpid,
             "file_path": "conflict_test.txt",
             "old_text": "original content",
@@ -769,7 +735,6 @@ async def test_sc13_atomic_write_integrity(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc13-atomic",
             "file_path": file_path_str,
             "autosave": True,
         },
@@ -781,7 +746,6 @@ async def test_sc13_atomic_write_integrity(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": "test-sc13-atomic",
             "viewport_id": vpid,
             "file_path": file_path_str,
             "old_text": "line c",
@@ -827,7 +791,6 @@ async def test_sc_lf1_crlf_preserved_after_save(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc-lf1",
             "file_path": file_path_str,
             "autosave": True,
         },
@@ -839,7 +802,6 @@ async def test_sc_lf1_crlf_preserved_after_save(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": "test-sc-lf1",
             "viewport_id": vpid,
             "file_path": file_path_str,
             "old_text": "line two",
@@ -885,7 +847,6 @@ async def test_sc_tmp1_flush_entry_uses_mkstemp(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc-tmp1",
             "file_path": file_path_str,
             "autosave": True,
         },
@@ -897,7 +858,6 @@ async def test_sc_tmp1_flush_entry_uses_mkstemp(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": "test-sc-tmp1",
             "viewport_id": vpid,
             "file_path": file_path_str,
             "old_text": "mkstemp test",
@@ -1039,7 +999,6 @@ async def test_sc36_crlf_roundtrip(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc36",
             "file_path": file_path_str,
             "autosave": True,
         },
@@ -1051,7 +1010,6 @@ async def test_sc36_crlf_roundtrip(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": "test-sc36",
             "viewport_id": vpid,
             "file_path": file_path_str,
             "old_text": "beta",
@@ -1105,7 +1063,6 @@ async def test_sc38_unicode_escape_decodes_in_buffer(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc38",
             "file_path": file_path_str,
             "autosave": True,
         },
@@ -1117,7 +1074,6 @@ async def test_sc38_unicode_escape_decodes_in_buffer(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": "test-sc38",
             "viewport_id": vpid,
             "file_path": file_path_str,
             "old_text": "hello world",
@@ -1171,7 +1127,6 @@ async def test_sc_test_atomic_crlf_and_mkstemp(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc-atomic",
             "file_path": file_path_str,
             "autosave": True,
         },
@@ -1182,7 +1137,6 @@ async def test_sc_test_atomic_crlf_and_mkstemp(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": "test-sc-atomic",
             "viewport_id": vpid,
             "file_path": file_path_str,
             "old_text": "beta",

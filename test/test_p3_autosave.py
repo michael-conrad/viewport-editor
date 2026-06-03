@@ -19,7 +19,6 @@ Co-authored with AI: OpenCode (ollama-cloud/glm-5.1)
 from __future__ import annotations
 
 import tempfile
-import uuid
 from pathlib import Path
 from typing import AsyncIterator
 
@@ -85,10 +84,6 @@ def _extract_vpid(text: str) -> str:
     return ""
 
 
-def _unique_sid() -> str:
-    return f"test-p3a-{uuid.uuid4().hex[:8]}"
-
-
 # ── SC-14: With autosave=on, file:save returns no-op / empty state ────────────
 
 
@@ -104,7 +99,6 @@ async def test_autosave_on_file_save_noop(
     GREEN: file:save with autosave=on returns "no pending changes" or
     equivalent no-op response instead of performing a redundant flush.
     """
-    sid = _unique_sid()
     file_path = "autosave_gate.txt"
     original = (test_project_root / file_path).read_text()
 
@@ -112,7 +106,6 @@ async def test_autosave_on_file_save_noop(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": sid,
             "file_path": file_path,
             "autosave": True,
         },
@@ -125,7 +118,6 @@ async def test_autosave_on_file_save_noop(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": sid,
             "viewport_id": vpid,
             "file_path": file_path,
             "old_text": "beta",
@@ -142,7 +134,6 @@ async def test_autosave_on_file_save_noop(
         "file",
         arguments={
             "action": "save",
-            "session_id": sid,
             "viewport_id": vpid,
         },
     )
@@ -177,14 +168,12 @@ async def test_autosave_on_diff_show_empty(
     "no pending changes (autosave: on)" explicitly — not just rely on the
     natural side effect that buffer and disk stay in sync.
     """
-    sid = _unique_sid()
     file_path = "autosave_gate.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": sid,
             "file_path": file_path,
             "autosave": True,
         },
@@ -197,7 +186,6 @@ async def test_autosave_on_diff_show_empty(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": sid,
             "viewport_id": vpid,
             "file_path": file_path,
             "old_text": "gamma",
@@ -209,7 +197,6 @@ async def test_autosave_on_diff_show_empty(
         "diff",
         arguments={
             "action": "show",
-            "session_id": sid,
             "viewport_id": vpid,
         },
     )
@@ -241,14 +228,12 @@ async def test_autosave_on_discard_empty(
     GREEN: file:discard with autosave=on returns "no pending changes" or
     equivalent no-op because autosave already keeps buffer and disk in sync.
     """
-    sid = _unique_sid()
     file_path = "autosave_gate.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": sid,
             "file_path": file_path,
             "autosave": True,
         },
@@ -261,7 +246,6 @@ async def test_autosave_on_discard_empty(
         "file",
         arguments={
             "action": "discard",
-            "session_id": sid,
             "viewport_id": vpid,
         },
     )
@@ -295,7 +279,6 @@ async def test_viewport_close_dirty_auto_saves(
     Opens a file with autosave=on, edits it, then closes. Verifies the
     modified content is on disk after close (not silently discarded).
     """
-    sid = _unique_sid()
     file_path = "autosave_close.txt"
     original = (test_project_root / file_path).read_text()
 
@@ -303,7 +286,6 @@ async def test_viewport_close_dirty_auto_saves(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": sid,
             "file_path": file_path,
             "autosave": True,
         },
@@ -316,7 +298,6 @@ async def test_viewport_close_dirty_auto_saves(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": sid,
             "viewport_id": vpid,
             "file_path": file_path,
             "old_text": "original line one",
@@ -328,7 +309,6 @@ async def test_viewport_close_dirty_auto_saves(
         "viewport",
         arguments={
             "action": "close",
-            "session_id": sid,
             "viewport_id": vpid,
         },
     )
@@ -356,14 +336,12 @@ async def test_viewport_close_already_closed_noop(
     because the viewport no longer exists in the session. This is the
     correct no-op behavior — you can't close what's already closed.
     """
-    sid = _unique_sid()
     file_path = "autosave_gate.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": sid,
             "file_path": file_path,
         },
     )
@@ -375,7 +353,6 @@ async def test_viewport_close_already_closed_noop(
         "viewport",
         arguments={
             "action": "close",
-            "session_id": sid,
             "viewport_id": vpid,
         },
     )
@@ -387,7 +364,6 @@ async def test_viewport_close_already_closed_noop(
         "viewport",
         arguments={
             "action": "close",
-            "session_id": sid,
             "viewport_id": vpid,
         },
     )
@@ -416,7 +392,6 @@ async def test_viewport_close_clean_noop(
     The file on disk must remain byte-identical to the original (no
     unnecessary write). Additionally, close should succeed without error.
     """
-    sid = _unique_sid()
     file_path = "autosave_clean.txt"
     original = (test_project_root / file_path).read_bytes()
 
@@ -424,7 +399,6 @@ async def test_viewport_close_clean_noop(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": sid,
             "file_path": file_path,
         },
     )
@@ -434,7 +408,7 @@ async def test_viewport_close_clean_noop(
 
     list_result = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": sid},
+        arguments={"action": "list"},
     )
     list_text = _get_text(list_result)
     assert "dirty: True" not in list_text, (
@@ -445,7 +419,6 @@ async def test_viewport_close_clean_noop(
         "viewport",
         arguments={
             "action": "close",
-            "session_id": sid,
             "viewport_id": vpid,
         },
     )
@@ -515,14 +488,14 @@ def test_viewport_close_clean_no_write_unit() -> None:
 
         mgr = ViewportManager(project_root=tmpdir)
         entry = mgr.open(
-            session_id="p3a-sc24-clean",
+            session_id="p3a-clean-unit",
             file_path="sc24_clean_unit.txt",
             autosave=True,
         )
 
         assert not entry.dirty, "Precondition: entry should be clean"
 
-        mgr.close(session_id="p3a-sc24-clean", viewport_id=entry.viewport_id)
+        mgr.close(session_id="p3a-clean-unit", viewport_id=entry.viewport_id)
 
         after_bytes = test_file.read_bytes()
         assert after_bytes == original_bytes, (

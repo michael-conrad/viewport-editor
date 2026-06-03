@@ -14,7 +14,6 @@ Co-authored with AI: OpenCode (ollama-cloud/glm-5.1)
 from __future__ import annotations
 
 import tempfile
-import uuid
 from pathlib import Path
 from typing import AsyncIterator
 
@@ -79,10 +78,6 @@ def _extract_vpid(text: str) -> str:
     return ""
 
 
-def _unique_sid() -> str:
-    return f"test-p3s-{uuid.uuid4().hex[:8]}"
-
-
 # ── SC-43: stash copies clipboard contents to named storage slot ─────────────
 
 
@@ -96,14 +91,12 @@ async def test_stash_copies_clipboard(
     RED: clipboard stash action does not exist; call_tool will fail.
     GREEN: after stash, clipboard:show still has content and stash slot has content.
     """
-    sid = _unique_sid()
     file_path = "stash_src.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": sid,
             "file_path": file_path,
         },
     )
@@ -114,7 +107,6 @@ async def test_stash_copies_clipboard(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "start_line": 2,
             "end_line": 4,
@@ -128,7 +120,6 @@ async def test_stash_copies_clipboard(
         "clipboard",
         arguments={
             "action": "stash",
-            "session_id": sid,
             "name": "slot_a",
         },
     )
@@ -143,7 +134,7 @@ async def test_stash_copies_clipboard(
 
     show_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "show", "session_id": sid},
+        arguments={"action": "show"},
     )
     show_text = _get_text(show_result)
     assert "beta" in show_text, (
@@ -155,7 +146,7 @@ async def test_stash_copies_clipboard(
 
     stash_list_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "stash-list", "session_id": sid},
+        arguments={"action": "stash-list"},
     )
     list_text = _get_text(stash_list_result)
     assert not stash_list_result.isError, (
@@ -176,14 +167,12 @@ async def test_stash_overwrite(
     RED: clipboard stash action does not exist; call_tool will fail.
     GREEN: second stash to 'slot_a' overwrites; stash-list shows new content.
     """
-    sid = _unique_sid()
     file_path = "stash_src.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": sid,
             "file_path": file_path,
         },
     )
@@ -194,7 +183,6 @@ async def test_stash_overwrite(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "start_line": 1,
             "end_line": 1,
@@ -203,7 +191,7 @@ async def test_stash_overwrite(
 
     stash1 = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "stash", "session_id": sid, "name": "slot_a"},
+        arguments={"action": "stash", "name": "slot_a"},
     )
     stash1_text = _get_text(stash1)
     assert not stash1.isError, (
@@ -214,7 +202,6 @@ async def test_stash_overwrite(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "start_line": 3,
             "end_line": 5,
@@ -223,7 +210,7 @@ async def test_stash_overwrite(
 
     stash2 = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "stash", "session_id": sid, "name": "slot_a"},
+        arguments={"action": "stash", "name": "slot_a"},
     )
     stash2_text = _get_text(stash2)
     assert not stash2.isError, (
@@ -232,7 +219,7 @@ async def test_stash_overwrite(
 
     list_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "stash-list", "session_id": sid},
+        arguments={"action": "stash-list"},
     )
     list_text = _get_text(list_result)
     assert not list_result.isError, (
@@ -241,7 +228,7 @@ async def test_stash_overwrite(
 
     pop_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "pop", "session_id": sid, "name": "slot_a"},
+        arguments={"action": "pop", "name": "slot_a"},
     )
     pop_text = _get_text(pop_result)
     assert not pop_result.isError, (
@@ -262,11 +249,10 @@ async def test_stash_empty_clipboard_is_error(
     RED: clipboard stash action does not exist; call_tool will fail.
     GREEN: stash on a fresh session (no clipboard) returns isError=true.
     """
-    sid = _unique_sid()
 
     result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "stash", "session_id": sid, "name": "empty_slot"},
+        arguments={"action": "stash", "name": "empty_slot"},
     )
     result_text = _get_text(result)
 
@@ -288,14 +274,12 @@ async def test_pop_replaces_clipboard(
     RED: clipboard pop action does not exist; call_tool will fail.
     GREEN: after pop, clipboard has slot content, and stash-list still shows slot.
     """
-    sid = _unique_sid()
     file_path = "stash_other.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": sid,
             "file_path": file_path,
         },
     )
@@ -306,7 +290,6 @@ async def test_pop_replaces_clipboard(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "start_line": 1,
             "end_line": 2,
@@ -315,7 +298,7 @@ async def test_pop_replaces_clipboard(
 
     stash_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "stash", "session_id": sid, "name": "my_slot"},
+        arguments={"action": "stash", "name": "my_slot"},
     )
     assert not stash_result.isError, (
         f"Precondition: stash must work: {_get_text(stash_result)[:200]}"
@@ -325,7 +308,6 @@ async def test_pop_replaces_clipboard(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "start_line": 4,
             "end_line": 5,
@@ -334,7 +316,7 @@ async def test_pop_replaces_clipboard(
 
     pop_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "pop", "session_id": sid, "name": "my_slot"},
+        arguments={"action": "pop", "name": "my_slot"},
     )
     pop_text = _get_text(pop_result)
 
@@ -347,7 +329,7 @@ async def test_pop_replaces_clipboard(
 
     show_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "show", "session_id": sid},
+        arguments={"action": "show"},
     )
     show_text = _get_text(show_result)
     assert "foo" in show_text, (
@@ -359,7 +341,7 @@ async def test_pop_replaces_clipboard(
 
     list_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "stash-list", "session_id": sid},
+        arguments={"action": "stash-list"},
     )
     list_text = _get_text(list_result)
     assert "my_slot" in list_text, (
@@ -377,11 +359,10 @@ async def test_pop_nonexistent_slot_is_error(
     RED: clipboard pop action does not exist; call_tool will fail.
     GREEN: pop with a name that was never stashed returns isError=true.
     """
-    sid = _unique_sid()
 
     result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "pop", "session_id": sid, "name": "no_such_slot"},
+        arguments={"action": "pop", "name": "no_such_slot"},
     )
     result_text = _get_text(result)
 
@@ -403,14 +384,12 @@ async def test_swap_exchanges(
     RED: clipboard swap action does not exist; call_tool will fail.
     GREEN: after swap, clipboard has former slot content and slot has former clipboard content.
     """
-    sid = _unique_sid()
     file_path = "stash_src.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": sid,
             "file_path": file_path,
         },
     )
@@ -421,7 +400,6 @@ async def test_swap_exchanges(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "start_line": 1,
             "end_line": 2,
@@ -430,7 +408,7 @@ async def test_swap_exchanges(
 
     stash_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "stash", "session_id": sid, "name": "swap_slot"},
+        arguments={"action": "stash", "name": "swap_slot"},
     )
     assert not stash_result.isError, (
         f"Precondition: stash must work: {_get_text(stash_result)[:200]}"
@@ -440,7 +418,6 @@ async def test_swap_exchanges(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "start_line": 4,
             "end_line": 5,
@@ -449,7 +426,7 @@ async def test_swap_exchanges(
 
     swap_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "swap", "session_id": sid, "name": "swap_slot"},
+        arguments={"action": "swap", "name": "swap_slot"},
     )
     swap_text = _get_text(swap_result)
 
@@ -462,7 +439,7 @@ async def test_swap_exchanges(
 
     show_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "show", "session_id": sid},
+        arguments={"action": "show"},
     )
     show_text = _get_text(show_result)
 
@@ -475,7 +452,7 @@ async def test_swap_exchanges(
 
     pop_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "pop", "session_id": sid, "name": "swap_slot"},
+        arguments={"action": "pop", "name": "swap_slot"},
     )
     pop_text = _get_text(pop_result)
     assert "delta" in pop_text, (
@@ -496,14 +473,12 @@ async def test_swap_empty_clipboard_is_error(
     RED: clipboard swap action does not exist; call_tool will fail.
     GREEN: swap on a fresh session (no clipboard, even with a stashed slot) returns isError.
     """
-    sid = _unique_sid()
     file_path = "stash_other.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": sid,
             "file_path": file_path,
         },
     )
@@ -514,7 +489,6 @@ async def test_swap_empty_clipboard_is_error(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "start_line": 1,
             "end_line": 1,
@@ -523,20 +497,19 @@ async def test_swap_empty_clipboard_is_error(
 
     stash_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "stash", "session_id": sid, "name": "filled_slot"},
+        arguments={"action": "stash", "name": "filled_slot"},
     )
     assert not stash_result.isError
 
     show_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "show", "session_id": sid},
+        arguments={"action": "show"},
     )
     _get_text(show_result)
     await client_session.call_tool(
         "clipboard",
         arguments={
             "action": "cut",
-            "session_id": sid,
             "viewport_id": vpid,
             "start_line": 1,
             "end_line": 1,
@@ -547,7 +520,6 @@ async def test_swap_empty_clipboard_is_error(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": sid,
             "file_path": file_path,
             "autosave": False,
         },
@@ -557,7 +529,7 @@ async def test_swap_empty_clipboard_is_error(
 
     swap_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "swap", "session_id": sid, "name": "filled_slot"},
+        arguments={"action": "swap", "name": "filled_slot"},
     )
     _get_text(swap_result)
 
@@ -565,11 +537,9 @@ async def test_swap_empty_clipboard_is_error(
     # we need a session with no clipboard at all. Use a fresh separate session
     # via a different _unique_sid. Instead, test with a session where we
     # never copy/cut anything.
-    sid_fresh = _unique_sid()
-
     swap_fresh = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "swap", "session_id": sid_fresh, "name": "any_name"},
+        arguments={"action": "swap", "name": "any_name"},
     )
     swap_fresh_text = _get_text(swap_fresh)
 
@@ -591,14 +561,12 @@ async def test_stash_list_shows_metadata(
     RED: clipboard stash-list action does not exist; call_tool will fail.
     GREEN: stash-list output includes all required metadata fields.
     """
-    sid = _unique_sid()
     file_path = "stash_src.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": sid,
             "file_path": file_path,
         },
     )
@@ -609,7 +577,6 @@ async def test_stash_list_shows_metadata(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "start_line": 2,
             "end_line": 4,
@@ -618,7 +585,7 @@ async def test_stash_list_shows_metadata(
 
     stash_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "stash", "session_id": sid, "name": "meta_slot"},
+        arguments={"action": "stash", "name": "meta_slot"},
     )
     assert not stash_result.isError, (
         f"Precondition: stash must work: {_get_text(stash_result)[:200]}"
@@ -626,7 +593,7 @@ async def test_stash_list_shows_metadata(
 
     list_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "stash-list", "session_id": sid},
+        arguments={"action": "stash-list"},
     )
     list_text = _get_text(list_result)
 
@@ -668,11 +635,10 @@ async def test_stash_list_empty_returns_empty(
     RED: clipboard stash-list action does not exist; call_tool will fail.
     GREEN: fresh session returns empty list or no-slot message (not error).
     """
-    sid = _unique_sid()
 
     list_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "stash-list", "session_id": sid},
+        arguments={"action": "stash-list"},
     )
     list_text = _get_text(list_result)
 
@@ -701,14 +667,12 @@ async def test_stash_list_after_multiple_stash(
     RED: clipboard stash action does not exist; call_tool will fail.
     GREEN: after stashing to 'alpha' and 'beta', stash-list shows both.
     """
-    sid = _unique_sid()
     file_path = "stash_other.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": sid,
             "file_path": file_path,
         },
     )
@@ -719,7 +683,6 @@ async def test_stash_list_after_multiple_stash(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "start_line": 1,
             "end_line": 2,
@@ -728,7 +691,7 @@ async def test_stash_list_after_multiple_stash(
 
     stash_a = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "stash", "session_id": sid, "name": "slot_alpha"},
+        arguments={"action": "stash", "name": "slot_alpha"},
     )
     assert not stash_a.isError, (
         f"Precondition: stash must work: {_get_text(stash_a)[:200]}"
@@ -738,7 +701,6 @@ async def test_stash_list_after_multiple_stash(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "start_line": 3,
             "end_line": 5,
@@ -747,7 +709,7 @@ async def test_stash_list_after_multiple_stash(
 
     stash_b = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "stash", "session_id": sid, "name": "slot_beta"},
+        arguments={"action": "stash", "name": "slot_beta"},
     )
     assert not stash_b.isError, (
         f"Precondition: second stash must work: {_get_text(stash_b)[:200]}"
@@ -755,7 +717,7 @@ async def test_stash_list_after_multiple_stash(
 
     list_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "stash-list", "session_id": sid},
+        arguments={"action": "stash-list"},
     )
     list_text = _get_text(list_result)
 

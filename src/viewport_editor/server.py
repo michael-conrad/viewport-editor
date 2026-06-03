@@ -9,11 +9,13 @@ Co-authored with AI: OpenCode (deepseek-v4-flash)
 from __future__ import annotations
 
 import os
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncIterator, Optional
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.server import Context
 
 from .clipboard import ClipboardEntry, apply_copy, apply_cut, apply_paste
 from .exceptions import DiffApplyError, ViewportError
@@ -27,6 +29,30 @@ def _get_project_root() -> str:
 
 
 _manager: Optional[ViewportManager] = None
+
+
+_current_session: str | None = None
+
+
+def _resolve_session(ctx: Context | None) -> str:
+    """Resolve the session ID for this request.
+
+    Uses the FastMCP Context.session_id when injected (each MCP connection
+    gets its own persistent session ID). When called outside a request
+    context (e.g., raw stdio client in tests), uses a single per-process
+    session ID since one stdio subprocess equals one connection.
+    """
+    global _current_session
+    if ctx is not None:
+        try:
+            sid = ctx.session_id
+            _current_session = sid
+            return sid
+        except (RuntimeError, AttributeError):
+            pass
+    if _current_session is None:
+        _current_session = uuid.uuid4().hex
+    return _current_session
 
 
 @asynccontextmanager
@@ -54,7 +80,6 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
     @mcp.tool()
     def viewport(
         action: str,
-        session_id: str,
         file_path: Optional[str] = None,
         start_line: Optional[int] = None,
         end_line: Optional[int] = None,
@@ -64,7 +89,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         target: Optional[str] = None,
         enabled: Optional[bool] = None,
         display_mode: Optional[str] = None,
-        ctx: Any = None,
+        ctx: Context = None,
     ) -> str:
         """Open a focused window into a file and navigate it without loading the entire file into context.
 
@@ -76,6 +101,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         if _manager is None:
             return "error: server not initialized"
 
+        session_id = _resolve_session(ctx)
         session = get_session(session_id)
         if session is None:
             create_session(session_id)
@@ -100,9 +126,8 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
     @mcp.tool()
     def edit(
-        ctx: Any = None,
+        ctx: Context = None,
         action: str = "",
-        session_id: str = "",
         viewport_id: str = "",
         file_path: str = "",
         old_text: str = "",
@@ -128,6 +153,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         if _manager is None:
             return "error: server not initialized"
 
+        session_id = _resolve_session(ctx)
         session = get_session(session_id)
         if session is None:
             create_session(session_id)
@@ -149,9 +175,8 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
     @mcp.tool()
     def file(
-        ctx: Any = None,
+        ctx: Context = None,
         action: str = "",
-        session_id: str = "",
         viewport_id: str = "",
         file_path: str = "",
         force: bool = False,
@@ -162,6 +187,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         if _manager is None:
             return "error: server not initialized"
 
+        session_id = _resolve_session(ctx)
         session = get_session(session_id)
         if session is None:
             create_session(session_id)
@@ -176,9 +202,8 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
     @mcp.tool()
     def diff(
-        ctx: Any = None,
+        ctx: Context = None,
         action: str = "",
-        session_id: str = "",
         viewport_id: str = "",
         file_path: str = "",
         patch: str = "",
@@ -189,6 +214,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         if _manager is None:
             return "error: server not initialized"
 
+        session_id = _resolve_session(ctx)
         session = get_session(session_id)
         if session is None:
             create_session(session_id)
@@ -204,13 +230,12 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
     @mcp.tool()
     def clipboard(
         action: str,
-        session_id: str,
         viewport_id: Optional[str] = None,
         start_line: Optional[int] = None,
         end_line: Optional[int] = None,
         target_line: Optional[int] = None,
         name: Optional[str] = None,
-        ctx: Any = None,
+        ctx: Context = None,
     ) -> str:
         """Clipboard tool for copying, cutting, pasting, and stashing content from viewports.
 
@@ -218,6 +243,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         if _manager is None:
             return "error: server not initialized"
 
+        session_id = _resolve_session(ctx)
         session = get_session(session_id)
         if session is None:
             create_session(session_id)
@@ -234,9 +260,8 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
     @mcp.tool()
     def search(
-        ctx: Any = None,
+        ctx: Context = None,
         action: str = "",
-        session_id: str = "",
         pattern: str = "",
         regex: Optional[bool] = None,
         scope: Optional[str] = None,
@@ -264,6 +289,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         if _manager is None:
             return "error: server not initialized"
 
+        session_id = _resolve_session(ctx)
         session = get_session(session_id)
         if session is None:
             create_session(session_id)
@@ -280,7 +306,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
     @mcp.tool()
     def regex(
-        ctx: Any = None,
+        ctx: Context = None,
         action: str = "",
         pattern: Optional[str] = None,
         text: Optional[str] = None,

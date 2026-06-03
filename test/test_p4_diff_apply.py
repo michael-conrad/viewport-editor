@@ -14,7 +14,6 @@ Co-authored with AI: OpenCode (ollama-cloud/glm-5.1)
 from __future__ import annotations
 
 import tempfile
-import uuid
 from pathlib import Path
 from typing import AsyncIterator
 
@@ -85,12 +84,10 @@ def _extract_vpid(text: str) -> str:
 @pytest.mark.phase4
 async def test_diff_apply_stages_into_buffer(client_session: ClientSession) -> None:
     """SC-23: diff:apply stages diff into buffer and returns diff summary."""
-    sid = f"test-apply-stage-{uuid.uuid4().hex[:8]}"
     result = await client_session.call_tool(
         "viewport",
         {
             "action": "open",
-            "session_id": sid,
             "file_path": "diff_target.txt",
         },
     )
@@ -102,7 +99,6 @@ async def test_diff_apply_stages_into_buffer(client_session: ClientSession) -> N
         "diff",
         {
             "action": "apply",
-            "session_id": sid,
             "viewport_id": vpid,
             "patch": patch,
         },
@@ -116,7 +112,6 @@ async def test_diff_apply_stages_into_buffer(client_session: ClientSession) -> N
         "diff",
         {
             "action": "show",
-            "session_id": sid,
             "viewport_id": vpid,
         },
     )
@@ -132,7 +127,6 @@ async def test_diff_apply_stages_into_buffer(client_session: ClientSession) -> N
 @pytest.mark.phase4
 async def test_diff_apply_auto_loads_unopened(client_session: ClientSession) -> None:
     """SC-23: diff:apply auto-loads file if not in any viewport."""
-    sid = f"test-apply-autoload-{uuid.uuid4().hex[:8]}"
 
     patch = "--- a/autolaod_target.txt\n+++ b/autolaod_target.txt\n@@ -1,2 +1,2 @@\n-auto line one\n+auto line ONE\n auto line two\n"
 
@@ -140,7 +134,6 @@ async def test_diff_apply_auto_loads_unopened(client_session: ClientSession) -> 
         "diff",
         {
             "action": "apply",
-            "session_id": sid,
             "file_path": "autolaod_target.txt",
             "patch": patch,
         },
@@ -155,7 +148,6 @@ async def test_diff_apply_auto_loads_unopened(client_session: ClientSession) -> 
             "viewport",
             {
                 "action": "list",
-                "session_id": sid,
             },
         )
     )
@@ -167,12 +159,10 @@ async def test_diff_apply_auto_loads_unopened(client_session: ClientSession) -> 
 @pytest.mark.phase4
 async def test_diff_apply_fuzzy_context_matching(client_session: ClientSession) -> None:
     """SC-23: diff:apply applies with modified context lines (fuzzy matching)."""
-    sid = f"test-apply-fuzzy-{uuid.uuid4().hex[:8]}"
     result = await client_session.call_tool(
         "viewport",
         {
             "action": "open",
-            "session_id": sid,
             "file_path": "fuzzy_target.txt",
         },
     )
@@ -194,7 +184,6 @@ async def test_diff_apply_fuzzy_context_matching(client_session: ClientSession) 
         "diff",
         {
             "action": "apply",
-            "session_id": sid,
             "viewport_id": vpid,
             "patch": patch,
         },
@@ -209,7 +198,6 @@ async def test_diff_apply_fuzzy_context_matching(client_session: ClientSession) 
             "diff",
             {
                 "action": "show",
-                "session_id": sid,
                 "viewport_id": vpid,
             },
         )
@@ -225,12 +213,10 @@ async def test_diff_apply_fuzzy_context_matching(client_session: ClientSession) 
 @pytest.mark.phase4
 async def test_diff_apply_no_match_rejects(client_session: ClientSession) -> None:
     """SC-23: diff:apply returns isError when context doesn't match anywhere."""
-    sid = f"test-apply-nomatch-{uuid.uuid4().hex[:8]}"
     result = await client_session.call_tool(
         "viewport",
         {
             "action": "open",
-            "session_id": sid,
             "file_path": "diff_target.txt",
         },
     )
@@ -250,7 +236,6 @@ async def test_diff_apply_no_match_rejects(client_session: ClientSession) -> Non
         "diff",
         {
             "action": "apply",
-            "session_id": sid,
             "viewport_id": vpid,
             "patch": patch,
         },
@@ -267,12 +252,10 @@ async def test_diff_apply_no_match_rejects(client_session: ClientSession) -> Non
 @pytest.mark.phase4
 async def test_diff_apply_autosave_gate(client_session: ClientSession) -> None:
     """SC-23: diff:apply triggers autosave gate — switches to buffered mode."""
-    sid = f"test-apply-autosavegate-{uuid.uuid4().hex[:8]}"
     result = await client_session.call_tool(
         "viewport",
         {
             "action": "open",
-            "session_id": sid,
             "file_path": "diff_target.txt",
             "autosave": True,
         },
@@ -285,7 +268,6 @@ async def test_diff_apply_autosave_gate(client_session: ClientSession) -> None:
         "diff",
         {
             "action": "apply",
-            "session_id": sid,
             "viewport_id": vpid,
             "patch": patch,
         },

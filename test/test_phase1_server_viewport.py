@@ -110,7 +110,6 @@ async def test_sc3_tool_descriptions_use_prose_yaml_no_json(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-3-yaml",
             "file_path": "test_file.txt",
         },
     )
@@ -134,7 +133,6 @@ async def test_sc4_absolute_paths_rejected(client_session: ClientSession) -> Non
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-1",
             "file_path": "/etc/passwd",
         },
     )
@@ -156,7 +154,6 @@ async def test_sc4_relative_paths_accepted(client_session: ClientSession) -> Non
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-2",
             "file_path": "test_file.txt",
         },
     )
@@ -177,7 +174,6 @@ async def test_sc5_open_returns_entry_with_all_fields(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-3",
             "file_path": "test_file.txt",
         },
     )
@@ -206,7 +202,6 @@ async def test_sc6_open_accepts_autosave_param_defaults_off(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-6a",
             "file_path": "test_file.txt",
             "autosave": True,
         },
@@ -216,7 +211,6 @@ async def test_sc6_open_accepts_autosave_param_defaults_off(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-6b",
             "file_path": "test_file.txt",
         },
     )
@@ -232,7 +226,6 @@ async def test_sc7_page_up_moves_by_viewport_height(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-7",
             "file_path": "long_file.txt",
             "start_line": 50,
             "end_line": 60,
@@ -243,7 +236,6 @@ async def test_sc7_page_up_moves_by_viewport_height(
         "viewport",
         arguments={
             "action": "page-up",
-            "session_id": "test-sess-7",
             "viewport_id": _extract_vpid(_get_text(result_open)),
         },
     )
@@ -267,7 +259,6 @@ async def test_sc8_page_down_moves_by_viewport_height(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-8",
             "file_path": "long_file.txt",
             "start_line": 1,
             "end_line": 10,
@@ -278,7 +269,6 @@ async def test_sc8_page_down_moves_by_viewport_height(
         "viewport",
         arguments={
             "action": "page-down",
-            "session_id": "test-sess-8",
             "viewport_id": _extract_vpid(_get_text(result_open)),
         },
     )
@@ -302,7 +292,6 @@ async def test_sc25_soft_conflict_warning_on_viewport_operations(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-25",
             "file_path": "test_file.txt",
         },
     )
@@ -319,7 +308,6 @@ async def test_sc25_soft_conflict_warning_on_viewport_operations(
         "viewport",
         arguments={
             "action": "scroll",
-            "session_id": "test-sess-25",
             "viewport_id": vpid,
             "lines": 1,
         },
@@ -333,20 +321,22 @@ async def test_sc25_soft_conflict_warning_on_viewport_operations(
 @pytest.mark.phase1
 @pytest.mark.asyncio
 async def test_sc26_session_isolation(client_session: ClientSession) -> None:
-    await client_session.call_tool(
+    """SC-26: viewport opened in the same connection is visible via list."""
+    result_open = await client_session.call_tool(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "sess-a",
             "file_path": "test_file.txt",
         },
     )
+    assert "error" not in _get_text(result_open)
     list_b = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": "sess-b"},
+        arguments={"action": "list"},
     )
     text = _get_text(list_b)
-    assert "no open viewports" in text.lower()
+    assert "viewports (1):" in text
+    assert "test_file.txt" in text
 
 
 @pytest.mark.phase1
@@ -358,7 +348,6 @@ async def test_sc27_jump_returns_is_error_on_target_not_found(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-27",
             "file_path": "test_file.txt",
         },
     )
@@ -367,7 +356,6 @@ async def test_sc27_jump_returns_is_error_on_target_not_found(
         "viewport",
         arguments={
             "action": "jump",
-            "session_id": "test-sess-27",
             "viewport_id": vpid,
             "target": "NONEXISTENT_TEXT_XYZ",
         },
@@ -383,7 +371,6 @@ async def test_sc31_scroll_by_n_lines(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-31",
             "file_path": "long_file.txt",
             "start_line": 10,
             "end_line": 20,
@@ -396,7 +383,6 @@ async def test_sc31_scroll_by_n_lines(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "scroll",
-            "session_id": "test-sess-31",
             "viewport_id": _extract_vpid(text),
             "lines": 5,
         },
@@ -415,7 +401,6 @@ async def test_sc31_scroll_negative(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-31b",
             "file_path": "long_file.txt",
             "start_line": 10,
             "end_line": 20,
@@ -426,7 +411,6 @@ async def test_sc31_scroll_negative(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "scroll",
-            "session_id": "test-sess-31b",
             "viewport_id": vpid,
             "lines": -3,
         },
@@ -445,7 +429,6 @@ async def test_sc32_autosave_toggles_flag(client_session: ClientSession) -> None
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-32",
             "file_path": "test_file.txt",
             "autosave": False,
         },
@@ -455,7 +438,6 @@ async def test_sc32_autosave_toggles_flag(client_session: ClientSession) -> None
         "viewport",
         arguments={
             "action": "autosave",
-            "session_id": "test-sess-32",
             "viewport_id": vpid,
             "enabled": True,
         },
@@ -465,7 +447,6 @@ async def test_sc32_autosave_toggles_flag(client_session: ClientSession) -> None
         "viewport",
         arguments={
             "action": "autosave",
-            "session_id": "test-sess-32",
             "viewport_id": vpid,
             "enabled": False,
         },
@@ -480,13 +461,12 @@ async def test_sc33_list_returns_all_fields(client_session: ClientSession) -> No
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-33",
             "file_path": "test_file.txt",
         },
     )
     result = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": "test-sess-33"},
+        arguments={"action": "list"},
     )
     text = _get_text(result)
     assert "viewport_id:" in text
@@ -508,7 +488,6 @@ async def test_sc34_relative_paths_only(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-34",
             "file_path": "/etc/hostname",
         },
     )
@@ -520,7 +499,6 @@ async def test_sc34_relative_paths_only(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-34",
             "file_path": "test_file.txt",
         },
     )
@@ -537,7 +515,6 @@ async def test_viewport_open_close(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-oc",
             "file_path": "test_file.txt",
         },
     )
@@ -548,7 +525,6 @@ async def test_viewport_open_close(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "close",
-            "session_id": "test-sess-oc",
             "viewport_id": vpid,
         },
     )
@@ -562,7 +538,6 @@ async def test_viewport_open_custom_range(client_session: ClientSession) -> None
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-range",
             "file_path": "long_file.txt",
             "start_line": 20,
             "end_line": 30,
@@ -592,7 +567,6 @@ async def test_sc35_dirty_buffers_never_flushed(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-35",
             "file_path": file_path,
         },
     )
@@ -605,7 +579,6 @@ async def test_sc35_dirty_buffers_never_flushed(
             "viewport",
             arguments={
                 "action": "scroll",
-                "session_id": "test-sess-35",
                 "viewport_id": vpid,
                 "lines": 1,
             },
@@ -616,7 +589,6 @@ async def test_sc35_dirty_buffers_never_flushed(
         "viewport",
         arguments={
             "action": "page-down",
-            "session_id": "test-sess-35",
             "viewport_id": vpid,
         },
     )
@@ -625,7 +597,6 @@ async def test_sc35_dirty_buffers_never_flushed(
         "viewport",
         arguments={
             "action": "page-up",
-            "session_id": "test-sess-35",
             "viewport_id": vpid,
         },
     )
@@ -634,7 +605,6 @@ async def test_sc35_dirty_buffers_never_flushed(
         "viewport",
         arguments={
             "action": "jump",
-            "session_id": "test-sess-35",
             "viewport_id": vpid,
             "target": "line 3",
         },
@@ -650,7 +620,6 @@ async def test_sc35_dirty_buffers_never_flushed(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-35-fresh",
             "file_path": file_path,
         },
     )
@@ -733,7 +702,6 @@ async def test_set_display_mode_show(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-dm-show",
             "file_path": "non_printing.txt",
         },
     )
@@ -744,7 +712,6 @@ async def test_set_display_mode_show(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "set-display-mode",
-            "session_id": "test-dm-show",
             "viewport_id": vpid,
             "display_mode": "show",
         },
@@ -764,7 +731,6 @@ async def test_set_display_mode_hide(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-dm-hide",
             "file_path": "non_printing.txt",
         },
     )
@@ -775,7 +741,6 @@ async def test_set_display_mode_hide(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "set-display-mode",
-            "session_id": "test-dm-hide",
             "viewport_id": vpid,
             "display_mode": "hide",
         },
@@ -794,7 +759,6 @@ async def test_set_display_mode_invalid(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-dm-inv",
             "file_path": "test_file.txt",
         },
     )
@@ -804,7 +768,6 @@ async def test_set_display_mode_invalid(client_session: ClientSession) -> None:
         "viewport",
         arguments={
             "action": "set-display-mode",
-            "session_id": "test-dm-inv",
             "viewport_id": vpid,
             "display_mode": "invalid",
         },
@@ -836,7 +799,6 @@ async def test_sc38_unicode_decode_in_edit_replace(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc38-edit",
             "file_path": file_path_str,
         },
     )
@@ -849,7 +811,6 @@ async def test_sc38_unicode_decode_in_edit_replace(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": "test-sc38-edit",
             "viewport_id": vpid,
             "file_path": file_path_str,
             "old_text": "\\u006c\\u0069\\u006e\\u0065",
@@ -881,7 +842,6 @@ async def test_sc38_unicode_decode_noop_on_literal_text(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sc38-literal",
             "file_path": "test_file.txt",
         },
     )
@@ -913,7 +873,6 @@ async def test_content_block_format_cat_n(client_session: ClientSession) -> None
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-catn-v2",
             "file_path": "long_file.txt",
             "start_line": 1,
             "end_line": 10,
@@ -938,7 +897,6 @@ async def test_navigation_chain_content_consistency(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-chain",
             "file_path": "long_file.txt",
             "start_line": 5,
             "end_line": 15,
@@ -954,7 +912,6 @@ async def test_navigation_chain_content_consistency(
         "viewport",
         arguments={
             "action": "page-up",
-            "session_id": "test-chain",
             "viewport_id": vpid,
         },
     )
@@ -967,7 +924,6 @@ async def test_navigation_chain_content_consistency(
         "viewport",
         arguments={
             "action": "page-down",
-            "session_id": "test-chain",
             "viewport_id": vpid,
         },
     )
@@ -979,7 +935,6 @@ async def test_navigation_chain_content_consistency(
         "viewport",
         arguments={
             "action": "scroll",
-            "session_id": "test-chain",
             "viewport_id": vpid,
             "lines": 3,
         },
@@ -993,7 +948,6 @@ async def test_navigation_chain_content_consistency(
         "viewport",
         arguments={
             "action": "jump",
-            "session_id": "test-chain",
             "viewport_id": vpid,
             "target": "line 70",
         },
@@ -1006,7 +960,6 @@ async def test_navigation_chain_content_consistency(
         "viewport",
         arguments={
             "action": "jump",
-            "session_id": "test-chain",
             "viewport_id": vpid,
             "target": "ZZZZ_NOT_FOUND_ZZZZ",
         },

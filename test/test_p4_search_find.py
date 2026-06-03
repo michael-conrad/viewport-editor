@@ -73,7 +73,6 @@ async def test_search_find_substring_default(
         "search",
         arguments={
             "action": "find",
-            "session_id": "sc17-sub",
             "pattern": "hello",
         },
     )
@@ -94,7 +93,6 @@ async def test_search_find_regex_flag(
         "search",
         arguments={
             "action": "find",
-            "session_id": "sc17-regex",
             "pattern": r"def \w+",
             "regex": True,
         },
@@ -115,7 +113,6 @@ async def test_search_find_scope_file(
         "search",
         arguments={
             "action": "find",
-            "session_id": "sc17-sf",
             "pattern": "hello",
             "scope": "file",
             "file_path": "alpha.py",
@@ -137,7 +134,6 @@ async def test_search_find_scope_viewport(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "sc17-sv",
             "file_path": "alpha.py",
         },
     )
@@ -148,7 +144,6 @@ async def test_search_find_scope_viewport(
         "search",
         arguments={
             "action": "find",
-            "session_id": "sc17-sv",
             "pattern": "hello",
             "scope": "viewport",
             "viewport_id": vpid,
@@ -171,7 +166,6 @@ async def test_search_find_scope_all_open(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "sc17-ao",
             "file_path": "alpha.py",
         },
     )
@@ -179,7 +173,6 @@ async def test_search_find_scope_all_open(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "sc17-ao",
             "file_path": "beta.py",
         },
     )
@@ -188,7 +181,6 @@ async def test_search_find_scope_all_open(
         "search",
         arguments={
             "action": "find",
-            "session_id": "sc17-ao",
             "pattern": "hello",
             "scope": "all_open",
         },
