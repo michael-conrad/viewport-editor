@@ -59,6 +59,22 @@ All operations are exposed through 6 tools with an `action` parameter. This keep
 | **search** | find |
 | **regex** | test, escape |
 
+## MCP Tool Naming
+
+This server is registered as `viewport_editor` (underscore, not hyphen). MCP clients prefix every tool name with the server key, so tool names are `viewport_editor_viewport`, `viewport_editor_edit`, etc.
+
+AI models frequently hallucinate `viewport-editor_*` (hyphen → hyphen) when the server key contains hyphens. Using an underscore in the server key avoids this failure mode. If you change the config key, update all tool references accordingly.
+
+```jsonc
+// Correct: config key uses underscore
+"mcp": {
+    "viewport_editor": {
+        // ...
+    }
+}
+// Tool names in agent output: viewport_editor_viewport, viewport_editor_edit, etc.
+```
+
 ## Quick Start
 
 No setup required. The project root is the current working directory at server start.
@@ -67,7 +83,7 @@ No setup required. The project root is the current working directory at server s
 
 ```jsonc
 "mcp": {
-    "viewport-editor": {
+    "viewport_editor": {
       "type": "local",
       "command": ["uvx", "viewport-editor"],
       "enabled": true
@@ -80,7 +96,7 @@ No setup required. The project root is the current working directory at server s
 ```json
 {
   "mcpServers": {
-    "viewport-editor": {
+    "viewport_editor": {
       "command": "uvx",
       "args": ["viewport-editor"]
     }
