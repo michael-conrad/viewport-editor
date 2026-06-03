@@ -305,6 +305,15 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         )
 
     @mcp.tool()
+    def ping(
+        ctx: Context = None,
+    ) -> str:
+        """Report the session_id for this MCP connection. Hidden diagnostic tool."""
+        import json
+        session_id = _resolve_session(ctx)
+        return json.dumps({"session_id": session_id, "pid": os.getpid()})
+
+    @mcp.tool()
     def regex(
         ctx: Context = None,
         action: str = "",
