@@ -18,6 +18,10 @@ build-backend = "hatchling.build"
 [tool.uv]
 package = true
 
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+
 [tool.pytest.ini_options]
 testpaths = ["test"]
 python_files = ["test_*.py"]
