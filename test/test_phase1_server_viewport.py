@@ -184,8 +184,8 @@ async def test_sc5_open_returns_entry_with_all_fields(
     text = _get_text(result)
     assert "viewport_id:" in text
     assert "file:" in text
-    assert "start_line:" in text
-    assert "end_line:" in text
+    assert "line_start:" in text
+    assert "line_end:" in text
     assert "autosave:" in text
     assert "mtime:" in text
     assert "size:" in text
@@ -234,8 +234,8 @@ async def test_sc7_page_up_moves_by_viewport_height(
             "action": "open",
             "session_id": "test-sess-7",
             "file_path": "long_file.txt",
-            "start_line": 50,
-            "end_line": 60,
+            "line_start": 50,
+            "line_end": 60,
         },
     )
     assert "error" not in _get_text(result_open)
@@ -249,8 +249,8 @@ async def test_sc7_page_up_moves_by_viewport_height(
     )
     text = _get_text(result_up)
     assert "paged up" in text.lower()
-    assert "start_line: 40" in text
-    assert "end_line: 50" in text
+    assert "line_start: 40" in text
+    assert "line_end: 50" in text
     # SC-7 behavioral evidence: visible text content at new position (cat -n style)
     assert "  content:" in text
     assert "    40: line 40" in text
@@ -269,8 +269,8 @@ async def test_sc8_page_down_moves_by_viewport_height(
             "action": "open",
             "session_id": "test-sess-8",
             "file_path": "long_file.txt",
-            "start_line": 1,
-            "end_line": 10,
+            "line_start": 1,
+            "line_end": 10,
         },
     )
     assert "error" not in _get_text(result_open)
@@ -284,8 +284,8 @@ async def test_sc8_page_down_moves_by_viewport_height(
     )
     text = _get_text(result_down)
     assert "paged down" in text.lower()
-    assert "start_line: 10" in text
-    assert "end_line: 19" in text
+    assert "line_start: 10" in text
+    assert "line_end: 19" in text
     # SC-8 behavioral evidence: visible text content at new position (cat -n style)
     assert "  content:" in text
     assert "    10: line 10" in text
@@ -385,13 +385,13 @@ async def test_sc31_scroll_by_n_lines(client_session: ClientSession) -> None:
             "action": "open",
             "session_id": "test-sess-31",
             "file_path": "long_file.txt",
-            "start_line": 10,
-            "end_line": 20,
+            "line_start": 10,
+            "line_end": 20,
         },
     )
     assert "error" not in _get_text(result_open)
     text = _get_text(result_open)
-    assert "start_line: 10" in text
+    assert "line_start: 10" in text
     result_scroll = await client_session.call_tool(
         "viewport",
         arguments={
@@ -402,7 +402,7 @@ async def test_sc31_scroll_by_n_lines(client_session: ClientSession) -> None:
         },
     )
     scroll_text = _get_text(result_scroll)
-    assert "start_line: 15" in scroll_text
+    assert "line_start: 15" in scroll_text
     assert "  content:" in scroll_text
     assert "    15: line 15" in scroll_text
     assert "    19: line 19" in scroll_text
@@ -417,8 +417,8 @@ async def test_sc31_scroll_negative(client_session: ClientSession) -> None:
             "action": "open",
             "session_id": "test-sess-31b",
             "file_path": "long_file.txt",
-            "start_line": 10,
-            "end_line": 20,
+            "line_start": 10,
+            "line_end": 20,
         },
     )
     vpid = _extract_vpid(_get_text(result_open))
@@ -432,7 +432,7 @@ async def test_sc31_scroll_negative(client_session: ClientSession) -> None:
         },
     )
     text = _get_text(result)
-    assert "start_line: 7" in text
+    assert "line_start: 7" in text
     assert "  content:" in text
     assert "    7: line 7" in text
     assert "    9: line 9" in text
@@ -457,7 +457,7 @@ async def test_sc32_autosave_toggles_flag(client_session: ClientSession) -> None
             "action": "autosave",
             "session_id": "test-sess-32",
             "viewport_id": vpid,
-            "enabled": True,
+            "autosave_enabled": True,
         },
     )
     assert "autosave set to True" in _get_text(result_on)
@@ -467,7 +467,7 @@ async def test_sc32_autosave_toggles_flag(client_session: ClientSession) -> None
             "action": "autosave",
             "session_id": "test-sess-32",
             "viewport_id": vpid,
-            "enabled": False,
+            "autosave_enabled": False,
         },
     )
     assert "autosave set to False" in _get_text(result_off)
@@ -491,8 +491,8 @@ async def test_sc33_list_returns_all_fields(client_session: ClientSession) -> No
     text = _get_text(result)
     assert "viewport_id:" in text
     assert "file:" in text
-    assert "start_line:" in text
-    assert "end_line:" in text
+    assert "line_start:" in text
+    assert "line_end:" in text
     assert "mtime:" in text
     assert "size:" in text
     assert "autosave:" in text
@@ -564,13 +564,13 @@ async def test_viewport_open_custom_range(client_session: ClientSession) -> None
             "action": "open",
             "session_id": "test-sess-range",
             "file_path": "long_file.txt",
-            "start_line": 20,
-            "end_line": 30,
+            "line_start": 20,
+            "line_end": 30,
         },
     )
     text = _get_text(result)
-    assert "start_line: 20" in text
-    assert "end_line: 30" in text
+    assert "line_start: 20" in text
+    assert "line_end: 30" in text
 
 
 @pytest.mark.phase1
@@ -915,8 +915,8 @@ async def test_content_block_format_cat_n(client_session: ClientSession) -> None
             "action": "open",
             "session_id": "test-catn-v2",
             "file_path": "long_file.txt",
-            "start_line": 1,
-            "end_line": 10,
+            "line_start": 1,
+            "line_end": 10,
         },
     )
     text = _get_text(result)
@@ -940,8 +940,8 @@ async def test_navigation_chain_content_consistency(
             "action": "open",
             "session_id": "test-chain",
             "file_path": "long_file.txt",
-            "start_line": 5,
-            "end_line": 15,
+            "line_start": 5,
+            "line_end": 15,
         },
     )
     t1 = _get_text(result_open)
@@ -960,7 +960,7 @@ async def test_navigation_chain_content_consistency(
     )
     t2 = _get_text(result_up)
     assert "   1: line 1" in t2, "page-up from 5-15 should hit line 1"
-    assert "start_line:" in t2
+    assert "line_start:" in t2
 
     # Page down — back to original-ish position
     result_down = await client_session.call_tool(
@@ -986,7 +986,7 @@ async def test_navigation_chain_content_consistency(
     )
     t4 = _get_text(result_scroll)
     assert "content:" in t4, "scroll should include content block"
-    assert "start_line:" in t4, "scroll should report position"
+    assert "line_start:" in t4, "scroll should report position"
 
     # Jump to a target
     result_jump = await client_session.call_tool(

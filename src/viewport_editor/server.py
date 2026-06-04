@@ -53,18 +53,18 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
     @mcp.tool()
     def viewport(
-        action: str,
-        session_id: str,
+        ctx: Any = None,
+        action: str = "",
+        session_id: str = "",
         file_path: Optional[str] = None,
-        start_line: Optional[int] = None,
-        end_line: Optional[int] = None,
+        line_start: Optional[int] = None,
+        line_end: Optional[int] = None,
         autosave: Optional[bool] = None,
         viewport_id: Optional[str] = None,
         lines: Optional[int] = None,
         target: Optional[str] = None,
-        enabled: Optional[bool] = None,
+        autosave_enabled: Optional[bool] = None,
         display_mode: Optional[str] = None,
-        ctx: Any = None,
     ) -> str:
         """Viewport text editor tool. Opens, navigates, and manages file viewports.
 
@@ -83,13 +83,13 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
                 action=action,
                 session_id=session_id,
                 file_path=file_path,
-                start_line=start_line,
-                end_line=end_line,
+                line_start=line_start,
+                line_end=line_end,
                 autosave=autosave,
                 viewport_id=viewport_id,
                 lines=lines,
                 target=target,
-                enabled=enabled,
+                autosave_enabled=autosave_enabled,
                 display_mode=display_mode,
             )
             return result
@@ -102,7 +102,6 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         action: str = "",
         session_id: str = "",
         viewport_id: str = "",
-        file_path: str = "",
         old_text: str = "",
         new_text: str = "",
         line_start: int = 0,
@@ -126,7 +125,6 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
             action=action,
             session_id=session_id,
             viewport_id=viewport_id,
-            file_path=file_path,
             old_text=old_text,
             new_text=new_text,
             line_start=line_start,
@@ -193,14 +191,14 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
     @mcp.tool()
     def clipboard(
-        action: str,
-        session_id: str,
+        ctx: Any = None,
+        action: str = "",
+        session_id: str = "",
         viewport_id: Optional[str] = None,
-        start_line: Optional[int] = None,
-        end_line: Optional[int] = None,
+        line_start: Optional[int] = None,
+        line_end: Optional[int] = None,
         target_line: Optional[int] = None,
         name: Optional[str] = None,
-        ctx: Any = None,
     ) -> str:
         """Clipboard tool for copying, cutting, pasting, and stashing content from viewports.
 
@@ -216,8 +214,8 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
             action=action,
             session_id=session_id,
             viewport_id=viewport_id or "",
-            start_line=start_line or 0,
-            end_line=end_line or 0,
+            line_start=line_start or 0,
+            line_end=line_end or 0,
             target_line=target_line or 0,
             name=name or "",
         )
@@ -261,7 +259,6 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         action: str = "",
         pattern: Optional[str] = None,
         text: Optional[str] = None,
-        ctx_pattern: Optional[str] = None,
     ) -> str:
         """Regex operations for viewport-editor.
 
@@ -347,13 +344,13 @@ def _handle_viewport_action(
     action: str,
     session_id: str,
     file_path: Optional[str] = None,
-    start_line: Optional[int] = None,
-    end_line: Optional[int] = None,
+    line_start: Optional[int] = None,
+    line_end: Optional[int] = None,
     autosave: Optional[bool] = None,
     viewport_id: Optional[str] = None,
     lines: Optional[int] = None,
     target: Optional[str] = None,
-    enabled: Optional[bool] = None,
+    autosave_enabled: Optional[bool] = None,
     display_mode: Optional[str] = None,
 ) -> str:
     if _manager is None:
@@ -384,13 +381,13 @@ def _handle_viewport_action(
     result = handler(
         session_id=session_id,
         file_path=file_path,
-        start_line=start_line,
-        end_line=end_line,
+        line_start=line_start,
+        line_end=line_end,
         autosave=autosave,
         viewport_id=viewport_id,
         lines=lines,
         target=target,
-        enabled=enabled,
+        autosave_enabled=autosave_enabled,
         display_mode=display_mode,
     )
 
@@ -471,12 +468,12 @@ def _decode_unicode_escapes(text: str) -> str:
 
 
 def _format_content_block(
-    visible_lines: list[str], start_line: int, display_mode: str = "hide"
+    visible_lines: list[str], line_start: int, display_mode: str = "hide"
 ) -> str:
     """Format visible text content as a line-numbered content block (cat -n style)."""
     parts = ["  content:"]
     for i, line in enumerate(visible_lines):
-        line_num = start_line + i
+        line_num = line_start + i
         # strip trailing newline for display; show blank lines as empty
         display = line.rstrip("\n").rstrip("\r")
         display = _render_content_line(display, display_mode)
@@ -487,8 +484,8 @@ def _format_content_block(
 def _action_open(
     session_id: str,
     file_path: Optional[str] = None,
-    start_line: Optional[int] = None,
-    end_line: Optional[int] = None,
+    line_start: Optional[int] = None,
+    line_end: Optional[int] = None,
     autosave: Optional[bool] = None,
     **kwargs: Any,
 ) -> str:
@@ -499,21 +496,21 @@ def _action_open(
     result = _manager.open(
         session_id=session_id,
         file_path=file_path,
-        start_line=start_line or 1,
-        end_line=end_line or 100,
+        line_start=line_start or 1,
+        line_end=line_end or 100,
         autosave=autosave or False,
     )
     entry_data = result.to_dict()
     visible = _manager.get_visible_lines(session_id, result)
     content_block = _format_content_block(
-        visible, result.start_line, result.display_mode
+        visible, result.line_start, result.display_mode
     )
     lines = [
         f"opened viewport for {entry_data['file']}:",
         f"  viewport_id: {entry_data['viewport_id']}",
         f"  file: {entry_data['file']}",
-        f"  start_line: {entry_data['start_line']}",
-        f"  end_line: {entry_data['end_line']}",
+        f"  line_start: {entry_data['line_start']}",
+        f"  line_end: {entry_data['line_end']}",
         f"  line_ending: {entry_data['line_ending']!r}",
         f"  display_mode: {entry_data['display_mode']}",
         f"  autosave: {entry_data['autosave']}",
@@ -556,8 +553,8 @@ def _action_list(
     for e in entries:
         parts.append(f"  - viewport_id: {e['viewport_id']}")
         parts.append(f"    file: {e['file']}")
-        parts.append(f"    start_line: {e['start_line']}")
-        parts.append(f"    end_line: {e['end_line']}")
+        parts.append(f"    line_start: {e['line_start']}")
+        parts.append(f"    line_end: {e['line_end']}")
         parts.append(f"    mtime: {e['mtime']}")
         parts.append(f"    size: {e['size']}")
         parts.append(f"    autosave: {e['autosave']}")
@@ -581,12 +578,12 @@ def _action_scroll(
         return "error: lines is required"
     entry = _manager.scroll(session_id, viewport_id, lines)
     visible = _manager.get_visible_lines(session_id, entry)
-    content_block = _format_content_block(visible, entry.start_line)
+    content_block = _format_content_block(visible, entry.line_start)
     conflict_msg = _check_file_conflict(entry.file, entry)
     parts = [
         f"scrolled viewport {viewport_id} by {lines} lines:",
-        f"  start_line: {entry.start_line}",
-        f"  end_line: {entry.end_line}",
+        f"  line_start: {entry.line_start}",
+        f"  line_end: {entry.line_end}",
         content_block,
     ]
     if conflict_msg:
@@ -605,12 +602,12 @@ def _action_page_up(
         return "error: viewport_id is required"
     entry = _manager.page_up(session_id, viewport_id)
     visible = _manager.get_visible_lines(session_id, entry)
-    content_block = _format_content_block(visible, entry.start_line)
+    content_block = _format_content_block(visible, entry.line_start)
     conflict_msg = _check_file_conflict(entry.file, entry)
     parts = [
         f"paged up viewport {viewport_id}:",
-        f"  start_line: {entry.start_line}",
-        f"  end_line: {entry.end_line}",
+        f"  line_start: {entry.line_start}",
+        f"  line_end: {entry.line_end}",
         content_block,
     ]
     if conflict_msg:
@@ -629,12 +626,12 @@ def _action_page_down(
         return "error: viewport_id is required"
     entry = _manager.page_down(session_id, viewport_id)
     visible = _manager.get_visible_lines(session_id, entry)
-    content_block = _format_content_block(visible, entry.start_line)
+    content_block = _format_content_block(visible, entry.line_start)
     conflict_msg = _check_file_conflict(entry.file, entry)
     parts = [
         f"paged down viewport {viewport_id}:",
-        f"  start_line: {entry.start_line}",
-        f"  end_line: {entry.end_line}",
+        f"  line_start: {entry.line_start}",
+        f"  line_end: {entry.line_end}",
         content_block,
     ]
     if conflict_msg:
@@ -656,12 +653,12 @@ def _action_jump(
         return "error: target is required"
     entry = _manager.jump(session_id, viewport_id, target)
     visible = _manager.get_visible_lines(session_id, entry)
-    content_block = _format_content_block(visible, entry.start_line)
+    content_block = _format_content_block(visible, entry.line_start)
     conflict_msg = _check_file_conflict(entry.file, entry)
     parts = [
         f"jumped to '{target}' in viewport {viewport_id}:",
-        f"  start_line: {entry.start_line}",
-        f"  end_line: {entry.end_line}",
+        f"  line_start: {entry.line_start}",
+        f"  line_end: {entry.line_end}",
         content_block,
     ]
     if conflict_msg:
@@ -672,19 +669,19 @@ def _action_jump(
 def _action_autosave(
     session_id: str,
     viewport_id: Optional[str] = None,
-    enabled: Optional[bool] = None,
+    autosave_enabled: Optional[bool] = None,
     **kwargs: Any,
 ) -> str:
     if _manager is None:
         return "error: server not initialized"
     if viewport_id is None:
         return "error: viewport_id is required"
-    if enabled is None:
-        return "error: enabled is required"
+    if autosave_enabled is None:
+        return "error: autosave_enabled is required"
     entry = _manager.get_entry(session_id, viewport_id)
     conflict_msg = _check_file_conflict(entry.file, entry)
-    _manager.set_autosave(session_id, viewport_id, enabled)
-    parts = [f"autosave set to {enabled} for viewport {viewport_id}"]
+    _manager.set_autosave(session_id, viewport_id, autosave_enabled)
+    parts = [f"autosave set to {autosave_enabled} for viewport {viewport_id}"]
     if conflict_msg:
         parts.append(f"  warning:\n{conflict_msg}")
     return "\n".join(parts)
@@ -704,7 +701,7 @@ def _action_set_display_mode(
         return "error: display_mode is required"
     entry = _manager.set_display_mode(session_id, viewport_id, display_mode)
     visible = _manager.get_visible_lines(session_id, entry)
-    content_block = _format_content_block(visible, entry.start_line, entry.display_mode)
+    content_block = _format_content_block(visible, entry.line_start, entry.display_mode)
     conflict_msg = _check_file_conflict(entry.file, entry)
     parts = [
         f"display_mode set to {display_mode} for viewport {viewport_id}:",
@@ -721,7 +718,6 @@ def _handle_edit_action(
     action: str,
     session_id: str,
     viewport_id: str,
-    file_path: str = "",
     old_text: str = "",
     new_text: str = "",
     line_start: int = 0,
@@ -923,7 +919,7 @@ def _handle_diff_action(
         diff_str = _manager.get_buffer_diff(session_id, vpid)
         visible = _manager.get_visible_lines(session_id, entry_after)
         content_block = _format_content_block(
-            visible, entry_after.start_line, entry_after.display_mode
+            visible, entry_after.line_start, entry_after.display_mode
         )
 
         parts = [
@@ -946,8 +942,8 @@ def _handle_clipboard_action(
     action: str,
     session_id: str,
     viewport_id: str,
-    start_line: int = 0,
-    end_line: int = 0,
+    line_start: int = 0,
+    line_end: int = 0,
     target_line: int = 0,
     name: str = "",
 ) -> str:
@@ -960,10 +956,10 @@ def _handle_clipboard_action(
     if action == "copy":
         if not viewport_id:
             return "error: viewport_id is required"
-        if start_line <= 0 or end_line <= 0:
-            return "error: start_line and end_line are required"
-        if end_line < start_line:
-            return "error: end_line must be >= start_line"
+        if line_start <= 0 or line_end <= 0:
+            return "error: line_start and line_end are required"
+        if line_end < line_start:
+            return "error: line_end must be >= line_start"
 
         entry = _manager.get_entry(session_id, viewport_id)
         file_lines = _manager._buffer_mgr.get_lines(session_id, entry.file)
@@ -971,8 +967,8 @@ def _handle_clipboard_action(
 
         copied_lines, clip_entry = apply_copy(
             file_lines=file_lines,
-            line_start=start_line,
-            line_end=end_line,
+            line_start=line_start,
+            line_end=line_end,
             source_file=entry.file,
             line_ending=line_ending,
         )
@@ -982,14 +978,14 @@ def _handle_clipboard_action(
             session.clipboard = clip_entry
 
         content_block = _format_content_block(
-            copied_lines, start_line, entry.display_mode
+            copied_lines, line_start, entry.display_mode
         )
         parts = [
             "copied to clipboard:",
             f"  source_file: {entry.file}",
-            f"  start_line: {start_line}",
-            f"  end_line: {end_line}",
-            f"  line_range: {start_line}-{end_line}",
+            f"  line_start: {line_start}",
+            f"  line_end: {line_end}",
+            f"  line_range: {line_start}-{line_end}",
             f"  timestamp: {clip_entry.timestamp}",
             content_block,
         ]
@@ -1001,10 +997,10 @@ def _handle_clipboard_action(
     elif action == "cut":
         if not viewport_id:
             return "error: viewport_id is required"
-        if start_line <= 0 or end_line <= 0:
-            return "error: start_line and end_line are required"
-        if end_line < start_line:
-            return "error: end_line must be >= start_line"
+        if line_start <= 0 or line_end <= 0:
+            return "error: line_start and line_end are required"
+        if line_end < line_start:
+            return "error: line_end must be >= line_start"
 
         entry = _manager.get_entry(session_id, viewport_id)
         buf = _manager._buffer_mgr.get_buffer_ref(session_id, entry.file)
@@ -1013,8 +1009,8 @@ def _handle_clipboard_action(
 
         remaining_lines, clip_entry = apply_cut(
             file_lines=file_lines,
-            line_start=start_line,
-            line_end=end_line,
+            line_start=line_start,
+            line_end=line_end,
             source_file=entry.file,
             line_ending=line_ending,
         )
@@ -1035,14 +1031,14 @@ def _handle_clipboard_action(
         diff_str = _manager.get_buffer_diff(session_id, viewport_id)
 
         content_block = _format_content_block(
-            clip_entry.content, start_line, entry.display_mode
+            clip_entry.content, line_start, entry.display_mode
         )
         parts = [
             "cut to clipboard:",
             f"  source_file: {entry.file}",
-            f"  start_line: {start_line}",
-            f"  end_line: {end_line}",
-            f"  line_range: {start_line}-{end_line}",
+            f"  line_start: {line_start}",
+            f"  line_end: {line_end}",
+            f"  line_range: {line_start}-{line_end}",
             f"  timestamp: {clip_entry.timestamp}",
             content_block,
         ]

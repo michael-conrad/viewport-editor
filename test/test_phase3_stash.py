@@ -116,8 +116,8 @@ async def test_stash_copies_clipboard(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 2,
-            "end_line": 4,
+            "line_start": 2,
+            "line_end": 4,
         },
     )
     assert not result.isError, (
@@ -196,8 +196,8 @@ async def test_stash_overwrite(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 1,
+            "line_start": 1,
+            "line_end": 1,
         },
     )
 
@@ -216,8 +216,8 @@ async def test_stash_overwrite(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 3,
-            "end_line": 5,
+            "line_start": 3,
+            "line_end": 5,
         },
     )
 
@@ -308,8 +308,8 @@ async def test_pop_replaces_clipboard(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 2,
+            "line_start": 1,
+            "line_end": 2,
         },
     )
 
@@ -327,8 +327,8 @@ async def test_pop_replaces_clipboard(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 4,
-            "end_line": 5,
+            "line_start": 4,
+            "line_end": 5,
         },
     )
 
@@ -423,8 +423,8 @@ async def test_swap_exchanges(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 2,
+            "line_start": 1,
+            "line_end": 2,
         },
     )
 
@@ -442,8 +442,8 @@ async def test_swap_exchanges(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 4,
-            "end_line": 5,
+            "line_start": 4,
+            "line_end": 5,
         },
     )
 
@@ -516,8 +516,8 @@ async def test_swap_empty_clipboard_is_error(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 1,
+            "line_start": 1,
+            "line_end": 1,
         },
     )
 
@@ -538,8 +538,8 @@ async def test_swap_empty_clipboard_is_error(
             "action": "cut",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 1,
+            "line_start": 1,
+            "line_end": 1,
         },
     )
 
@@ -611,8 +611,8 @@ async def test_stash_list_shows_metadata(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 2,
-            "end_line": 4,
+            "line_start": 2,
+            "line_end": 4,
         },
     )
 
@@ -643,7 +643,7 @@ async def test_stash_list_shows_metadata(
     assert "source_file" in list_text, (
         f"SC-47: stash-list must include source_file: {list_text[:300]}"
     )
-    assert "line_range" in list_text or "start_line" in list_text, (
+    assert "line_range" in list_text or "line_start" in list_text, (
         f"SC-47: stash-list must include line_range: {list_text[:300]}"
     )
     assert "line_count" in list_text, (
@@ -721,8 +721,8 @@ async def test_stash_list_after_multiple_stash(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 2,
+            "line_start": 1,
+            "line_end": 2,
         },
     )
 
@@ -740,8 +740,8 @@ async def test_stash_list_after_multiple_stash(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 3,
-            "end_line": 5,
+            "line_start": 3,
+            "line_end": 5,
         },
     )
 

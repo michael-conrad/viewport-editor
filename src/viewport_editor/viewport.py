@@ -39,8 +39,8 @@ IDLE_TIMEOUT: float = 14400.0  # 4 hours
 @dataclass
 class ViewportEntry:
     file: str
-    start_line: int
-    end_line: int
+    line_start: int
+    line_end: int
     mtime: Optional[float] = None
     size: Optional[int] = None
     autosave: bool = False
@@ -55,8 +55,8 @@ class ViewportEntry:
         return {
             "viewport_id": self.viewport_id,
             "file": self.file,
-            "start_line": self.start_line,
-            "end_line": self.end_line,
+            "line_start": self.line_start,
+            "line_end": self.line_end,
             "mtime": self.mtime,
             "size": self.size,
             "autosave": self.autosave,
@@ -107,8 +107,8 @@ class ViewportManager:
         self,
         session_id: str,
         file_path: str,
-        start_line: int = 1,
-        end_line: int = 100,
+        line_start: int = 1,
+        line_end: int = 100,
         autosave: bool = False,
     ) -> ViewportEntry:
         resolved_path, _ = file_ops._resolve_path(file_path, self.project_root)
@@ -118,16 +118,16 @@ class ViewportManager:
             self._entries[session_id] = {}
         buffer = self._buffer_mgr.get_or_create(session_id, file_path, resolved_path)
         total_lines = len(buffer.content.splitlines(keepends=True))
-        start = max(1, start_line)
-        end = min(end_line, total_lines) if end_line <= total_lines else total_lines
+        start = max(1, line_start)
+        end = min(line_end, total_lines) if line_end <= total_lines else total_lines
         detected = file_ops._detect_line_ending(resolved_path)
         if session_id not in self.line_endings:
             self.line_endings[session_id] = {}
         self.line_endings[session_id][file_path] = detected
         entry = ViewportEntry(
             file=file_path,
-            start_line=start,
-            end_line=end,
+            line_start=start,
+            line_end=end,
             mtime=buffer.mtime,
             size=buffer.size,
             autosave=autosave,
@@ -179,37 +179,37 @@ class ViewportManager:
     def get_visible_lines(self, session_id: str, entry: ViewportEntry) -> list[str]:
         file_lines = self._buffer_mgr.get_lines(session_id, entry.file)
         total = len(file_lines)
-        start = max(0, entry.start_line - 1)
-        end = min(entry.end_line, total)
+        start = max(0, entry.line_start - 1)
+        end = min(entry.line_end, total)
         return file_lines[start:end]
 
     def scroll(self, session_id: str, viewport_id: str, lines: int) -> ViewportEntry:
         entry = self.get_entry(session_id, viewport_id)
         file_lines = self._buffer_mgr.get_lines(session_id, entry.file)
-        height = entry.end_line - entry.start_line
+        height = entry.line_end - entry.line_start
         total = len(file_lines)
-        new_start = max(1, entry.start_line + lines)
+        new_start = max(1, entry.line_start + lines)
         if new_start + height > total:
             new_start = max(1, total - height)
-        entry.start_line = new_start
-        entry.end_line = min(new_start + height, total)
+        entry.line_start = new_start
+        entry.line_end = min(new_start + height, total)
         return entry
 
     def page_up(self, session_id: str, viewport_id: str) -> ViewportEntry:
         entry = self.get_entry(session_id, viewport_id)
-        height = entry.end_line - entry.start_line
+        height = entry.line_end - entry.line_start
         return self.scroll(session_id, viewport_id, -height)
 
     def page_down(self, session_id: str, viewport_id: str) -> ViewportEntry:
         entry = self.get_entry(session_id, viewport_id)
-        height = entry.end_line - entry.start_line
+        height = entry.line_end - entry.line_start
         return self.scroll(session_id, viewport_id, height)
 
     def jump(self, session_id: str, viewport_id: str, target: str) -> ViewportEntry:
         entry = self.get_entry(session_id, viewport_id)
         file_lines = self._buffer_mgr.get_lines(session_id, entry.file)
         total = len(file_lines)
-        height = entry.end_line - entry.start_line
+        height = entry.line_end - entry.line_start
         target_str = target.strip()
         if target_str.isdigit():
             line_num = int(target_str)
@@ -228,8 +228,8 @@ class ViewportManager:
                 raise JumpTargetNotFoundError(target)
         if new_start + height > total:
             new_start = max(1, total - height)
-        entry.start_line = new_start
-        entry.end_line = min(new_start + height, total)
+        entry.line_start = new_start
+        entry.line_end = min(new_start + height, total)
         return entry
 
     def set_autosave(
@@ -387,8 +387,8 @@ class ViewportManager:
         self.line_endings[session_id][file_path] = "\n"
         entry = ViewportEntry(
             file=file_path,
-            start_line=1,
-            end_line=0,
+            line_start=1,
+            line_end=0,
             mtime=buffer.mtime,
             size=0,
             autosave=False,
