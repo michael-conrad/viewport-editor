@@ -16,7 +16,8 @@ from __future__ import annotations
 import os
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from itertools import count
+from typing import Dict, Iterator, List, Optional
 
 from .buffer import BufferManager
 from . import editor
@@ -31,6 +32,7 @@ from .exceptions import (
 )
 from . import file_ops
 
+_viewport_id_counter: Iterator[int] = count(1)
 IDLE_TIMEOUT: float = 14400.0  # 4 hours
 
 
@@ -45,7 +47,9 @@ class ViewportEntry:
     dirty: bool = False
     line_ending: str = "\n"
     display_mode: str = "hide"
-    viewport_id: str = field(default_factory=lambda: hex(id(object()))[2:])
+    viewport_id: str = field(
+        default_factory=lambda: f"viewport_{next(_viewport_id_counter)}"
+    )
 
     def to_dict(self) -> dict:
         return {
