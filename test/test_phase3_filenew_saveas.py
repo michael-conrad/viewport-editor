@@ -530,7 +530,7 @@ async def test_sc_lf3_file_new_crlf_write_preserved(
             "action": "autosave",
             "session_id": "test-sc-lf3-crlf",
             "viewport_id": vpid,
-            "enabled": True,
+            "autosave_enabled": True,
         },
     )
 

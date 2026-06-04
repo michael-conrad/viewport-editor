@@ -115,8 +115,8 @@ async def test_copy_creates_clipboard_with_provenance(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 2,
-            "end_line": 4,
+            "line_start": 2,
+            "line_end": 4,
         },
     )
     text = _get_text(result)
@@ -129,7 +129,7 @@ async def test_copy_creates_clipboard_with_provenance(
     assert "source_file:" in text, (
         f"SC-39: response must include source_file provenance: {text[:300]}"
     )
-    assert "line_range:" in text or "start_line:" in text, (
+    assert "line_range:" in text or "line_start:" in text, (
         f"SC-39: response must include line_range provenance: {text[:300]}"
     )
     assert "timestamp:" in text, (
@@ -178,15 +178,15 @@ async def test_copy_line_aligned_only(
     vpid = _extract_vpid(_get_text(result_open))
 
     # Request lines 2-4 (already line-aligned), verify response reports
-    # start_line=2, end_line=4 with no character/offset granularity
+    # line_start=2, line_end=4 with no character/offset granularity
     result = await client_session.call_tool(
         "clipboard",
         arguments={
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 2,
-            "end_line": 4,
+            "line_start": 2,
+            "line_end": 4,
         },
     )
     text = _get_text(result)
@@ -197,11 +197,11 @@ async def test_copy_line_aligned_only(
     )
 
     # Response must report line-aligned range (integer line numbers only)
-    assert "start_line: 2" in text, (
-        f"SC-48: response must report start_line as integer: {text[:300]}"
+    assert "line_start: 2" in text, (
+        f"SC-48: response must report line_start as integer: {text[:300]}"
     )
-    assert "end_line: 4" in text, (
-        f"SC-48: response must report end_line as integer: {text[:300]}"
+    assert "line_end: 4" in text, (
+        f"SC-48: response must report line_end as integer: {text[:300]}"
     )
 
     # Must NOT contain character offset fields (col_start, col_end, char_offset, etc.)
@@ -259,8 +259,8 @@ async def test_copy_cross_file(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 3,
+            "line_start": 1,
+            "line_end": 3,
         },
     )
     text = _get_text(result)
@@ -319,8 +319,8 @@ async def test_copy_no_buffered_switch(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 2,
+            "line_start": 1,
+            "line_end": 2,
         },
     )
     text = _get_text(result)
@@ -389,8 +389,8 @@ async def test_cut_stages_deletion_in_buffer(
             "action": "cut",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 2,
-            "end_line": 4,
+            "line_start": 2,
+            "line_end": 4,
         },
     )
     text = _get_text(result)
@@ -403,11 +403,11 @@ async def test_cut_stages_deletion_in_buffer(
     assert "source_file:" in text, (
         f"SC-40: cut response must include source_file provenance: {text[:300]}"
     )
-    assert "start_line: 2" in text, (
-        f"SC-40: cut response must report start_line: {text[:300]}"
+    assert "line_start: 2" in text, (
+        f"SC-40: cut response must report line_start: {text[:300]}"
     )
-    assert "end_line: 4" in text, (
-        f"SC-40: cut response must report end_line: {text[:300]}"
+    assert "line_end: 4" in text, (
+        f"SC-40: cut response must report line_end: {text[:300]}"
     )
     assert "cut" in text.lower(), (
         f"SC-40: cut response must indicate cut operation: {text[:300]}"
@@ -486,8 +486,8 @@ async def test_cut_autosave_gate(
             "action": "cut",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 1,
+            "line_start": 1,
+            "line_end": 1,
         },
     )
     text = _get_text(result)
@@ -551,8 +551,8 @@ async def test_cut_already_buffered(
             "action": "cut",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 1,
+            "line_start": 1,
+            "line_end": 1,
         },
     )
     text = _get_text(result)
@@ -600,8 +600,8 @@ async def test_paste_insert_before(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 2,
-            "end_line": 4,
+            "line_start": 2,
+            "line_end": 4,
         },
     )
     assert not result.isError
@@ -692,8 +692,8 @@ async def test_paste_preserves_clipboard(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 2,
+            "line_start": 1,
+            "line_end": 2,
         },
     )
     assert not result.isError
@@ -785,8 +785,8 @@ async def test_paste_cross_viewport(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid_src,
-            "start_line": 2,
-            "end_line": 3,
+            "line_start": 2,
+            "line_end": 3,
         },
     )
     assert not copy_result.isError
@@ -853,8 +853,8 @@ async def test_paste_autosave_gate(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 1,
+            "line_start": 1,
+            "line_end": 1,
         },
     )
     assert not result_copy.isError
@@ -920,8 +920,8 @@ async def test_paste_already_buffered_no_notice(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 1,
+            "line_start": 1,
+            "line_end": 1,
         },
     )
     assert not result_copy.isError
@@ -980,8 +980,8 @@ async def test_cut_autosave_gate_notice(
             "action": "cut",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 1,
+            "line_start": 1,
+            "line_end": 1,
         },
     )
     text = _get_text(result)
@@ -1039,8 +1039,8 @@ async def test_cut_diff_response(
             "action": "cut",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 1,
+            "line_start": 1,
+            "line_end": 1,
         },
     )
     text = _get_text(result)
@@ -1089,8 +1089,8 @@ async def test_paste_diff_response(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 1,
-            "end_line": 1,
+            "line_start": 1,
+            "line_end": 1,
         },
     )
     assert not result_copy.isError
@@ -1194,8 +1194,8 @@ async def test_paste_ignores_stash(
             "action": "copy",
             "session_id": sid,
             "viewport_id": vpid,
-            "start_line": 2,
-            "end_line": 4,
+            "line_start": 2,
+            "line_end": 4,
         },
     )
     assert not result_copy.isError

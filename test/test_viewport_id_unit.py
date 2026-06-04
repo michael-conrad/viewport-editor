@@ -26,7 +26,7 @@ def test_sc1_viewport_id_no_collision() -> None:
     ids: list[str] = []
     for _ in range(100):
         # Create and immediately delete to trigger GC memory address reuse
-        entry = ViewportEntry(file="/dev/null", start_line=1, end_line=1)
+        entry = ViewportEntry(file="/dev/null", line_start=1, line_end=1)
         ids.append(entry.viewport_id)
         del entry
 
@@ -48,7 +48,7 @@ def test_sc2_viewport_id_format() -> None:
 
     ids: list[str] = []
     for _ in range(20):
-        entry = ViewportEntry(file="/dev/null", start_line=1, end_line=1)
+        entry = ViewportEntry(file="/dev/null", line_start=1, line_end=1)
         ids.append(entry.viewport_id)
 
     # After fix, IDs should start with "viewport_" and increment
