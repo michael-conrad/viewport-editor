@@ -1,0 +1,84 @@
+# Z3 Contract: #46 fastmcp switch investigation
+# Models RED→GREEN transitions: each variable represents completed state.
+# RED phase = variable false (change not yet applied).
+# GREEN phase = variable true (change applied).
+# Invariants enforce dependency ordering and mutual consistency.
+
+variables:
+  # Phase 1: Dependency Switch (Cards 1+6)
+  DEP_SWITCH: {type: bool}          # 1a: uv add fastmcp, import resolves
+  IMPORT_CHANGE: {type: bool}       # 1b: server.py import path changed to from fastmcp
+  FILE_PATH_CLEANUP: {type: bool}   # 1c: file_path removed from 21 edit() test calls
+  SIZE_DELTA: {type: bool}          # 1d: pip show size comparison
+
+  # Phase 2: ctx: Context Annotation (Card 2)
+  CTX_ANNOTATE: {type: bool}        # 2a: all 7 handlers use ctx: Context
+  SESSION_ID_OK: {type: bool}       # 2b: ctx.session_id returns non-empty str
+
+  # Phase 3: In-Memory Client Fixture (Card 4)
+  CONFTEST: {type: bool}            # 3a: shared conftest.py fixture
+  TEST_MIGRATED: {type: bool}       # 3b: all 12 test files use in-memory client
+
+  # Phase 4: Server Infra (Cards 5+7)
+  LIFESPAN_OK: {type: bool}         # 4b: lifespan runs startup+shutdown
+
+  # Phase 5: Session Isolation POC (Card 3)
+  DIFF_SESSION_IDS: {type: bool}    # 5a: two clients, different session_ids
+  STATE_ISOLATION: {type: bool}     # 5b: ctx.set_state/get_state per session
+
+invariants:
+  # ── Phase 1 internal dependencies ──
+  # IMPORT_CHANGE requires DEP_SWITCH (can't import what isn't installed)
+  - "z3.Implies(IMPORT_CHANGE, DEP_SWITCH)"
+  # SIZE_DELTA requires DEP_SWITCH (can't measure what isn't installed)
+  - "z3.Implies(SIZE_DELTA, DEP_SWITCH)"
+  # FILE_PATH_CLEANUP is independent — no dependency on DEP_SWITCH
+  # The dead file_path field exists regardless of which SDK is used
+
+  # ── Phase 2: depends on Phase 1 ──
+  # CTX_ANNOTATE requires fastmcp installed (Context type from fastmcp)
+  - "z3.Implies(CTX_ANNOTATE, DEP_SWITCH)"
+  # SESSION_ID_OK requires annotation first
+  - "z3.Implies(SESSION_ID_OK, CTX_ANNOTATE)"
+
+  # ── Phase 3: depends on Phase 1 ──
+  # CONFTEST requires fastmcp installed (Client from fastmcp)
+  - "z3.Implies(CONFTEST, DEP_SWITCH)"
+  # TEST_MIGRATED requires conftest exists
+  - "z3.Implies(TEST_MIGRATED, CONFTEST)"
+
+  # ── Phase 4: depends on Phase 1 ──
+  - "z3.Implies(LIFESPAN_OK, DEP_SWITCH)"
+
+  # ── Phase 5: depends on Phase 2 AND Phase 3 ──
+  # Different session IDs require ctx.session_id working + in-memory clients
+  - "z3.Implies(DIFF_SESSION_IDS, SESSION_ID_OK)"
+  - "z3.Implies(DIFF_SESSION_IDS, TEST_MIGRATED)"
+  # State isolation also requires session_id + in-memory
+  - "z3.Implies(STATE_ISOLATION, SESSION_ID_OK)"
+  - "z3.Implies(STATE_ISOLATION, TEST_MIGRATED)"
+
+  # ── RED→GREEN consistency invariants ──
+  # SC-5 (all tests pass) requires FILE_PATH_CLEANUP
+  # Without cleanup, FastMCP 3.x rejects edit() calls passing file_path
+  - "z3.Implies(TEST_MIGRATED, FILE_PATH_CLEANUP)"
+  # DIFF_SESSION_IDS and STATE_ISOLATION also exercise edit() indirectly
+  # through full test suite, so they require FILE_PATH_CLEANUP
+  - "z3.Implies(DIFF_SESSION_IDS, FILE_PATH_CLEANUP)"
+  - "z3.Implies(STATE_ISOLATION, FILE_PATH_CLEANUP)"
+
+# SAT ordering (Z3 verified):
+# RED: all variables = false
+# Phase 1 (parallel):
+#   DEP_SWITCH → IMPORT_CHANGE
+#   DEP_SWITCH → SIZE_DELTA
+#   FILE_PATH_CLEANUP (independent, can run anytime)
+# Phase 2: DEP_SWITCH → CTX_ANNOTATE → SESSION_ID_OK
+# Phase 3: DEP_SWITCH → CONFTEST → TEST_MIGRATED
+# Phase 4: DEP_SWITCH → LIFESPAN_OK
+# Phase 5: SESSION_ID_OK + TEST_MIGRATED + FILE_PATH_CLEANUP → DIFF_SESSION_IDS
+#           SESSION_ID_OK + TEST_MIGRATED + FILE_PATH_CLEANUP → STATE_ISOLATION
+
+# Parallel opportunities:
+# Phase 2, 3, 4 can proceed in parallel after Phase 1
+# FILE_PATH_CLEANUP can proceed independently (no SDK dependency)
