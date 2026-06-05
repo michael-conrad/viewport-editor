@@ -42,8 +42,7 @@ git -C .issues log --oneline -5
 ```
 .issues/
   {issue_number}/
-    spec.md                    — Local mirror of the GitHub Issue spec
-    state.yaml                 — Workspace state metadata
+    spec.md                    — The spec (authoritative, may mirror remote or be sole copy)
     spec-artifacts/
       plan.md                  — Implementation plan (RED/GREEN items, dependency graph)
       cards.md                 — Card catalogue with status and decision log
