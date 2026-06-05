@@ -1,0 +1,26 @@
+---
+issue_number: 47
+title: "[BUG] Repeated agent workflow violations — authorization bypass, silent halt, inline work"
+state: open
+labels:
+  - "BUG"
+created: 2026-06-04T21:20:00Z
+updated: 2026-06-04T21:20:00Z
+prerequisites: []
+dependents: []
+workflow_phase: open
+branch: none
+blockers: []
+---
+
+## Violations Observed
+
+1. **"fail" → treated as authorization** — negative response mapped to proceed signal
+2. **Empty sub-agent result → silent proceed** — zero output after task() return
+3. **Preloaded sub-agent context** — inline file paths, step defs, expected outcomes in task() prompt
+4. **Orchestrator inline reads** — task files, spec bodies, state files read directly
+5. **Checkpoint tag without commit** — step 1 tag placed at bare HEAD
+
+## Root Cause
+
+Agent defaults to inline work instead of dispatching through skill task() pipeline.

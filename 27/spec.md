@@ -1,4 +1,4 @@
-# Synced from GitHub Issue #27 at 2026-06-02T02:47:57Z
+# Synced from GitHub Issue #27 at 2026-06-02T14:18:00Z
 
 ## Parent Plan
 
@@ -43,7 +43,3 @@ Per-SC behavioral evidence artifacts as defined above.
 ## Workflow Pipeline
 
 Standard pipeline. Feature branch: `feature/p4-search-find`
-
----
-
-🤖 Co-authored with AI: OpenCode (ollama-cloud/glm-5.1)

@@ -6,38 +6,44 @@
 
 ## Concern
 
-End-to-end integration testing across all subsystems — viewport, buffer, edit, file ops, clipboard, search, regex, diff.
+End-to-end behavioral integration testing across all subsystems — viewport, buffer, edit, file ops, clipboard, search, regex, diff — using opencode-cli test harness with goal-directed instruction cards.
 
 ## SCs Covered
 
-Integration coverage for all prior SCs from all phases.
+9 behavioral integration scenarios (SC-1 through SC-9) verifying agent-in-the-loop execution of all viewport-editor tools.
 
 ## SC-to-Task Traceability
 
-| # | Task | Validates | Test Function | Behavioral Evidence Artifact |
-|---|------|-----------|---------------|------------------------------|
-| 1 | RED: Full buffered workflow integration | All edit+file+diff SCs | `test_integration_buffered_workflow` — open file, edit:replace, diff:show shows changes, file:save writes to disk, viewport:close, verify disk content | `./tmp/behavioral-evidence-P5-workflow-buffered.log` |
-| 2 | RED: Full autosave=on workflow | SC-14, SC-24 | `test_integration_autosave_on_workflow` — open with autosave=on, edit:replace, verify disk reflects edit immediately | `./tmp/behavioral-evidence-P5-autosave-on.log` |
-| 3 | RED: Autosave toggle workflow | SC-14, SC-32 | `test_integration_autosave_toggle` — open autosave=off, edit, diff:show shows pending, toggle autosave=on, verify flush to disk | `./tmp/behavioral-evidence-P5-autosave-toggle.log` |
-| 4 | RED: N-session isolation | SC-26 | `test_integration_session_isolation` — N=2 sessions open same file, each edits independently, verify no cross-session contamination | `./tmp/behavioral-evidence-P5-session-isolation.log` |
-| 5 | RED: Conflict detection save rejection | SC-11, SC-25 | `test_integration_conflict_detection` — external file modification between edit and save triggers hard conflict; external modification before edit triggers soft warning | `./tmp/behavioral-evidence-P5-conflict-detection.log` |
-| 6 | RED: Clipboard cross-viewport workflow | SC-39, SC-40, SC-41, SC-42 | `test_integration_clipboard_cross_viewport` — copy from viewport A, paste into viewport B, verify content and provenance | `./tmp/behavioral-evidence-P5-clipboard-cross.log` |
-| 7 | RED: Clipboard stash-pop workflow | SC-43, SC-44, SC-45 | `test_integration_stash_pop_swap` — copy, stash, edit, pop, verify clipboard restored from stash | `./tmp/behavioral-evidence-P5-stash-pop.log` |
+| # | Scenario | Validates | Script | Artifact Directory (model-run) |
+|---|----------|-----------|--------|-------------------------------|
+| 1 | Full buffered workflow integration | All edit+file+diff SCs | `viewport-buffered-workflow.sh` | `./tmp/behavioral-evidence-viewport-buffered-workflow-GREEN-ollama-glm-5.1-cloud/` |
+| 2 | Full autosave=on workflow | SC-14, SC-24 | `viewport-autosave-on.sh` | `./tmp/behavioral-evidence-viewport-autosave-on-GREEN-ollama-glm-5.1-cloud/` |
+| 3 | Autosave toggle workflow | SC-14, SC-32 | `viewport-autosave-toggle.sh` | `./tmp/behavioral-evidence-viewport-autosave-toggle-GREEN-ollama-deepseek-v4-flash-cloud/` |
+| 4 | N-session isolation | SC-26 | `viewport-session-isolation.sh` | `./tmp/behavioral-evidence-viewport-session-isolation-GREEN-ollama-qwen3.5-397b-cloud/` |
+| 5 | Conflict detection save rejection | SC-11, SC-25 | `viewport-conflict-detection.sh` | `./tmp/behavioral-evidence-viewport-conflict-detection-GREEN-ollama-qwen3.5-397b-cloud/` |
+| 6 | Clipboard cross-viewport workflow | SC-39, SC-40, SC-41, SC-42 | `viewport-clipboard-cross-viewport.sh` | `./tmp/behavioral-evidence-viewport-clipboard-cross-viewport-GREEN-ollama-qwen3.5-397b-cloud/` |
+| 7 | Clipboard stash-pop-swap workflow | SC-43, SC-44, SC-45 | `viewport-stash-pop-swap.sh` | `./tmp/behavioral-evidence-viewport-stash-pop-swap-GREEN-ollama-deepseek-v4-flash-cloud/` |
+| 8 | Search and navigate workflow | SC-27, SC-5 | `viewport-search-navigate.sh` | `./tmp/behavioral-evidence-viewport-search-navigate-GREEN-ollama-gpt-oss-120b-cloud/` |
+| 9 | Code navigation workflow | SC-28, SC-5 | `viewport-code-navigation.sh` | `./tmp/behavioral-evidence-viewport-code-navigation-GREEN-ollama-deepseek-v4-flash-cloud/` |
+
+Each artifact directory contains: manifest.yaml, stdout.log, stderr.log, exit_code, session.yaml.
 
 ## Dependencies
 
-- **Requires:** #18, #17 (Clipboard Core), #22 (Clipboard Stash), #23 (File New + Save-As), #24 (File Delete), #25 (Autosave Integration), #26 (Diff Apply), #27 (Search Find), #28 (Regex Tools)
+- **Requires:** #18, #17, #22, #23, #24, #25, #26, #27, #28
 - **Blocks:** Nothing (final phase)
-- **SAT ordering:** After ALL other issues (proven via Z3 constraint model)
 
 ## Verification (behavioral)
 
-**Full suite (implicit cumulative regression guard):**
-`uv run pytest test/ > ./tmp/behavioral-evidence-P5-full-suite.log 2>&1` — complete test suite passes. This is the ultimate regression check — all P1+P2+P3+P4+P5 tests must pass together.
+**Unit tests (regression guard):**
+`uv run pytest test/` — 132 tests pass (P1+P2+P3+P4).
+
+**Behavioral (model-run artifacts):**
+All 9 SC scripts produce artifact directories under `./tmp/behavioral-evidence-*/` with exit_code 0, meaningful agent prose in stdout, and viewport_editor tool dispatch traces in stderr.
 
 **Evidence artifacts are exempt from ./tmp/ cleanup per the spec §Behavioral Evidence Capture Protocol and survive until PR merge cleanup.**
 
-Feature branch: `feature/p5-integration`
+Feature branch: `pair-p5-integration`
 
 ---
 

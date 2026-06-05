@@ -1,4 +1,4 @@
-# Synced from GitHub Issue #22 at 2026-06-02T02:47:08Z
+# Synced from GitHub Issue #22 at 2026-06-02T05:23:00Z
 
 ## Parent Plan
 
@@ -52,24 +52,3 @@ Per-SC behavioral evidence artifacts as defined above.
 `uv run pytest test/ -k "p3_stash" > ./tmp/behavioral-evidence-stash.log 2>&1`
 
 **Evidence artifacts are exempt from ./tmp/ cleanup per the spec §Behavioral Evidence Capture Protocol and survive until PR merge cleanup.**
-
-## Workflow Pipeline (Pre-RED to PR Cleanup)
-
-### Pre-Work
-1. Create feature branch `feature/p3-stash`
-2. Tag submodule SHA at `.opencode`
-3. Sync dev: `git checkout dev && git pull && git checkout -b feature/p3-stash`
-4. Pre-flight: verify #17 (Clipboard Core) is merged, all P1+P2+clipboard tests pass
-
-### Coherence Gate (Pre-RED)
-1. Verify clipboard register and provenance model exist in codebase
-2. Confirm no superseding issues
-3. On BLOCKED: HALT. On PASS: proceed.
-
-### RED Phase → GREEN Phase → Completeness Gate → Adversarial Audit → Finishing Checklist → Review Prep → Post-PR Cleanup
-
-(Standard pipeline per project workflow — see #18 for full template)
-
----
-
-🤖 Co-authored with AI: OpenCode (ollama-cloud/glm-5.1)
