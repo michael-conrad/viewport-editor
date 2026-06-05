@@ -2,7 +2,7 @@
 
 ## Identity
 
-`.issues/` is a standalone git repository with an `issues-data` orphan branch, stored as a git worktree of the parent repo at `.git/worktrees/-issues/`. It uses the remote `git@github.com:michael-conrad/viewport-editor.git` — the same remote as the parent repo, on the `issues-data` branch.
+`.issues/` is a standalone git repository with an `issues-data` orphan branch, stored as a git worktree of the parent repo at `.git/worktrees/-issues/`. It uses the same remote as the parent repo (determined at runtime via `git -C .issues remote -v`), on the `issues-data` branch.
 
 **This is NOT a submodule.** It is an orphan branch worktree. Do not add it as a submodule or `.gitmodules` entry.
 
@@ -28,11 +28,7 @@ git -C .issues push
 git -C .issues pull --rebase
 ```
 
-If conflicts occur during pull, resolve them automatically:
-- For `state.yaml`: accept the incoming version (state is ephemeral, latest wins)
-- For `spec.md`: accept the incoming version (GitHub issue body is authoritative)
-- For `spec-artifacts/` files: attempt automatic merge via `git -C .issues merge --no-edit`; if that fails, accept the local version (spec-artifacts are workspace-local)
-- If any conflict cannot be resolved automatically: report the conflict files and HALT
+If conflicts occur during pull, resolve them intelligently using your best judgment. Read both sides, understand the intent of each change, and synthesize a merged version. If genuinely unresolvable, report the conflict files and HALT.
 
 ### Check Current Status
 
@@ -77,9 +73,9 @@ Reading and writing `.issues/` is **authorization-free** — it is workspace-loc
 
 Creating `feature/*` or `spec/*` branches for code changes still requires `for_implementation` or above scope.
 
-## Relationship to GitHub Issues
+## Relationship to Remote Issue Tracker
 
-- `.issues/{N}/spec.md` mirrors the GitHub Issue body for issue #N
-- `.issues/{N}/spec-artifacts/plan.md` is the local implementation plan (not mirrored to GitHub)
+- `.issues/{N}/spec.md` IS the spec — it may mirror a remote issue (GitHub/GitBucket) or be the sole authoritative copy. The remote is secondary.
+- `.issues/{N}/spec-artifacts/plan.md` is the local implementation plan (not mirrored to remote)
 - `.issues/{N}/spec-artifacts/cards.md` is the card catalogue with status tracking
-- GitHub Issue comments are the authoritative cross-reference directory — see issue bodies for `.issues/` artifact paths
+- Files in `.issues/` take precedence over remote issue bodies when both exist. The `.issues/` workspace is the source of truth for implementation planning.
