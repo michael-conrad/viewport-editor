@@ -10,6 +10,22 @@
 
 Always use `.opencode/tools/local-issues` for issue tracking operations within `.issues/`. Do not manipulate `.issues/` files manually unless the tool cannot perform the required operation.
 
+### Invocation
+
+```
+.opencode/tools/local-issues <command> [flags]
+```
+
+First invocation auto-initializes `.issues/` — creates the orphan branch, worktree, and initial commit. No separate setup step needed.
+
+### Standards
+
+- All spec files use `.md` extension with optional YAML frontmatter
+- All metadata files use `.yaml` extension
+- Comments are stored as YAML with `type: internal|stakeholder` field
+- Sub-issues use the `link` command for parent-child relationships
+- GitHub/GitBucket sync uses `--github` / `--remote-url` flags on `update` and `comment`
+
 ## Workflow
 
 ### Commit and Push
