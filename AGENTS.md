@@ -18,6 +18,45 @@ Always use `.opencode/tools/local-issues` for issue tracking operations within `
 
 First invocation auto-initializes `.issues/` — creates the orphan branch, worktree, and initial commit. No separate setup step needed.
 
+### Usage Examples
+
+```
+# List all issues
+.opencode/tools/local-issues list
+
+# Sample output:
+# #1 [open]
+# #46 [open]
+# #47 [open]
+
+# Read an issue
+.opencode/tools/local-issues read --number 46
+
+# Create a new issue (auto-numbered)
+.opencode/tools/local-issues create --title "My spec" --labels SPEC
+
+# Create with explicit number
+.opencode/tools/local-issues create --number 99 --title "Bug fix" --labels BUG
+
+# Search issues
+.opencode/tools/local-issues search --query "fastmcp"
+
+# Link sub-issues to a parent
+.opencode/tools/local-issues link --number 46 --sub 47 48 --type sub-issue
+
+# Add a comment
+.opencode/tools/local-issues comment --number 46 --type internal --body "Investigation complete"
+
+# Close an issue
+.opencode/tools/local-issues close --number 99 --reason completed
+
+# Update an issue body from file
+.opencode/tools/local-issues update --number 46 --body-file ./tmp/spec-v2.md
+
+# Check promotion readiness
+.opencode/tools/local-issues promote --number 46
+```
+
 ### Standards
 
 - All spec files use `.md` extension with optional YAML frontmatter
@@ -28,30 +67,33 @@ First invocation auto-initializes `.issues/` — creates the orphan branch, work
 
 ## Workflow
 
-### Commit and Push
+All git operations (commit, push) are handled automatically by the tool after mutation commands. You do NOT need to run `git -C .issues` commands manually.
 
-Whenever issue ticket metadata changes — specs, plans, cards, comments, state — the agent MUST:
+| Action | Command | Auto-commit? | Auto-push? |
+|--------|---------|-------------|-------------|
+| List issues | `local-issues list` | N/A (read-only) | N/A |
+| Read issue | `local-issues read --number N` | N/A (read-only) | N/A |
+| Search | `local-issues search --query "..."` | N/A (read-only) | N/A |
+| Create issue | `local-issues create --title "..."` | ✅ Yes | ✅ Yes |
+| Update issue | `local-issues update --number N ...` | ✅ Yes | ✅ Yes |
+| Add comment | `local-issues comment --number N --body "..."` | ✅ Yes | ✅ Yes |
+| Close issue | `local-issues close --number N --reason completed` | ✅ Yes | ✅ Yes |
+| Link sub-issues | `local-issues link --number N --sub M --type sub-issue` | ✅ Yes | ✅ Yes |
+| Renumber | `local-issues renumber --from N --to M` | ✅ Yes | ✅ Yes |
 
-```
-git -C .issues add <changed-files>
-git -C .issues commit -m "docs(#N): description of change"
-git -C .issues push
-```
-
-### Pull (at session start or on request)
-
-```
-git -C .issues pull --rebase
-```
-
-If conflicts occur during pull, resolve them intelligently using your best judgment. Read both sides, understand the intent of each change, and synthesize a merged version. If genuinely unresolvable, report the conflict files and HALT.
-
-### Check Current Status
+### Pull at session start
 
 ```
-git -C .issues status
-git -C .issues log --oneline -5
+.opencode/tools/local-issues list
 ```
+
+The `list` command auto-initializes the `.issues/` worktree if missing. However, it does not pull remote changes. To sync before starting work:
+
+```
+git -C .issues pull --rebase origin issues-data
+```
+
+This is the ONLY manual `git -C .issues` command needed.
 
 ## Directory Layout
 
