@@ -25,8 +25,14 @@ git -C .issues push
 ### Pull (at session start or on request)
 
 ```
-git -C .issues pull
+git -C .issues pull --rebase
 ```
+
+If conflicts occur during pull, resolve them automatically:
+- For `state.yaml`: accept the incoming version (state is ephemeral, latest wins)
+- For `spec.md`: accept the incoming version (GitHub issue body is authoritative)
+- For `spec-artifacts/` files: attempt automatic merge via `git -C .issues merge --no-edit`; if that fails, accept the local version (spec-artifacts are workspace-local)
+- If any conflict cannot be resolved automatically: report the conflict files and HALT
 
 ### Check Current Status
 
@@ -40,15 +46,30 @@ git -C .issues log --oneline -5
 ```
 .issues/
   {issue_number}/
-    spec.md            — Local mirror of the GitHub Issue spec
-    plan.md            — Implementation plan (RED/GREEN items, dependency graph)
-    cards.md           — Card catalogue with status and decision log
-    state.yaml         — Workspace state metadata
-    spec-artifacts/    — Dependency contracts and evidence cross-refs
-  AGENTS.md            — This file
-  open/                — Symlinks or references to open issues
-  closed/              — Archived issues
+    spec.md                    — Local mirror of the GitHub Issue spec
+    state.yaml                 — Workspace state metadata
+    spec-artifacts/
+      plan.md                  — Implementation plan (RED/GREEN items, dependency graph)
+      cards.md                 — Card catalogue with status and decision log
+      dependency-contract.yaml — Dependency contracts and phase ordering
+      research/                — Investigation findings, capability probes, evidence notes
+      designs/                 — UI wireframes, architecture diagrams, design artifacts
+      audit/                   — Adversarial audit verdicts, cross-validate consensus
+  AGENTS.md                    — This file
+  open/                        — Symlinks or references to open issues
+  closed/                      — Archived issues
 ```
+
+### Example: Spec-Artifact Placement
+
+| Artifact | Path |
+|----------|------|
+| Card catalogue with all card findings | `.issues/46/spec-artifacts/cards.md` |
+| Implementation plan with RED/GREEN items | `.issues/46/spec-artifacts/plan.md` |
+| Dependency contract for state machine | `.issues/46/spec-artifacts/dependency-contract.yaml` |
+| FastMCP capability probe results | `.issues/46/spec-artifacts/research/fastmcp-capabilities.md` |
+| In-memory client migration design | `.issues/46/spec-artifacts/designs/in-memory-fixture.md` |
+| Adversarial audit consensus verdict | `.issues/46/spec-artifacts/audit/consensus.yaml` |
 
 ## Authorization
 
@@ -59,6 +80,6 @@ Creating `feature/*` or `spec/*` branches for code changes still requires `for_i
 ## Relationship to GitHub Issues
 
 - `.issues/{N}/spec.md` mirrors the GitHub Issue body for issue #N
-- `.issues/{N}/plan.md` is the local implementation plan (not mirrored to GitHub)
-- `.issues/{N}/cards.md` is the card catalogue with status tracking
+- `.issues/{N}/spec-artifacts/plan.md` is the local implementation plan (not mirrored to GitHub)
+- `.issues/{N}/spec-artifacts/cards.md` is the card catalogue with status tracking
 - GitHub Issue comments are the authoritative cross-reference directory — see issue bodies for `.issues/` artifact paths
