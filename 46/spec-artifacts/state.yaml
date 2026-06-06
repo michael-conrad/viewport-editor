@@ -1,4 +1,4 @@
-timestamp: '2026-06-06T18:13:56.187764+00:00'
+timestamp: '2026-06-06T18:29:51.575594+00:00'
 variables:
   CONFTEST: true
   CON_p10_audit: true
@@ -18,7 +18,21 @@ variables:
   CTX_ANNOTATE: false
   DEP_SWITCH: true
   DIFF_SESSION_IDS: false
-  IMPORT_CHANGE: false
+  IMPORT_CHANGE: true
+  IMP_p10_audit: true
+  IMP_p11_crossval: true
+  IMP_p12_regression: true
+  IMP_p13_review: true
+  IMP_p14_exec: true
+  IMP_p1_coherence: true
+  IMP_p2_baseline: true
+  IMP_p3_red: true
+  IMP_p4_red_double: true
+  IMP_p5_green: true
+  IMP_p6_checkpoint: true
+  IMP_p7_structural: true
+  IMP_p8_green_double: true
+  IMP_p9_vbc: true
   LIFESPAN_OK: true
   LIF_p10_audit: true
   LIF_p11_crossval: true
