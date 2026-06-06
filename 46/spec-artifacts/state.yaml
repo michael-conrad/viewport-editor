@@ -1,4 +1,4 @@
-timestamp: '2026-06-06T18:29:51.575594+00:00'
+timestamp: '2026-06-06T18:59:41.844367+00:00'
 variables:
   CONFTEST: true
   CON_p10_audit: true
@@ -51,4 +51,18 @@ variables:
   SESSION_ID_OK: false
   SIZE_DOCUMENTED: false
   STATE_ISOLATION: false
-  TEST_MIGRATED: false
+  TEST_MIGRATED: true
+  TST_p10_audit: true
+  TST_p11_crossval: true
+  TST_p12_regression: true
+  TST_p13_review: true
+  TST_p14_exec: true
+  TST_p1_coherence: true
+  TST_p2_baseline: true
+  TST_p3_red: true
+  TST_p4_red_double: true
+  TST_p5_green: true
+  TST_p6_checkpoint: true
+  TST_p7_structural: true
+  TST_p8_green_double: true
+  TST_p9_vbc: true
