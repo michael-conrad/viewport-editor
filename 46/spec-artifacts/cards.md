@@ -45,7 +45,15 @@
 
 ## Card 6 — Dependency Bloat
 
-`fastmcp` 4.8M (3,874,374 bytes), `mcp` 2.2M (1,555,251 bytes). Delta: +2.6M net. `fastmcp` transitively depends on `mcp`, so `mcp` is NOT removed. Document delta in spec.
+| Metric | Value |
+|--------|-------|
+| `fastmcp` (3.4.2) | 4.1 MB (4,171,026 bytes) |
+| `mcp` (1.27.1) | 1.6 MB (1,611,495 bytes) |
+| Delta | **+2.5 MB** |
+| Note | `fastmcp` transitively depends on `mcp`, so `mcp` is NOT removed — the delta is additive. |
+| Combined install | 5.7 MB (both packages side-by-side) |
+
+Verified by `du -sb .venv/lib/python3.13/site-packages/fastmcp .venv/lib/python3.13/site-packages/mcp`.
 
 ## Card 7 — Lifespan Handler
 
