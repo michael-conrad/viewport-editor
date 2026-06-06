@@ -1,60 +1,480 @@
 # Z3 Contract: #46 fastmcp switch
-# Models RED→GREEN transitions.
-# RED = variable false (change not yet applied)
-# GREEN = variable true (change applied, verified)
-# Invariants enforce dependency ordering.
+# Models the 14-step implementation pipeline per unit.
+# Each unit has a boolean for every pipeline gate.
+# A unit's "done" variable goes True only when all 14 gates pass.
 
 variables:
-  # Phase 1: Package Switch
+  # Domain — units of work (what must be done)
   DEP_SWITCH:
     type: bool
   IMPORT_CHANGE:
     type: bool
-
-  # Phase 2: ctx: Context Annotation
   CTX_ANNOTATE:
     type: bool
   SESSION_ID_OK:
     type: bool
-
-  # Phase 3: In-Memory Client (optional)
   CONFTEST:
     type: bool
   TEST_MIGRATED:
     type: bool
-
-  # Phase 4: Session Isolation POC
+  LIFESPAN_OK:
+    type: bool
+  SIZE_DOCUMENTED:
+    type: bool
   DIFF_SESSION_IDS:
     type: bool
   STATE_ISOLATION:
     type: bool
 
-# State variables are initialised in state.yaml (all False).
-# No preconditions — the contract models arbitrary intermediate states.
+  # Pipeline gates per unit — each unit must pass every step to complete
+  # Format: {unit}_p{step_number}
+  # Steps: 1=coherence, 2=baseline, 3=red, 4=red-double, 5=green,
+  #        6=checkpoint, 7=structural, 8=green-double, 9=vbc,
+  #        10=audit, 11=cross-val, 12=regression, 13=review, 14=exec
+
+  # Unit 1a: Package install
+  DEP_p1_coherence:
+    type: bool
+  DEP_p2_baseline:
+    type: bool
+  DEP_p3_red:
+    type: bool
+  DEP_p4_red_double:
+    type: bool
+  DEP_p5_green:
+    type: bool
+  DEP_p6_checkpoint:
+    type: bool
+  DEP_p7_structural:
+    type: bool
+  DEP_p8_green_double:
+    type: bool
+  DEP_p9_vbc:
+    type: bool
+  DEP_p10_audit:
+    type: bool
+  DEP_p11_crossval:
+    type: bool
+  DEP_p12_regression:
+    type: bool
+  DEP_p13_review:
+    type: bool
+  DEP_p14_exec:
+    type: bool
+
+  # Unit 1b: Import change
+  IMP_p1_coherence:
+    type: bool
+  IMP_p2_baseline:
+    type: bool
+  IMP_p3_red:
+    type: bool
+  IMP_p4_red_double:
+    type: bool
+  IMP_p5_green:
+    type: bool
+  IMP_p6_checkpoint:
+    type: bool
+  IMP_p7_structural:
+    type: bool
+  IMP_p8_green_double:
+    type: bool
+  IMP_p9_vbc:
+    type: bool
+  IMP_p10_audit:
+    type: bool
+  IMP_p11_crossval:
+    type: bool
+  IMP_p12_regression:
+    type: bool
+  IMP_p13_review:
+    type: bool
+  IMP_p14_exec:
+    type: bool
+
+  # Unit 3a: ctx annotation
+  CTX_p1_coherence:
+    type: bool
+  CTX_p2_baseline:
+    type: bool
+  CTX_p3_red:
+    type: bool
+  CTX_p4_red_double:
+    type: bool
+  CTX_p5_green:
+    type: bool
+  CTX_p6_checkpoint:
+    type: bool
+  CTX_p7_structural:
+    type: bool
+  CTX_p8_green_double:
+    type: bool
+  CTX_p9_vbc:
+    type: bool
+  CTX_p10_audit:
+    type: bool
+  CTX_p11_crossval:
+    type: bool
+  CTX_p12_regression:
+    type: bool
+  CTX_p13_review:
+    type: bool
+  CTX_p14_exec:
+    type: bool
+
+  # Unit 3b: session_id verify (test-only)
+  SES_p1_coherence:
+    type: bool
+  SES_p2_baseline:
+    type: bool
+  SES_p3_red:
+    type: bool
+  SES_p4_red_double:
+    type: bool
+  SES_p5_green:
+    type: bool
+  SES_p6_checkpoint:
+    type: bool
+  SES_p7_structural:
+    type: bool
+  SES_p8_green_double:
+    type: bool
+  SES_p9_vbc:
+    type: bool
+  SES_p10_audit:
+    type: bool
+  SES_p11_crossval:
+    type: bool
+  SES_p12_regression:
+    type: bool
+  SES_p13_review:
+    type: bool
+  SES_p14_exec:
+    type: bool
+
+  # Unit 5a: conftest fixture
+  CON_p1_coherence:
+    type: bool
+  CON_p2_baseline:
+    type: bool
+  CON_p3_red:
+    type: bool
+  CON_p4_red_double:
+    type: bool
+  CON_p5_green:
+    type: bool
+  CON_p6_checkpoint:
+    type: bool
+  CON_p7_structural:
+    type: bool
+  CON_p8_green_double:
+    type: bool
+  CON_p9_vbc:
+    type: bool
+  CON_p10_audit:
+    type: bool
+  CON_p11_crossval:
+    type: bool
+  CON_p12_regression:
+    type: bool
+  CON_p13_review:
+    type: bool
+  CON_p14_exec:
+    type: bool
+
+  # Unit 5b: test file migration
+  TST_p1_coherence:
+    type: bool
+  TST_p2_baseline:
+    type: bool
+  TST_p3_red:
+    type: bool
+  TST_p4_red_double:
+    type: bool
+  TST_p5_green:
+    type: bool
+  TST_p6_checkpoint:
+    type: bool
+  TST_p7_structural:
+    type: bool
+  TST_p8_green_double:
+    type: bool
+  TST_p9_vbc:
+    type: bool
+  TST_p10_audit:
+    type: bool
+  TST_p11_crossval:
+    type: bool
+  TST_p12_regression:
+    type: bool
+  TST_p13_review:
+    type: bool
+  TST_p14_exec:
+    type: bool
+
+  # Unit SC-2: lifespan (test-only)
+  LIF_p1_coherence:
+    type: bool
+  LIF_p2_baseline:
+    type: bool
+  LIF_p3_red:
+    type: bool
+  LIF_p4_red_double:
+    type: bool
+  LIF_p5_green:
+    type: bool
+  LIF_p6_checkpoint:
+    type: bool
+  LIF_p7_structural:
+    type: bool
+  LIF_p8_green_double:
+    type: bool
+  LIF_p9_vbc:
+    type: bool
+  LIF_p10_audit:
+    type: bool
+  LIF_p11_crossval:
+    type: bool
+  LIF_p12_regression:
+    type: bool
+  LIF_p13_review:
+    type: bool
+  LIF_p14_exec:
+    type: bool
+
+  # Unit SC-4: unique session IDs (test-only)
+  DIF_p1_coherence:
+    type: bool
+  DIF_p2_baseline:
+    type: bool
+  DIF_p3_red:
+    type: bool
+  DIF_p4_red_double:
+    type: bool
+  DIF_p5_green:
+    type: bool
+  DIF_p6_checkpoint:
+    type: bool
+  DIF_p7_structural:
+    type: bool
+  DIF_p8_green_double:
+    type: bool
+  DIF_p9_vbc:
+    type: bool
+  DIF_p10_audit:
+    type: bool
+  DIF_p11_crossval:
+    type: bool
+  DIF_p12_regression:
+    type: bool
+  DIF_p13_review:
+    type: bool
+  DIF_p14_exec:
+    type: bool
+
+  # Unit SC-7: state isolation
+  STA_p1_coherence:
+    type: bool
+  STA_p2_baseline:
+    type: bool
+  STA_p3_red:
+    type: bool
+  STA_p4_red_double:
+    type: bool
+  STA_p5_green:
+    type: bool
+  STA_p6_checkpoint:
+    type: bool
+  STA_p7_structural:
+    type: bool
+  STA_p8_green_double:
+    type: bool
+  STA_p9_vbc:
+    type: bool
+  STA_p10_audit:
+    type: bool
+  STA_p11_crossval:
+    type: bool
+  STA_p12_regression:
+    type: bool
+  STA_p13_review:
+    type: bool
+  STA_p14_exec:
+    type: bool
+
 preconditions: []
 
 invariants:
-  # Phase 1: import requires install
-  - "z3.Implies(IMPORT_CHANGE, DEP_SWITCH)"
+  # === Pipeline step ordering (serial per unit) ===
+  # Each step requires the previous step to have passed.
+  # Pattern: pN → p(N-1) for N=2..14
 
-  # Phase 2: annotation requires fastmcp installed, session_id requires annotation
+  # Unit DEP (1a)
+  - "z3.Implies(DEP_p2_baseline, DEP_p1_coherence)"
+  - "z3.Implies(DEP_p3_red, DEP_p2_baseline)"
+  - "z3.Implies(DEP_p4_red_double, DEP_p3_red)"
+  - "z3.Implies(DEP_p5_green, DEP_p4_red_double)"
+  - "z3.Implies(DEP_p6_checkpoint, DEP_p5_green)"
+  - "z3.Implies(DEP_p7_structural, DEP_p6_checkpoint)"
+  - "z3.Implies(DEP_p8_green_double, DEP_p7_structural)"
+  - "z3.Implies(DEP_p9_vbc, DEP_p8_green_double)"
+  - "z3.Implies(DEP_p10_audit, DEP_p9_vbc)"
+  - "z3.Implies(DEP_p11_crossval, DEP_p10_audit)"
+  - "z3.Implies(DEP_p12_regression, DEP_p11_crossval)"
+  - "z3.Implies(DEP_p13_review, DEP_p12_regression)"
+  - "z3.Implies(DEP_p14_exec, DEP_p13_review)"
+  # Unit completion requires pipeline completion
+  - "z3.Implies(DEP_SWITCH, DEP_p14_exec)"
+
+  # Unit IMP (1b)
+  - "z3.Implies(IMP_p2_baseline, IMP_p1_coherence)"
+  - "z3.Implies(IMP_p3_red, IMP_p2_baseline)"
+  - "z3.Implies(IMP_p4_red_double, IMP_p3_red)"
+  - "z3.Implies(IMP_p5_green, IMP_p4_red_double)"
+  - "z3.Implies(IMP_p6_checkpoint, IMP_p5_green)"
+  - "z3.Implies(IMP_p7_structural, IMP_p6_checkpoint)"
+  - "z3.Implies(IMP_p8_green_double, IMP_p7_structural)"
+  - "z3.Implies(IMP_p9_vbc, IMP_p8_green_double)"
+  - "z3.Implies(IMP_p10_audit, IMP_p9_vbc)"
+  - "z3.Implies(IMP_p11_crossval, IMP_p10_audit)"
+  - "z3.Implies(IMP_p12_regression, IMP_p11_crossval)"
+  - "z3.Implies(IMP_p13_review, IMP_p12_regression)"
+  - "z3.Implies(IMP_p14_exec, IMP_p13_review)"
+  - "z3.Implies(IMPORT_CHANGE, IMP_p14_exec)"
+
+  # Unit CTX (3a)
+  - "z3.Implies(CTX_p2_baseline, CTX_p1_coherence)"
+  - "z3.Implies(CTX_p3_red, CTX_p2_baseline)"
+  - "z3.Implies(CTX_p4_red_double, CTX_p3_red)"
+  - "z3.Implies(CTX_p5_green, CTX_p4_red_double)"
+  - "z3.Implies(CTX_p6_checkpoint, CTX_p5_green)"
+  - "z3.Implies(CTX_p7_structural, CTX_p6_checkpoint)"
+  - "z3.Implies(CTX_p8_green_double, CTX_p7_structural)"
+  - "z3.Implies(CTX_p9_vbc, CTX_p8_green_double)"
+  - "z3.Implies(CTX_p10_audit, CTX_p9_vbc)"
+  - "z3.Implies(CTX_p11_crossval, CTX_p10_audit)"
+  - "z3.Implies(CTX_p12_regression, CTX_p11_crossval)"
+  - "z3.Implies(CTX_p13_review, CTX_p12_regression)"
+  - "z3.Implies(CTX_p14_exec, CTX_p13_review)"
+  - "z3.Implies(CTX_ANNOTATE, CTX_p14_exec)"
+
+  # Unit SES (3b)
+  - "z3.Implies(SES_p2_baseline, SES_p1_coherence)"
+  - "z3.Implies(SES_p3_red, SES_p2_baseline)"
+  - "z3.Implies(SES_p4_red_double, SES_p3_red)"
+  - "z3.Implies(SES_p5_green, SES_p4_red_double)"
+  - "z3.Implies(SES_p6_checkpoint, SES_p5_green)"
+  - "z3.Implies(SES_p7_structural, SES_p6_checkpoint)"
+  - "z3.Implies(SES_p8_green_double, SES_p7_structural)"
+  - "z3.Implies(SES_p9_vbc, SES_p8_green_double)"
+  - "z3.Implies(SES_p10_audit, SES_p9_vbc)"
+  - "z3.Implies(SES_p11_crossval, SES_p10_audit)"
+  - "z3.Implies(SES_p12_regression, SES_p11_crossval)"
+  - "z3.Implies(SES_p13_review, SES_p12_regression)"
+  - "z3.Implies(SES_p14_exec, SES_p13_review)"
+  - "z3.Implies(SESSION_ID_OK, SES_p14_exec)"
+
+  # Unit CON (5a)
+  - "z3.Implies(CON_p2_baseline, CON_p1_coherence)"
+  - "z3.Implies(CON_p3_red, CON_p2_baseline)"
+  - "z3.Implies(CON_p4_red_double, CON_p3_red)"
+  - "z3.Implies(CON_p5_green, CON_p4_red_double)"
+  - "z3.Implies(CON_p6_checkpoint, CON_p5_green)"
+  - "z3.Implies(CON_p7_structural, CON_p6_checkpoint)"
+  - "z3.Implies(CON_p8_green_double, CON_p7_structural)"
+  - "z3.Implies(CON_p9_vbc, CON_p8_green_double)"
+  - "z3.Implies(CON_p10_audit, CON_p9_vbc)"
+  - "z3.Implies(CON_p11_crossval, CON_p10_audit)"
+  - "z3.Implies(CON_p12_regression, CON_p11_crossval)"
+  - "z3.Implies(CON_p13_review, CON_p12_regression)"
+  - "z3.Implies(CON_p14_exec, CON_p13_review)"
+  - "z3.Implies(CONFTEST, CON_p14_exec)"
+
+  # Unit TST (5b)
+  - "z3.Implies(TST_p2_baseline, TST_p1_coherence)"
+  - "z3.Implies(TST_p3_red, TST_p2_baseline)"
+  - "z3.Implies(TST_p4_red_double, TST_p3_red)"
+  - "z3.Implies(TST_p5_green, TST_p4_red_double)"
+  - "z3.Implies(TST_p6_checkpoint, TST_p5_green)"
+  - "z3.Implies(TST_p7_structural, TST_p6_checkpoint)"
+  - "z3.Implies(TST_p8_green_double, TST_p7_structural)"
+  - "z3.Implies(TST_p9_vbc, TST_p8_green_double)"
+  - "z3.Implies(TST_p10_audit, TST_p9_vbc)"
+  - "z3.Implies(TST_p11_crossval, TST_p10_audit)"
+  - "z3.Implies(TST_p12_regression, TST_p11_crossval)"
+  - "z3.Implies(TST_p13_review, TST_p12_regression)"
+  - "z3.Implies(TST_p14_exec, TST_p13_review)"
+  - "z3.Implies(TEST_MIGRATED, TST_p14_exec)"
+
+  # Unit LIF (SC-2)
+  - "z3.Implies(LIF_p2_baseline, LIF_p1_coherence)"
+  - "z3.Implies(LIF_p3_red, LIF_p2_baseline)"
+  - "z3.Implies(LIF_p4_red_double, LIF_p3_red)"
+  - "z3.Implies(LIF_p5_green, LIF_p4_red_double)"
+  - "z3.Implies(LIF_p6_checkpoint, LIF_p5_green)"
+  - "z3.Implies(LIF_p7_structural, LIF_p6_checkpoint)"
+  - "z3.Implies(LIF_p8_green_double, LIF_p7_structural)"
+  - "z3.Implies(LIF_p9_vbc, LIF_p8_green_double)"
+  - "z3.Implies(LIF_p10_audit, LIF_p9_vbc)"
+  - "z3.Implies(LIF_p11_crossval, LIF_p10_audit)"
+  - "z3.Implies(LIF_p12_regression, LIF_p11_crossval)"
+  - "z3.Implies(LIF_p13_review, LIF_p12_regression)"
+  - "z3.Implies(LIF_p14_exec, LIF_p13_review)"
+  - "z3.Implies(LIFESPAN_OK, LIF_p14_exec)"
+
+  # Unit DIF (SC-4)
+  - "z3.Implies(DIF_p2_baseline, DIF_p1_coherence)"
+  - "z3.Implies(DIF_p3_red, DIF_p2_baseline)"
+  - "z3.Implies(DIF_p4_red_double, DIF_p3_red)"
+  - "z3.Implies(DIF_p5_green, DIF_p4_red_double)"
+  - "z3.Implies(DIF_p6_checkpoint, DIF_p5_green)"
+  - "z3.Implies(DIF_p7_structural, DIF_p6_checkpoint)"
+  - "z3.Implies(DIF_p8_green_double, DIF_p7_structural)"
+  - "z3.Implies(DIF_p9_vbc, DIF_p8_green_double)"
+  - "z3.Implies(DIF_p10_audit, DIF_p9_vbc)"
+  - "z3.Implies(DIF_p11_crossval, DIF_p10_audit)"
+  - "z3.Implies(DIF_p12_regression, DIF_p11_crossval)"
+  - "z3.Implies(DIF_p13_review, DIF_p12_regression)"
+  - "z3.Implies(DIF_p14_exec, DIF_p13_review)"
+  - "z3.Implies(DIFF_SESSION_IDS, DIF_p14_exec)"
+
+  # Unit STA (SC-7)
+  - "z3.Implies(STA_p2_baseline, STA_p1_coherence)"
+  - "z3.Implies(STA_p3_red, STA_p2_baseline)"
+  - "z3.Implies(STA_p4_red_double, STA_p3_red)"
+  - "z3.Implies(STA_p5_green, STA_p4_red_double)"
+  - "z3.Implies(STA_p6_checkpoint, STA_p5_green)"
+  - "z3.Implies(STA_p7_structural, STA_p6_checkpoint)"
+  - "z3.Implies(STA_p8_green_double, STA_p7_structural)"
+  - "z3.Implies(STA_p9_vbc, STA_p8_green_double)"
+  - "z3.Implies(STA_p10_audit, STA_p9_vbc)"
+  - "z3.Implies(STA_p11_crossval, STA_p10_audit)"
+  - "z3.Implies(STA_p12_regression, STA_p11_crossval)"
+  - "z3.Implies(STA_p13_review, STA_p12_regression)"
+  - "z3.Implies(STA_p14_exec, STA_p13_review)"
+  - "z3.Implies(STATE_ISOLATION, STA_p14_exec)"
+
+  # === Domain dependency ordering ===
+  - "z3.Implies(IMPORT_CHANGE, DEP_SWITCH)"
   - "z3.Implies(CTX_ANNOTATE, DEP_SWITCH)"
   - "z3.Implies(SESSION_ID_OK, CTX_ANNOTATE)"
-
-  # Phase 3: in-memory client requires fastmcp installed
   - "z3.Implies(CONFTEST, DEP_SWITCH)"
   - "z3.Implies(TEST_MIGRATED, CONFTEST)"
-
-  # Phase 4: session isolation requires working ctx.session_id + in-memory clients
+  - "z3.Implies(LIFESPAN_OK, DEP_SWITCH)"
+  - "z3.Implies(SIZE_DOCUMENTED, DEP_SWITCH)"
   - "z3.Implies(DIFF_SESSION_IDS, SESSION_ID_OK)"
   - "z3.Implies(DIFF_SESSION_IDS, TEST_MIGRATED)"
   - "z3.Implies(STATE_ISOLATION, SESSION_ID_OK)"
   - "z3.Implies(STATE_ISOLATION, TEST_MIGRATED)"
 
 postconditions:
+  - "z3.Not(z3.And(IMPORT_CHANGE, z3.Not(DEP_SWITCH)))"
   - "z3.Not(z3.And(CTX_ANNOTATE, z3.Not(DEP_SWITCH)))"
   - "z3.Not(z3.And(SESSION_ID_OK, z3.Not(CTX_ANNOTATE)))"
+  - "z3.Not(z3.And(CONFTEST, z3.Not(DEP_SWITCH)))"
   - "z3.Not(z3.And(TEST_MIGRATED, z3.Not(CONFTEST)))"
+  - "z3.Not(z3.And(LIFESPAN_OK, z3.Not(DEP_SWITCH)))"
+  - "z3.Not(z3.And(SIZE_DOCUMENTED, z3.Not(DEP_SWITCH)))"
   - "z3.Not(z3.And(DIFF_SESSION_IDS, z3.Not(SESSION_ID_OK)))"
   - "z3.Not(z3.And(DIFF_SESSION_IDS, z3.Not(TEST_MIGRATED)))"
   - "z3.Not(z3.And(STATE_ISOLATION, z3.Not(SESSION_ID_OK)))"

@@ -1,10 +1,12 @@
-timestamp: '2026-06-06T16:40:27.173080+00:00'
+timestamp: '2026-06-06T16:54:35.150475+00:00'
 variables:
   CONFTEST: false
   CTX_ANNOTATE: false
   DEP_SWITCH: false
   DIFF_SESSION_IDS: false
   IMPORT_CHANGE: false
+  LIFESPAN_OK: false
   SESSION_ID_OK: false
+  SIZE_DOCUMENTED: false
   STATE_ISOLATION: false
   TEST_MIGRATED: false
