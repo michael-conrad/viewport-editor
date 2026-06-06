@@ -138,38 +138,24 @@ Creating `feature/*` or `spec/*` branches for code changes still requires `for_i
 - `.issues/{N}/spec-artifacts/` contains plan.md, cards.md, dependency-contract.yaml, and sub-directories (research/, designs/, audit/) — these are NEVER mirrored to the remote tracker.
 - When reading or acting on an issue, always read from `.issues/{N}/` first. Only use the remote issue body for user-facing context (comments, labels, assignees).
 
-## GitHub URLs for .issues/ Cross-References
+## GitHub URL Convention for Remote Issue Body
 
-When linking to `.issues/` files from GitHub issue bodies, use full URLs to the `issues-data` branch. The branch root IS the `.issues/` directory root.
+The remote issue body is a human-facing exec summary. It must include the spec folder URL once, at the top of the body, as a prominent blockquote. No other `.issues/` URLs belong in the remote issue body.
 
 ### Pattern
 
 ```
-Folder:   https://github.com/{owner}/{repo}/tree/issues-data/{N}
-File:     https://github.com/{owner}/{repo}/blob/issues-data/{N}/{path}
+> **Full spec and artifacts: [`.issues/{N}/`](https://github.com/{owner}/{repo}/tree/issues-data/{N})** — this issue is a condensed exec summary; the authoritative spec lives in the `issues-data` branch.
 ```
 
-### Convention
+### Rules
 
-- **Only the spec folder gets a full URL** — for human readers browsing via GitHub
-- **Artifact paths stay relative** (`.issues/N/spec-artifacts/plan.md`) — for AI agents reading locally
-- The folder URL is sufficient: it shows spec.md, spec-artifacts/, and all sub-files
+- **One URL only** — the spec folder, at the top, as a blockquote
+- **All artifact paths stay out of the remote issue body entirely** — `.issues/N/spec-artifacts/plan.md` etc. belong only in the local `.issues/{N}/spec.md`, never mirrored
+- AI agents read from `.issues/{N}/` directly — they should never need artifact paths from the remote body
 
-### Examples (viewport-editor)
-
-| Target | URL |
-|--------|-----|
-| Issue folder | `https://github.com/michael-conrad/viewport-editor/tree/issues-data/46` |
-| spec.md file | `https://github.com/michael-conrad/viewport-editor/blob/issues-data/46/spec.md` |
-
-### Example: Cross-References Table in Github Issue
+### Examples
 
 ```
-## Cross-References
-
-| Type | Reference | Direction |
-|------|-----------|-----------|
-| spec folder (view on GitHub) | [`.issues/46/`](https://github.com/michael-conrad/viewport-editor/tree/issues-data/46) | Spec and artifacts |
-| implementation plan | `.issues/46/spec-artifacts/plan.md` | Red/Green phase decomposition |
-| card catalogue | `.issues/46/spec-artifacts/cards.md` | Investigation findings and decisions |
+> **Full spec and artifacts: [`.issues/46/`](https://github.com/michael-conrad/viewport-editor/tree/issues-data/46)** — this issue is a condensed exec summary; the authoritative spec lives in the `issues-data` branch.
 ```
