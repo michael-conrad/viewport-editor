@@ -1,85 +1,52 @@
-# Card Catalogue: #46 fastmcp switch investigation
+# Card Catalogue: #46 fastmcp switch
 
-## Card 1 — Dependency Switch + file_path Cleanup ✅ IMPLEMENTED
+## Card 1 — Dependency Switch + file_path Cleanup
 
 | Field | Value |
 |-------|-------|
-| Status | **implemented** |
-| What | `uv add fastmcp` → change import → remove `file_path` from 21 `call_tool("edit", ...)` calls |
-| Evidence | `from fastmcp import FastMCP` resolves to `fastmcp.server.server`. 135/135 tests pass. All 7 tools register via runtime `list_tools()`. FastMCP 3.4.0 installed. |
-| Risk | Low — confirmed |
-| Note | FastMCP 3.x strict Pydantic rejects undeclared kwargs. 21 `file_path` entries removed from `call_tool("edit", arguments={...})` across 4 test files. `pyproject.toml` updated to `fastmcp>=3.0,<4.0`. |
+| What | Replace `mcp>=1.0.0` with `fastmcp>=3.0,<4.0` in pyproject.toml; change import; remove `file_path` from 21 `call_tool("edit", ...)` calls |
+| Method | `uv add fastmcp` → change `from mcp.server.fastmcp` to `from fastmcp` → remove `file_path` from `call_tool("edit", arguments={...})` calls across test files |
+| Risk | Low — `uv add fastmcp` test confirmed FastMCP 3.x resolves and uses strict Pydantic (rejects undeclared kwargs). 21 test call sites pass `file_path` as dead data that must be removed. |
+| Note | FastMCP 3.x strict Pydantic rejects undeclared kwargs — 21 `file_path` entries must be removed from `call_tool("edit", arguments={...})` across 4 test files |
 
-**Affected files (21 sites removed):**
+**Files requiring `file_path` removal (21 sites):**
 - `test/test_phase2_edit_diff.py` — 16
 - `test/test_p3_autosave.py` — 3
 - `test/test_phase1_server_viewport.py` — 1
 - `test/test_phase3_filenew_saveas.py` — 1
 
-**RED test file created:** `test/test_red_46_card1_switch.py` — 2 RED tests (import check + file_path grep), now GREEN.
-
-## Card 2 — `ctx: Context` Type Annotation
+## Card 2 — `ctx: Context` Type Annotation (depends on Card 1)
 
 | Field | Value |
 |-------|-------|
-| Status | pending |
-| Method | Replace `ctx: Any = None` with `ctx: Context` in all 7 handlers |
-| Current state | All 7 handlers still use `ctx: Any = None` — annotation change not yet applied |
-| Risk | Low |
-| Requires | Card 1 |
+| What | Change all 7 tool handler `ctx` parameters from `ctx: Any = None` to `ctx: Context` |
+| Method | Import `Context` from fastmcp, annotate 7 handlers, verify `ctx.session_id` returns str in handler |
+| Risk | Low — `ctx` parameter already exists and is positioned first per #45 |
 
-## Card 3 — Session Management Capability
+## Card 3 — Session Management Capability (depends on Card 2)
 
 | Field | Value |
 |-------|-------|
-| Status | pending |
-| Method | PoC: two tools sharing state via ctx.set_state/ctx.get_state |
-| Risk | Medium |
-| Requires | Card 2 |
+| What | Verify `ctx.session_id`, `ctx.set_state`, `ctx.get_state` work for session isolation |
+| Method | Build proof-of-concept: two tools sharing session state, two clients confirmed isolated |
+| Risk | Medium — `ctx.session_id` raises `RuntimeError` pre-handshake; tool handlers run post-handshake so likely safe |
 
-## Card 4 — In-Memory Test Client
-
-| Field | Value |
-|-------|-------|
-| Status | pending |
-| Method | Single shared fixture `Client(create_server(...))` across 11 files |
-| Current state | Tests still use `mcp.client.session.ClientSession` + `stdio_client` — not migrated |
-| Risk | Medium |
-
-## Card 5 — Decorator Compatibility ✅ CONFIRMED (no code change)
+## Card 4 — In-Memory Test Client (depends on Card 1)
 
 | Field | Value |
 |-------|-------|
-| Status | **confirmed — no code change needed** |
-| Method | Verify `@mcp.tool()` still callable |
-| Evidence | `grep` confirms zero captures of `@mcp.tool()` decorator return value in `src/`. No code relies on the return type — the decorator is used only for side-effect registration. Standalone fastmcp returns original function; official SDK returned `FunctionTool`. No behavioral impact. |
-| Risk | None |
+| What | Replace stdio-subprocess test fixtures with in-memory `Client(server)` |
+| Method | Single shared fixture `Client(create_server(...))` across 11 files. Currently uses `mcp.client.session.ClientSession` + `stdio_client`. |
+| Risk | Medium — 11 files with different module-scope settings |
 
-## Card 6 — Dependency Bloat (measured, spec corrected)
+## Card 5 — Decorator Compatibility
 
-| Field | Value |
-|-------|-------|
-| Status | **measured** |
-| Method | `du -sh` on installed packages |
-| Evidence | fastmcp 4.8M (3,874,374 bytes), mcp 2.2M (1,555,251 bytes). Delta: +2.6M net. Note: fastmcp transitively depends on mcp, so mcp is NOT removed. |
-| Risk | Low — CLI server extras are unused but harmless |
-| Note | Spec originally cited 28.8 MB vs 621 KB (PyPI download sizes). Corrected to actual on-disk sizes. |
+`@mcp.tool()` returns original function in standalone fastmcp (official SDK returned `FunctionTool`). Zero captures of decorator return value in `src/` — no code depends on return type. No requirements change needed.
 
-## Card 7 — Lifespan Handler ✅ CONFIRMED (no code change)
+## Card 6 — Dependency Bloat
 
-| Field | Value |
-|-------|-------|
-| Status | **confirmed — no code change needed** |
-| Method | Verify `_server_lifespan` async generator works with standalone fastmcp |
-| Evidence | Same `@asynccontextmanager` + `lifespan=` parameter pattern. Pattern confirmed identical in both SDKs. Server starts and lifespan manager invoked identically. |
-| Risk | None |
+`fastmcp` 4.8M (3,874,374 bytes), `mcp` 2.2M (1,555,251 bytes). Delta: +2.6M net. `fastmcp` transitively depends on `mcp`, so `mcp` is NOT removed. Document delta in spec.
 
-## Decision Log
+## Card 7 — Lifespan Handler
 
-| Date | Finding | Decision |
-|------|---------|----------|
-| 2026-06-04 | FastMCP 3.x strict Pydantic rejects undeclared kwargs. 21 `edit()` test calls pass `file_path` — dead field never forwarded to handler. | Card 1 must remove `file_path` from edit() test calls. #39's test passes on dev and stays GREEN. |
-| 2026-06-05 | Card 1 implemented: 135/135 tests pass, all 7 tools register at runtime via `create_server() + list_tools()`. FastMCP 3.4.0 resolves to `fastmcp.server.server`. | Switch to standalone fastmcp is VIABLE for Card 1. Proceed with Cards 2-4. |
-| 2026-06-05 | Card 5: `grep` confirms zero `= @mcp.tool()` captures across `src/`. Decorator used only for side-effect registration. | No code change needed. Documented and closed. |
-| 2026-06-05 | Card 6: Actual on-disk sizes are fastmcp 4.8M vs mcp 2.2M (delta +2.6M). Original spec cited PyPI download sizes (28.8 MB / 621 KB) which were incorrect for installed footprint. | Spec corrected to actual `du -sh` measurements. |
-| 2026-06-05 | Card 7: `_server_lifespan` uses same `@asynccontextmanager` pattern in both SDKs. FastMCP accepts `lifespan=` identically. | No code change needed. Documented and closed. |
+Same `@asynccontextmanager` + `lifespan=` parameter pattern in both SDKs. No requirements change needed.

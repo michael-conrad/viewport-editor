@@ -1,0 +1,32 @@
+# Dependency contract for remaining open issues
+# Verifies that issue ordering respects all code-level dependencies.
+
+variables:
+  done_46:
+    type: bool
+
+  done_38:
+    type: bool
+
+  done_6:
+    type: bool
+
+preconditions:
+  # True today
+  - "z3.Not(done_46)"
+  - "z3.Not(done_38)"
+  - "z3.Not(done_6)"
+
+# Dependency constraints as invariants (must hold at all times)
+invariants:
+  # 46 must be done before 38 can be done
+  - "z3.Implies(done_38, done_46)"
+  # 38 must be done before 6 can be done (integration tests must test deployed API)
+  - "z3.Implies(done_6, done_38)"
+  # Therefore: 6 implies both 46 and 38
+  - "z3.Implies(done_6, z3.And(done_46, done_38))"
+
+postconditions:
+  # No circular dependencies — acyclic
+  - "z3.Not(z3.And(done_6, z3.Not(done_38)))"
+  - "z3.Not(z3.And(done_38, z3.Not(done_46)))"
