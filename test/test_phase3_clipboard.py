@@ -15,12 +15,9 @@ from __future__ import annotations
 import tempfile
 import uuid
 from pathlib import Path
-from typing import AsyncIterator
+from typing import AsyncIterator, Any
 
 import pytest
-from mcp.client.session import ClientSession
-from mcp.client.stdio import StdioServerParameters, stdio_client
-from mcp.types import CallToolResult
 
 
 @pytest.fixture(scope="module")
@@ -31,37 +28,7 @@ def test_project_root() -> Path:
     return tmpdir
 
 
-@pytest.fixture(scope="module")
-def server_params(test_project_root: Path) -> StdioServerParameters:
-    return StdioServerParameters(
-        command="uv",
-        args=[
-            "run",
-            "python",
-            "-m",
-            "viewport_editor",
-            "--project-root",
-            str(test_project_root),
-        ],
-    )
-
-
-@pytest.fixture
-async def client_session(
-    server_params: StdioServerParameters,
-) -> AsyncIterator[ClientSession]:
-    try:
-        async with stdio_client(server_params) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                yield session
-    except RuntimeError as exc:
-        msg = str(exc)
-        if "Attempted to exit cancel scope in a different task" not in msg:
-            raise
-
-
-def _get_text(result: CallToolResult) -> str:
+def _get_text(result: Any) -> str:
     parts: list[str] = []
     if result.content:
         for item in result.content:
@@ -88,7 +55,7 @@ def _unique_sid() -> str:
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_copy_creates_clipboard_with_provenance(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-39: clipboard:copy populates session clipboard with source_file, line_range, timestamp.
 
@@ -155,7 +122,7 @@ async def test_copy_creates_clipboard_with_provenance(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_copy_line_aligned_only(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-48: clipboard:copy snaps mid-line ranges to line boundaries.
 
@@ -233,7 +200,7 @@ async def test_copy_line_aligned_only(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_copy_cross_file(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-39: clipboard:copy provenance tracks correct source file across viewports.
 
@@ -284,7 +251,7 @@ async def test_copy_cross_file(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_copy_no_buffered_switch(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-39: clipboard:copy is a read — does not switch viewport to buffered mode.
 
@@ -361,7 +328,7 @@ async def test_copy_no_buffered_switch(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_cut_stages_deletion_in_buffer(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-40: cut copies range to clipboard AND stages deletion in buffer.
 
@@ -459,7 +426,7 @@ async def test_cut_stages_deletion_in_buffer(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_cut_autosave_gate(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-40: cut with autosave=on switches to buffered mode.
 
@@ -523,7 +490,7 @@ async def test_cut_autosave_gate(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_cut_already_buffered(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-40: cut when already buffered returns no autosave-gate notice.
 
@@ -573,7 +540,7 @@ async def test_cut_already_buffered(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_paste_insert_before(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-41: paste inserts clipboard content BEFORE target line (insert-before semantics).
 
@@ -665,7 +632,7 @@ async def test_paste_insert_before(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_paste_preserves_clipboard(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-41: paste preserves clipboard content (never auto-clears).
 
@@ -746,7 +713,7 @@ async def test_paste_preserves_clipboard(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_paste_cross_viewport(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-41: paste across viewports — clipboard is session-scoped, not viewport-scoped.
 
@@ -824,7 +791,7 @@ async def test_paste_cross_viewport(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_paste_autosave_gate(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-42: paste with autosave=on switches to buffered mode and returns notice.
 
@@ -893,7 +860,7 @@ async def test_paste_autosave_gate(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_paste_already_buffered_no_notice(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-42: paste when already buffered returns no autosave-gate notice.
 
@@ -951,7 +918,7 @@ async def test_paste_already_buffered_no_notice(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_cut_autosave_gate_notice(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-42: cut with autosave=on switches to buffered mode and returns notice.
 
@@ -1012,7 +979,7 @@ async def test_cut_autosave_gate_notice(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_cut_diff_response(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-42: cut returns diff in tool response (matching diff:show format).
 
@@ -1062,7 +1029,7 @@ async def test_cut_diff_response(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_paste_diff_response(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-42: paste returns diff in tool response (matching diff:show format).
 
@@ -1123,7 +1090,7 @@ async def test_paste_diff_response(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_paste_empty_clipboard_is_error(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-41: paste with no clipboard content returns isError=true.
 
@@ -1164,7 +1131,7 @@ async def test_paste_empty_clipboard_is_error(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_paste_ignores_stash(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-46: paste reads strictly from session.clipboard — never from stash.
 

@@ -16,12 +16,9 @@ from __future__ import annotations
 import tempfile
 import uuid
 from pathlib import Path
-from typing import AsyncIterator
+from typing import AsyncIterator, Any
 
 import pytest
-from mcp.client.session import ClientSession
-from mcp.client.stdio import StdioServerParameters, stdio_client
-from mcp.types import CallToolResult
 
 
 @pytest.fixture(scope="module")
@@ -35,37 +32,7 @@ def test_project_root() -> Path:
     return tmpdir
 
 
-@pytest.fixture(scope="module")
-def server_params(test_project_root: Path) -> StdioServerParameters:
-    return StdioServerParameters(
-        command="uv",
-        args=[
-            "run",
-            "python",
-            "-m",
-            "viewport_editor",
-            "--project-root",
-            str(test_project_root),
-        ],
-    )
-
-
-@pytest.fixture
-async def client_session(
-    server_params: StdioServerParameters,
-) -> AsyncIterator[ClientSession]:
-    try:
-        async with stdio_client(server_params) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                yield session
-    except RuntimeError as exc:
-        msg = str(exc)
-        if "Attempted to exit cancel scope in a different task" not in msg:
-            raise
-
-
-def _get_text(result: CallToolResult) -> str:
+def _get_text(result: Any) -> str:
     parts: list[str] = []
     if result.content:
         for item in result.content:
@@ -83,7 +50,7 @@ def _extract_vpid(text: str) -> str:
 
 
 @pytest.mark.phase4
-async def test_diff_apply_stages_into_buffer(client_session: ClientSession) -> None:
+async def test_diff_apply_stages_into_buffer(client_session: Any) -> None:
     """SC-23: diff:apply stages diff into buffer and returns diff summary."""
     sid = f"test-apply-stage-{uuid.uuid4().hex[:8]}"
     result = await client_session.call_tool(
@@ -130,7 +97,7 @@ async def test_diff_apply_stages_into_buffer(client_session: ClientSession) -> N
 
 
 @pytest.mark.phase4
-async def test_diff_apply_auto_loads_unopened(client_session: ClientSession) -> None:
+async def test_diff_apply_auto_loads_unopened(client_session: Any) -> None:
     """SC-23: diff:apply auto-loads file if not in any viewport."""
     sid = f"test-apply-autoload-{uuid.uuid4().hex[:8]}"
 
@@ -165,7 +132,7 @@ async def test_diff_apply_auto_loads_unopened(client_session: ClientSession) -> 
 
 
 @pytest.mark.phase4
-async def test_diff_apply_fuzzy_context_matching(client_session: ClientSession) -> None:
+async def test_diff_apply_fuzzy_context_matching(client_session: Any) -> None:
     """SC-23: diff:apply applies with modified context lines (fuzzy matching)."""
     sid = f"test-apply-fuzzy-{uuid.uuid4().hex[:8]}"
     result = await client_session.call_tool(
@@ -223,7 +190,7 @@ async def test_diff_apply_fuzzy_context_matching(client_session: ClientSession) 
 
 
 @pytest.mark.phase4
-async def test_diff_apply_no_match_rejects(client_session: ClientSession) -> None:
+async def test_diff_apply_no_match_rejects(client_session: Any) -> None:
     """SC-23: diff:apply returns isError when context doesn't match anywhere."""
     sid = f"test-apply-nomatch-{uuid.uuid4().hex[:8]}"
     result = await client_session.call_tool(
@@ -265,7 +232,7 @@ async def test_diff_apply_no_match_rejects(client_session: ClientSession) -> Non
 
 
 @pytest.mark.phase4
-async def test_diff_apply_autosave_gate(client_session: ClientSession) -> None:
+async def test_diff_apply_autosave_gate(client_session: Any) -> None:
     """SC-23: diff:apply triggers autosave gate — switches to buffered mode."""
     sid = f"test-apply-autosavegate-{uuid.uuid4().hex[:8]}"
     result = await client_session.call_tool(

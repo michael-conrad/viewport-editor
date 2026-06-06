@@ -21,12 +21,9 @@ from __future__ import annotations
 import tempfile
 import uuid
 from pathlib import Path
-from typing import AsyncIterator
+from typing import AsyncIterator, Any
 
 import pytest
-from mcp.client.session import ClientSession
-from mcp.client.stdio import StdioServerParameters, stdio_client
-from mcp.types import CallToolResult
 
 
 @pytest.fixture(scope="module")
@@ -38,37 +35,7 @@ def test_project_root() -> Path:
     return tmpdir
 
 
-@pytest.fixture(scope="module")
-def server_params(test_project_root: Path) -> StdioServerParameters:
-    return StdioServerParameters(
-        command="uv",
-        args=[
-            "run",
-            "python",
-            "-m",
-            "viewport_editor",
-            "--project-root",
-            str(test_project_root),
-        ],
-    )
-
-
-@pytest.fixture
-async def client_session(
-    server_params: StdioServerParameters,
-) -> AsyncIterator[ClientSession]:
-    try:
-        async with stdio_client(server_params) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                yield session
-    except RuntimeError as exc:
-        msg = str(exc)
-        if "Attempted to exit cancel scope in a different task" not in msg:
-            raise
-
-
-def _get_text(result: CallToolResult) -> str:
+def _get_text(result: Any) -> str:
     parts: list[str] = []
     if result.content:
         for item in result.content:
@@ -95,7 +62,7 @@ def _unique_sid() -> str:
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_autosave_on_file_save_noop(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-14: With autosave=on, file:save returns "no pending changes".
 
@@ -168,7 +135,7 @@ async def test_autosave_on_file_save_noop(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_autosave_on_diff_show_empty(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     """SC-14: With autosave=on, diff:show returns explicit autosave gate response.
 
@@ -229,7 +196,7 @@ async def test_autosave_on_diff_show_empty(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_autosave_on_discard_empty(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     """SC-14: With autosave=on, file:discard returns empty/no-op state.
 
@@ -285,7 +252,7 @@ async def test_autosave_on_discard_empty(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_viewport_close_dirty_auto_saves(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-24: viewport:close with dirty buffer and autosave=on flushes to disk.
 
@@ -345,7 +312,7 @@ async def test_viewport_close_dirty_auto_saves(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_viewport_close_already_closed_noop(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     """SC-24: closing an already-closed viewport raises ViewportNotFoundError.
 
@@ -405,7 +372,7 @@ async def test_viewport_close_already_closed_noop(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_viewport_close_clean_noop(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-24: closing a clean (non-dirty) viewport doesn't trigger a disk write.
 
@@ -533,7 +500,7 @@ def test_viewport_close_clean_no_write_unit() -> None:
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_phase3_autosave_tools_listed(client_session: ClientSession) -> None:
+async def test_phase3_autosave_tools_listed(client_session: Any) -> None:
     """Verify viewport, file, diff tools are present (regression guard)."""
     result = await client_session.list_tools()
     names = [t.name for t in result.tools]

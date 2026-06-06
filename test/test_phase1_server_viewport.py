@@ -11,15 +11,12 @@ from __future__ import annotations
 import time
 import tempfile
 from pathlib import Path
-from typing import AsyncIterator
+from typing import AsyncIterator, Any
 
 # Unit test imports for display mode helpers
 from viewport_editor.server import _render_content_line, _decode_unicode_escapes
 
 import pytest
-from mcp.client.session import ClientSession
-from mcp.client.stdio import StdioServerParameters, stdio_client
-from mcp.types import CallToolResult
 
 
 @pytest.fixture(scope="module")
@@ -34,49 +31,9 @@ def test_project_root() -> Path:
     return tmpdir
 
 
-@pytest.fixture(scope="module")
-def server_params(test_project_root: Path) -> StdioServerParameters:
-    return StdioServerParameters(
-        command="uv",
-        args=[
-            "run",
-            "python",
-            "-m",
-            "viewport_editor",
-            "--project-root",
-            str(test_project_root),
-        ],
-    )
-
-
-@pytest.fixture
-async def client_session(
-    server_params: StdioServerParameters,
-) -> AsyncIterator[ClientSession]:
-    """Fixture that creates a client session for testing.
-
-    Note: RuntimeError from anyio cancel scope mismatch during teardown is
-    suppressed — this is a known MCP SDK + anyio compatibility issue where
-    ClientSession's internal task group cancel scope is bound to the creating
-    task but may be exited in a different task during pytest-asyncio teardown.
-    Only the exact cancel-scope mismatch message is suppressed; other
-    RuntimeErrors (e.g., subprocess startup failure) propagate normally.
-    """
-    try:
-        async with stdio_client(server_params) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                yield session
-    except RuntimeError as exc:
-        msg = str(exc)
-        if "Attempted to exit cancel scope in a different task" not in msg:
-            raise  # genuine error — subprocess crash, init failure, etc.
-        # known anyio cancel scope mismatch during fixture teardown
-
-
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc1_exactly_6_tools(client_session: ClientSession) -> None:
+async def test_sc1_exactly_6_tools(client_session: Any) -> None:
     result = await client_session.list_tools()
     names = [t.name for t in result.tools]
     assert len(names) == 7, f"Expected 7 tools, got {len(names)}: {names}"
@@ -86,7 +43,7 @@ async def test_sc1_exactly_6_tools(client_session: ClientSession) -> None:
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc2_no_dedicated_help_tool(client_session: ClientSession) -> None:
+async def test_sc2_no_dedicated_help_tool(client_session: Any) -> None:
     result = await client_session.list_tools()
     names = [t.name for t in result.tools]
     assert "help" not in names
@@ -95,7 +52,7 @@ async def test_sc2_no_dedicated_help_tool(client_session: ClientSession) -> None
 @pytest.mark.phase1
 @pytest.mark.asyncio
 async def test_sc3_tool_descriptions_use_prose_yaml_no_json(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     # SC-3 behavioral evidence: tool descriptions are prose+YAML, not JSON
     result = await client_session.list_tools()
@@ -128,8 +85,8 @@ async def test_sc3_tool_descriptions_use_prose_yaml_no_json(
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc4_absolute_paths_rejected(client_session: ClientSession) -> None:
-    # SC-4 behavioral evidence: isError=true on the CallToolResult
+async def test_sc4_absolute_paths_rejected(client_session: Any) -> None:
+    # SC-4 behavioral evidence: isError=true on the Any
     result = await client_session.call_tool(
         "viewport",
         arguments={
@@ -151,7 +108,7 @@ async def test_sc4_absolute_paths_rejected(client_session: ClientSession) -> Non
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc4_relative_paths_accepted(client_session: ClientSession) -> None:
+async def test_sc4_relative_paths_accepted(client_session: Any) -> None:
     result = await client_session.call_tool(
         "viewport",
         arguments={
@@ -171,7 +128,7 @@ async def test_sc4_relative_paths_accepted(client_session: ClientSession) -> Non
 @pytest.mark.phase1
 @pytest.mark.asyncio
 async def test_sc5_open_returns_entry_with_all_fields(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     result = await client_session.call_tool(
         "viewport",
@@ -200,7 +157,7 @@ async def test_sc5_open_returns_entry_with_all_fields(
 @pytest.mark.phase1
 @pytest.mark.asyncio
 async def test_sc6_open_accepts_autosave_param_defaults_off(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     result_on = await client_session.call_tool(
         "viewport",
@@ -226,7 +183,7 @@ async def test_sc6_open_accepts_autosave_param_defaults_off(
 @pytest.mark.phase1
 @pytest.mark.asyncio
 async def test_sc7_page_up_moves_by_viewport_height(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     result_open = await client_session.call_tool(
         "viewport",
@@ -261,7 +218,7 @@ async def test_sc7_page_up_moves_by_viewport_height(
 @pytest.mark.phase1
 @pytest.mark.asyncio
 async def test_sc8_page_down_moves_by_viewport_height(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     result_open = await client_session.call_tool(
         "viewport",
@@ -296,7 +253,7 @@ async def test_sc8_page_down_moves_by_viewport_height(
 @pytest.mark.phase1
 @pytest.mark.asyncio
 async def test_sc25_soft_conflict_warning_on_viewport_operations(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     result_open = await client_session.call_tool(
         "viewport",
@@ -332,7 +289,7 @@ async def test_sc25_soft_conflict_warning_on_viewport_operations(
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc26_session_isolation(client_session: ClientSession) -> None:
+async def test_sc26_session_isolation(client_session: Any) -> None:
     await client_session.call_tool(
         "viewport",
         arguments={
@@ -352,7 +309,7 @@ async def test_sc26_session_isolation(client_session: ClientSession) -> None:
 @pytest.mark.phase1
 @pytest.mark.asyncio
 async def test_sc27_jump_returns_is_error_on_target_not_found(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     result_open = await client_session.call_tool(
         "viewport",
@@ -378,7 +335,7 @@ async def test_sc27_jump_returns_is_error_on_target_not_found(
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc31_scroll_by_n_lines(client_session: ClientSession) -> None:
+async def test_sc31_scroll_by_n_lines(client_session: Any) -> None:
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
@@ -410,7 +367,7 @@ async def test_sc31_scroll_by_n_lines(client_session: ClientSession) -> None:
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc31_scroll_negative(client_session: ClientSession) -> None:
+async def test_sc31_scroll_negative(client_session: Any) -> None:
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
@@ -440,7 +397,7 @@ async def test_sc31_scroll_negative(client_session: ClientSession) -> None:
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc32_autosave_toggles_flag(client_session: ClientSession) -> None:
+async def test_sc32_autosave_toggles_flag(client_session: Any) -> None:
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
@@ -475,7 +432,7 @@ async def test_sc32_autosave_toggles_flag(client_session: ClientSession) -> None
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc33_list_returns_all_fields(client_session: ClientSession) -> None:
+async def test_sc33_list_returns_all_fields(client_session: Any) -> None:
     await client_session.call_tool(
         "viewport",
         arguments={
@@ -503,7 +460,7 @@ async def test_sc33_list_returns_all_fields(client_session: ClientSession) -> No
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc34_relative_paths_only(client_session: ClientSession) -> None:
+async def test_sc34_relative_paths_only(client_session: Any) -> None:
     result_abs = await client_session.call_tool(
         "viewport",
         arguments={
@@ -532,7 +489,7 @@ async def test_sc34_relative_paths_only(client_session: ClientSession) -> None:
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_viewport_open_close(client_session: ClientSession) -> None:
+async def test_viewport_open_close(client_session: Any) -> None:
     result_open = await client_session.call_tool(
         "viewport",
         arguments={
@@ -557,7 +514,7 @@ async def test_viewport_open_close(client_session: ClientSession) -> None:
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_viewport_open_custom_range(client_session: ClientSession) -> None:
+async def test_viewport_open_custom_range(client_session: Any) -> None:
     result = await client_session.call_tool(
         "viewport",
         arguments={
@@ -576,7 +533,7 @@ async def test_viewport_open_custom_range(client_session: ClientSession) -> None
 @pytest.mark.phase1
 @pytest.mark.asyncio
 async def test_sc35_dirty_buffers_never_flushed(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-35: Connection loss cleanup — dirty buffers are discarded, never flushed to disk.
 
@@ -727,7 +684,7 @@ def test_decode_unicode_escapes_mixed() -> None:
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_set_display_mode_show(client_session: ClientSession) -> None:
+async def test_set_display_mode_show(client_session: Any) -> None:
     """set-display-mode to show: non-printing chars rendered as \\uNNNN."""
     result_open = await client_session.call_tool(
         "viewport",
@@ -758,7 +715,7 @@ async def test_set_display_mode_show(client_session: ClientSession) -> None:
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_set_display_mode_hide(client_session: ClientSession) -> None:
+async def test_set_display_mode_hide(client_session: Any) -> None:
     """set-display-mode to hide: non-printing chars shown as-is."""
     result_open = await client_session.call_tool(
         "viewport",
@@ -788,7 +745,7 @@ async def test_set_display_mode_hide(client_session: ClientSession) -> None:
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_set_display_mode_invalid(client_session: ClientSession) -> None:
+async def test_set_display_mode_invalid(client_session: Any) -> None:
     """Invalid display_mode returns error."""
     result_open = await client_session.call_tool(
         "viewport",
@@ -819,7 +776,7 @@ async def test_set_display_mode_invalid(client_session: ClientSession) -> None:
 @pytest.mark.phase1
 @pytest.mark.asyncio
 async def test_sc38_unicode_decode_in_edit_replace(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-38-FIX: agent input \\uNNNN in edit operations decodes to real character.
 
@@ -869,7 +826,7 @@ async def test_sc38_unicode_decode_in_edit_replace(
 @pytest.mark.phase1
 @pytest.mark.asyncio
 async def test_sc38_unicode_decode_noop_on_literal_text(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     """SC-38-FIX: decode is no-op on literal text (no \\uNNNN escapes).
 
@@ -887,7 +844,7 @@ async def test_sc38_unicode_decode_noop_on_literal_text(
     assert "error" not in _get_text(result_open)
 
 
-def _get_text(result: CallToolResult) -> str:
+def _get_text(result: Any) -> str:
     parts: list[str] = []
     if result.content:
         for item in result.content:
@@ -906,7 +863,7 @@ def _extract_vpid(text: str) -> str:
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_content_block_format_cat_n(client_session: ClientSession) -> None:
+async def test_content_block_format_cat_n(client_session: Any) -> None:
     """Verify cat -n style content output with line numbering."""
     result = await client_session.call_tool(
         "viewport",
@@ -929,7 +886,7 @@ async def test_content_block_format_cat_n(client_session: ClientSession) -> None
 @pytest.mark.phase1
 @pytest.mark.asyncio
 async def test_navigation_chain_content_consistency(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     """Chain open → page-up → page-down → scroll → jump, verify visible content at each step."""
     # Open at lines 5-15
