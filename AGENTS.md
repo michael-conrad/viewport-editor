@@ -136,3 +136,39 @@ Creating `feature/*` or `spec/*` branches for code changes still requires `for_i
 - `.issues/{N}/spec-artifacts/plan.md` is the local implementation plan (not mirrored to remote)
 - `.issues/{N}/spec-artifacts/cards.md` is the card catalogue with status tracking
 - Files in `.issues/` take precedence over remote issue bodies when both exist. The `.issues/` workspace is the source of truth for implementation planning.
+
+## GitHub URLs for .issues/ Cross-References
+
+When linking to `.issues/` files from GitHub issue bodies, use full URLs to the `issues-data` branch. The branch root IS the `.issues/` directory root.
+
+### Pattern
+
+```
+Folder:   https://github.com/{owner}/{repo}/tree/issues-data/{N}
+File:     https://github.com/{owner}/{repo}/blob/issues-data/{N}/{path}
+```
+
+### Convention
+
+- **Only the spec folder gets a full URL** — for human readers browsing via GitHub
+- **Artifact paths stay relative** (`.issues/N/spec-artifacts/plan.md`) — for AI agents reading locally
+- The folder URL is sufficient: it shows spec.md, spec-artifacts/, and all sub-files
+
+### Examples (viewport-editor)
+
+| Target | URL |
+|--------|-----|
+| Issue folder | `https://github.com/michael-conrad/viewport-editor/tree/issues-data/46` |
+| spec.md file | `https://github.com/michael-conrad/viewport-editor/blob/issues-data/46/spec.md` |
+
+### Example: Cross-References Table in Github Issue
+
+```
+## Cross-References
+
+| Type | Reference | Direction |
+|------|-----------|-----------|
+| spec folder (view on GitHub) | [`.issues/46/`](https://github.com/michael-conrad/viewport-editor/tree/issues-data/46) | Spec and artifacts |
+| implementation plan | `.issues/46/spec-artifacts/plan.md` | Red/Green phase decomposition |
+| card catalogue | `.issues/46/spec-artifacts/cards.md` | Investigation findings and decisions |
+```
