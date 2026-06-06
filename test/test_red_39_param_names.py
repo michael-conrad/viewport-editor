@@ -128,8 +128,11 @@ async def test_red_sc3_clipboard_line_start_end(client_session: Any) -> None:
 # SC-4: ctx is first parameter in all 7 tools (RED — viewport/clipboard have it last)
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_red_sc4_ctx_is_first_param(client_session: Any) -> None:
-    """Check inputSchema property order — ctx should be first in all tools."""
+async def test_red_sc4_ctx_is_not_in_schema(client_session: Any) -> None:
+    """Check that ctx is NOT in inputSchema — fastmcp auto-injects ctx: Context.
+
+    Unlike the bundled MCP SDK, standalone fastmcp strips ctx from the
+    tool schema since it's an auto-injected framework parameter."""
     result = await client_session.list_tools()
     tools_by_name = {t.name: t for t in result.tools}
     expected_tools = {
@@ -144,10 +147,8 @@ async def test_red_sc4_ctx_is_first_param(client_session: Any) -> None:
     for name in sorted(expected_tools):
         t = tools_by_name[name]
         props = list(t.inputSchema.get("properties", {}).keys())
-        # On RED: viewport and clipboard have ctx at end — this check fails
-        # On GREEN: viewport and clipboard have ctx at front — this passes
-        assert props[0] == "ctx", (
-            f"{name}: ctx is not first param. First param is {props[0]}. "
+        assert "ctx" not in props, (
+            f"{name}: ctx should not be in schema with fastmcp. "
             f"Params: {props}"
         )
 
