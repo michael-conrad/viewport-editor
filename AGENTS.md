@@ -140,22 +140,30 @@ Creating `feature/*` or `spec/*` branches for code changes still requires `for_i
 
 ## GitHub URL Convention for Remote Issue Body
 
-The remote issue body is a human-facing exec summary. It must include the spec folder URL once, at the top of the body, as a prominent blockquote. No other `.issues/` URLs belong in the remote issue body.
+The remote issue body is a human-facing exec summary. It must include two blockquotes at the top:
+
+1. **User-facing folder URL** — a full GitHub URL so the user can browse the spec folder on GitHub
+2. **AI-facing sub-folder references** — relative paths to `spec-artifacts/` sub-directories, so agents know where to glob for additional files. Do NOT list individual files — agents should discover content by reading `.issues/{N}/` and globbing `spec-artifacts/*` automatically.
 
 ### Pattern
 
 ```
 > **Full spec and artifacts: [`.issues/{N}/`](https://github.com/{owner}/{repo}/tree/issues-data/{N})** — this issue is a condensed exec summary; the authoritative spec lives in the `issues-data` branch.
+>
+> **Local artifacts:** `.issues/{N}/spec-artifacts/` — implementation plan, card catalogue, dependency contracts, research, designs, audit findings
 ```
 
 ### Rules
 
-- **One URL only** — the spec folder, at the top, as a blockquote
-- **All artifact paths stay out of the remote issue body entirely** — `.issues/N/spec-artifacts/plan.md` etc. belong only in the local `.issues/{N}/spec.md`, never mirrored
-- AI agents read from `.issues/{N}/` directly — they should never need artifact paths from the remote body
+- **User-facing: One full GitHub URL** — the spec folder, as a blockquote
+- **AI-facing: Sub-folder paths only** — reference `spec-artifacts/` (not individual files). Agents glob `spec-artifacts/*` to discover content
+- **NO hardcoded file lists** — don't list `plan.md`, `cards.md`, etc. individually in the remote body. They go stale. Agents discover by globbing.
+- AI agents read from `.issues/{N}/` directly — the remote body just tells them where to look
 
-### Examples
+### Example
 
 ```
 > **Full spec and artifacts: [`.issues/46/`](https://github.com/michael-conrad/viewport-editor/tree/issues-data/46)** — this issue is a condensed exec summary; the authoritative spec lives in the `issues-data` branch.
+>
+> **Local artifacts:** `.issues/46/spec-artifacts/` — implementation plan, card catalogue, dependency contracts, research, designs, audit findings
 ```
