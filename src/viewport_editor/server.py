@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncIterator, Optional
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from .clipboard import ClipboardEntry, apply_copy, apply_cut, apply_paste
 from .exceptions import DiffApplyError, ViewportError

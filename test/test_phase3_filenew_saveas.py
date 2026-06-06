@@ -518,7 +518,6 @@ async def test_sc_lf3_file_new_crlf_write_preserved(
             "action": "insert-lines",
             "session_id": "test-sc-lf3-crlf",
             "viewport_id": vpid,
-            "file_path": new_file,
             "line_start": 1,
             "lines": ["line one", "line two", "line three"],
         },

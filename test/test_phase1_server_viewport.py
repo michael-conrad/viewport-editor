@@ -851,7 +851,6 @@ async def test_sc38_unicode_decode_in_edit_replace(
             "action": "replace",
             "session_id": "test-sc38-edit",
             "viewport_id": vpid,
-            "file_path": file_path_str,
             "old_text": "\\u006c\\u0069\\u006e\\u0065",
             "new_text": "DECODED-LINE",
         },
