@@ -1,4 +1,4 @@
-timestamp: '2026-06-06T18:59:41.844367+00:00'
+timestamp: '2026-06-06T19:28:05.583527+00:00'
 variables:
   CONFTEST: true
   CON_p10_audit: true
@@ -15,9 +15,37 @@ variables:
   CON_p7_structural: true
   CON_p8_green_double: true
   CON_p9_vbc: true
-  CTX_ANNOTATE: false
+  CTX_ANNOTATE: true
+  CTX_p10_audit: true
+  CTX_p11_crossval: true
+  CTX_p12_regression: true
+  CTX_p13_review: true
+  CTX_p14_exec: true
+  CTX_p1_coherence: true
+  CTX_p2_baseline: true
+  CTX_p3_red: true
+  CTX_p4_red_double: true
+  CTX_p5_green: true
+  CTX_p6_checkpoint: true
+  CTX_p7_structural: true
+  CTX_p8_green_double: true
+  CTX_p9_vbc: true
   DEP_SWITCH: true
-  DIFF_SESSION_IDS: false
+  DIFF_SESSION_IDS: true
+  DIF_p10_audit: true
+  DIF_p11_crossval: true
+  DIF_p12_regression: true
+  DIF_p13_review: true
+  DIF_p14_exec: true
+  DIF_p1_coherence: true
+  DIF_p2_baseline: true
+  DIF_p3_red: true
+  DIF_p4_red_double: true
+  DIF_p5_green: true
+  DIF_p6_checkpoint: true
+  DIF_p7_structural: true
+  DIF_p8_green_double: true
+  DIF_p9_vbc: true
   IMPORT_CHANGE: true
   IMP_p10_audit: true
   IMP_p11_crossval: true
@@ -48,9 +76,37 @@ variables:
   LIF_p7_structural: true
   LIF_p8_green_double: true
   LIF_p9_vbc: true
-  SESSION_ID_OK: false
-  SIZE_DOCUMENTED: false
-  STATE_ISOLATION: false
+  SESSION_ID_OK: true
+  SES_p10_audit: true
+  SES_p11_crossval: true
+  SES_p12_regression: true
+  SES_p13_review: true
+  SES_p14_exec: true
+  SES_p1_coherence: true
+  SES_p2_baseline: true
+  SES_p3_red: true
+  SES_p4_red_double: true
+  SES_p5_green: true
+  SES_p6_checkpoint: true
+  SES_p7_structural: true
+  SES_p8_green_double: true
+  SES_p9_vbc: true
+  SIZE_DOCUMENTED: true
+  STATE_ISOLATION: true
+  STA_p10_audit: true
+  STA_p11_crossval: true
+  STA_p12_regression: true
+  STA_p13_review: true
+  STA_p14_exec: true
+  STA_p1_coherence: true
+  STA_p2_baseline: true
+  STA_p3_red: true
+  STA_p4_red_double: true
+  STA_p5_green: true
+  STA_p6_checkpoint: true
+  STA_p7_structural: true
+  STA_p8_green_double: true
+  STA_p9_vbc: true
   TEST_MIGRATED: true
   TST_p10_audit: true
   TST_p11_crossval: true
