@@ -51,9 +51,15 @@ def jump(self, session_id: str, viewport_id: str, target: str) -> ViewportEntry:
 
 The `lower()` normalization means `"TOP"`, `"Top"`, `"top"` all match — robust for LLM-generated target strings.
 
-### No server.py changes needed
+### server.py docstring update
 
-The `_action_jump` handler (line 642) already delegates to `_manager.jump()` and formats the result. No dispatch-table entries, no new handler functions, no schema changes.
+Add a `jump` detail line to the MCP tool docstring so AI agents discover the feature:
+
+```
+- Jump target: a line number, text to search for, "top" (start of file), or "bottom" (end of file)
+```
+
+The docstring at `server.py:68-72` is what MCP surfaces as the tool description — this single line tells agents about all four jump modalities.
 
 ### Response message update
 
@@ -64,6 +70,7 @@ The `_action_jump` handler formats its response as `jumped to '<target>'` — fo
 | File | Change |
 |------|--------|
 | `src/viewport_editor/viewport.py:208-233` | Add `"top"`/`"bottom"` keyword dispatch |
+| `src/viewport_editor/server.py:70` | Add jump target detail to tool docstring |
 | `test/test_phase1_server_viewport.py` | Add 5-6 test cases |
 
 ## Design Considerations
