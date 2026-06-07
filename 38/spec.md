@@ -1,5 +1,16 @@
 # [SPEC-FIX] Remove agent-provided session_id, derive from MCP connection context
 
+> **AI AGENT MANDATE — Read ALL local spec artifacts before any implementation dispatch.**
+> The files in `.issues/{N}/` are the authoritative source for implementation scope, pipeline steps, and cancellation decisions. This remote issue body is a condensed summary only.
+>
+> **Required reading before any implementation dispatch:**
+> 1. `.issues/{N}/spec.md` — this file (spec, intent, SCs)
+> 2. `.issues/{N}/spec-artifacts/plan.md` — dispatch table with pipeline steps mapped to skill tasks
+> 3. `.issues/{N}/spec-artifacts/problem.yaml` — Z3-validated state machine, fluent/goal definitions
+> 4. `.issues/{N}/spec-artifacts/cards.md` — card catalogue with feasibility findings and cancellations
+>
+> Acting on this remote body alone, without loading the local plan and problem model, produces scope errors, stale-pipeline execution, and spec-contradictory work. This mandate is enforced by `.issues/AGENTS.md`.
+
 ## Intent and Executive Summary
 
 **Problem Statement:** Every viewport-editor tool requires `session_id: str` as an agent-provided parameter. The agent invents session IDs like `"test-sc9"` or `"autosave-test"`, giving it control over session isolation boundaries. This means: (1) false isolation — agent can share or isolate sessions artificially, compromising all behavioral test results to date; (2) extra parameter burden — every tool call requires the agent to decide and pass a session string; (3) design violation — session isolation is supposed to be per-MCP-connection, not per-invented-key.
@@ -51,7 +62,7 @@ Files that never use `session_id`: `editor.py`, `file_ops.py`, `diff_engine.py`,
 
 ## Fix Approach
 
-Two-pass implementation:
+Three-pass implementation — see `spec-artifacts/plan.md` for the dispatch table and `spec-artifacts/problem.yaml` for the Z3 state machine.
 
 ### Pass 1: Core Session Derivation — Card 1 (COMPLETE, PR #49)
 
@@ -67,6 +78,8 @@ The `regex` tool never had a `session_id` parameter — no change needed.
 ### Pass 2: Observational Session Behavior — Card 2 (SC-6)
 
 Write empirical test that documents session behavior of two `Client(transport=server)` connections. No assertions — observational only. See SC-6 section below.
+
+**Note:** Phase B (manager-level cleanup) was CANCELLED after research. See §Alternatives Considered above and `spec-artifacts/cards.md` for the feasibility analysis.
 
 ### Pass 3: Documentation — Card 3
 
