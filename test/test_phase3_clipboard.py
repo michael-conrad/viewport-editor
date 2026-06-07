@@ -62,16 +62,12 @@ async def test_copy_creates_clipboard_with_provenance(
     RED: clipboard tool does not exist; call_tool will fail.
     GREEN: copy returns success; session state shows clipboard with provenance fields.
     """
-    sid = _unique_sid()
+    _unique_sid()
     file_path = "clip_src.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": file_path,
-        },
+        arguments={"action": "open", "file_path": file_path},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -80,7 +76,6 @@ async def test_copy_creates_clipboard_with_provenance(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "line_start": 2,
             "line_end": 4,
@@ -105,7 +100,7 @@ async def test_copy_creates_clipboard_with_provenance(
 
     list_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "show", "session_id": sid},
+        arguments={"action": "show"},
     )
     list_text = _get_text(list_result)
     assert not list_result.isError, (
@@ -130,16 +125,12 @@ async def test_copy_line_aligned_only(
     GREEN: copy with non-line-aligned range snaps start to line start, end to line end.
     Returns line_range as whole lines (2-4), not partial.
     """
-    sid = _unique_sid()
+    _unique_sid()
     file_path = "clip_src.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": file_path,
-        },
+        arguments={"action": "open", "file_path": file_path},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -150,7 +141,6 @@ async def test_copy_line_aligned_only(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "line_start": 2,
             "line_end": 4,
@@ -205,15 +195,11 @@ async def test_copy_cross_file(client_session: Any, test_project_root: Path) -> 
     RED: clipboard tool does not exist; call_tool will fail.
     GREEN: copying from clip_other.txt shows source_file=clip_other.txt.
     """
-    sid = _unique_sid()
+    _unique_sid()
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": "clip_other.txt",
-        },
+        arguments={"action": "open", "file_path": "clip_other.txt"},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -222,7 +208,6 @@ async def test_copy_cross_file(client_session: Any, test_project_root: Path) -> 
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "line_start": 1,
             "line_end": 3,
@@ -256,17 +241,12 @@ async def test_copy_no_buffered_switch(
     RED: clipboard tool does not exist; call_tool will fail.
     GREEN: after copy, viewport list shows same autosave state as before copy.
     """
-    sid = _unique_sid()
+    _unique_sid()
     file_path = "clip_src.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": file_path,
-            "autosave": False,
-        },
+        arguments={"action": "open", "file_path": file_path, "autosave": False},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -274,7 +254,7 @@ async def test_copy_no_buffered_switch(
     # Capture viewport state before copy
     list_before = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": sid},
+        arguments={"action": "list"},
     )
     text_before = _get_text(list_before)
 
@@ -282,7 +262,6 @@ async def test_copy_no_buffered_switch(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "line_start": 1,
             "line_end": 2,
@@ -298,7 +277,7 @@ async def test_copy_no_buffered_switch(
     # After copy, viewport list should show same state (no buffered/dirty switch)
     list_after = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": sid},
+        arguments={"action": "list"},
     )
     text_after = _get_text(list_after)
 
@@ -333,17 +312,12 @@ async def test_cut_stages_deletion_in_buffer(
     After cut, the clipboard should have the cut content, and the viewport
     should no longer show the cut lines (they are deleted from buffer).
     """
-    sid = _unique_sid()
+    _unique_sid()
     file_path = "clip_src.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": file_path,
-            "autosave": False,
-        },
+        arguments={"action": "open", "file_path": file_path, "autosave": False},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -352,7 +326,6 @@ async def test_cut_stages_deletion_in_buffer(
         "clipboard",
         arguments={
             "action": "cut",
-            "session_id": sid,
             "viewport_id": vpid,
             "line_start": 2,
             "line_end": 4,
@@ -380,12 +353,7 @@ async def test_cut_stages_deletion_in_buffer(
 
     content_result = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": file_path,
-            "autosave": False,
-        },
+        arguments={"action": "open", "file_path": file_path, "autosave": False},
     )
     content_text = _get_text(content_result)
 
@@ -407,7 +375,7 @@ async def test_cut_stages_deletion_in_buffer(
 
     show_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "show", "session_id": sid},
+        arguments={"action": "show"},
     )
     show_text = _get_text(show_result)
     assert "beta" in show_text, (
@@ -429,16 +397,11 @@ async def test_cut_autosave_gate(client_session: Any, test_project_root: Path) -
     Cut is a write operation — unlike copy, it stages a deletion. When
     autosave is on, the autosave gate fires on cut, same as delete-lines.
     """
-    sid = _unique_sid()
+    _unique_sid()
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": "clip_other.txt",
-            "autosave": False,
-        },
+        arguments={"action": "open", "file_path": "clip_other.txt", "autosave": False},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -447,7 +410,6 @@ async def test_cut_autosave_gate(client_session: Any, test_project_root: Path) -
         "clipboard",
         arguments={
             "action": "cut",
-            "session_id": sid,
             "viewport_id": vpid,
             "line_start": 1,
             "line_end": 1,
@@ -462,7 +424,7 @@ async def test_cut_autosave_gate(client_session: Any, test_project_root: Path) -
 
     list_result = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": sid},
+        arguments={"action": "list"},
     )
     list_text = _get_text(list_result)
     assert "dirty: False" in list_text or "dirty: True" in list_text, (
@@ -471,11 +433,7 @@ async def test_cut_autosave_gate(client_session: Any, test_project_root: Path) -
 
     content_result = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": "clip_other.txt",
-        },
+        arguments={"action": "open", "file_path": "clip_other.txt"},
     )
     content_text = _get_text(content_result)
     assert "foo" not in content_text, (
@@ -493,17 +451,12 @@ async def test_cut_already_buffered(
     When autosave is off (buffered mode), cut just stages deletion — no
     autosave gate switch needed since viewport is already buffered.
     """
-    sid = _unique_sid()
+    _unique_sid()
     file_path = "clip_src.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": file_path,
-            "autosave": False,
-        },
+        arguments={"action": "open", "file_path": file_path, "autosave": False},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -512,7 +465,6 @@ async def test_cut_already_buffered(
         "clipboard",
         arguments={
             "action": "cut",
-            "session_id": sid,
             "viewport_id": vpid,
             "line_start": 1,
             "line_end": 1,
@@ -543,16 +495,11 @@ async def test_paste_insert_before(
     Copy lines 2-4 (beta/gamma/delta), then paste before line 5 (epsilon).
     After paste, clipboard content must appear before line 5.
     """
-    sid = _unique_sid()
+    _unique_sid()
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": "clip_other.txt",
-            "autosave": False,
-        },
+        arguments={"action": "open", "file_path": "clip_other.txt", "autosave": False},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -561,7 +508,6 @@ async def test_paste_insert_before(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "line_start": 2,
             "line_end": 4,
@@ -571,12 +517,7 @@ async def test_paste_insert_before(
 
     paste_result = await client_session.call_tool(
         "clipboard",
-        arguments={
-            "action": "paste",
-            "session_id": sid,
-            "viewport_id": vpid,
-            "target_line": 5,
-        },
+        arguments={"action": "paste", "viewport_id": vpid, "target_line": 5},
     )
     paste_text = _get_text(paste_result)
 
@@ -592,11 +533,7 @@ async def test_paste_insert_before(
 
     verify_result = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": "clip_other.txt",
-        },
+        arguments={"action": "open", "file_path": "clip_other.txt"},
     )
     verify_text = _get_text(verify_result)
     lines = [
@@ -635,16 +572,11 @@ async def test_paste_preserves_clipboard(
     After paste, clipboard:show must still return the original copied content.
     Pasting twice should work without re-copying.
     """
-    sid = _unique_sid()
+    _unique_sid()
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": "clip_other.txt",
-            "autosave": False,
-        },
+        arguments={"action": "open", "file_path": "clip_other.txt", "autosave": False},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -653,7 +585,6 @@ async def test_paste_preserves_clipboard(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "line_start": 1,
             "line_end": 2,
@@ -663,12 +594,7 @@ async def test_paste_preserves_clipboard(
 
     paste_result = await client_session.call_tool(
         "clipboard",
-        arguments={
-            "action": "paste",
-            "session_id": sid,
-            "viewport_id": vpid,
-            "target_line": 3,
-        },
+        arguments={"action": "paste", "viewport_id": vpid, "target_line": 3},
     )
     paste_text = _get_text(paste_result)
     assert not paste_result.isError, (
@@ -680,7 +606,7 @@ async def test_paste_preserves_clipboard(
 
     show_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "show", "session_id": sid},
+        arguments={"action": "show"},
     )
     show_text = _get_text(show_result)
 
@@ -693,12 +619,7 @@ async def test_paste_preserves_clipboard(
 
     paste2_result = await client_session.call_tool(
         "clipboard",
-        arguments={
-            "action": "paste",
-            "session_id": sid,
-            "viewport_id": vpid,
-            "target_line": 5,
-        },
+        arguments={"action": "paste", "viewport_id": vpid, "target_line": 5},
     )
     paste2_text = _get_text(paste2_result)
     assert not paste2_result.isError, (
@@ -716,28 +637,18 @@ async def test_paste_cross_viewport(
     Copy from clip_src.txt viewport, paste into clip_other.txt viewport.
     The pasted content must appear in clip_other.txt, not clip_src.txt.
     """
-    sid = _unique_sid()
+    _unique_sid()
 
     result_src = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": "clip_other.txt",
-            "autosave": False,
-        },
+        arguments={"action": "open", "file_path": "clip_other.txt", "autosave": False},
     )
     assert "error" not in _get_text(result_src)
     vpid_src = _extract_vpid(_get_text(result_src))
 
     result_dest = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": "clip_src.txt",
-            "autosave": False,
-        },
+        arguments={"action": "open", "file_path": "clip_src.txt", "autosave": False},
     )
     assert "error" not in _get_text(result_dest)
     vpid_dest = _extract_vpid(_get_text(result_dest))
@@ -746,7 +657,6 @@ async def test_paste_cross_viewport(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid_src,
             "line_start": 2,
             "line_end": 3,
@@ -756,12 +666,7 @@ async def test_paste_cross_viewport(
 
     paste_result = await client_session.call_tool(
         "clipboard",
-        arguments={
-            "action": "paste",
-            "session_id": sid,
-            "viewport_id": vpid_dest,
-            "target_line": 1,
-        },
+        arguments={"action": "paste", "viewport_id": vpid_dest, "target_line": 1},
     )
     paste_text = _get_text(paste_result)
     assert not paste_result.isError, (
@@ -770,7 +675,7 @@ async def test_paste_cross_viewport(
 
     show_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "show", "session_id": sid},
+        arguments={"action": "show"},
     )
     show_text = _get_text(show_result)
     assert "bar" in show_text, (
@@ -796,16 +701,11 @@ async def test_paste_autosave_gate(
     includes a 'switched to buffered' notice. The change is staged in buffer,
     NOT flushed to disk immediately.
     """
-    sid = _unique_sid()
+    _unique_sid()
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": "clip_other.txt",
-            "autosave": True,
-        },
+        arguments={"action": "open", "file_path": "clip_other.txt", "autosave": True},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -814,7 +714,6 @@ async def test_paste_autosave_gate(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "line_start": 1,
             "line_end": 1,
@@ -824,12 +723,7 @@ async def test_paste_autosave_gate(
 
     result = await client_session.call_tool(
         "clipboard",
-        arguments={
-            "action": "paste",
-            "session_id": sid,
-            "viewport_id": vpid,
-            "target_line": 2,
-        },
+        arguments={"action": "paste", "viewport_id": vpid, "target_line": 2},
     )
     text = _get_text(result)
 
@@ -842,7 +736,7 @@ async def test_paste_autosave_gate(
 
     list_result = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": sid},
+        arguments={"action": "list"},
     )
     list_text = _get_text(list_result)
     assert "autosave: False" in list_text, (
@@ -863,16 +757,11 @@ async def test_paste_already_buffered_no_notice(
     When autosave is off (buffered mode), paste just stages the insertion —
     no autosave gate switch needed since viewport is already buffered.
     """
-    sid = _unique_sid()
+    _unique_sid()
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": "clip_src.txt",
-            "autosave": False,
-        },
+        arguments={"action": "open", "file_path": "clip_src.txt", "autosave": False},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -881,7 +770,6 @@ async def test_paste_already_buffered_no_notice(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "line_start": 1,
             "line_end": 1,
@@ -891,12 +779,7 @@ async def test_paste_already_buffered_no_notice(
 
     result = await client_session.call_tool(
         "clipboard",
-        arguments={
-            "action": "paste",
-            "session_id": sid,
-            "viewport_id": vpid,
-            "target_line": 2,
-        },
+        arguments={"action": "paste", "viewport_id": vpid, "target_line": 2},
     )
     text = _get_text(result)
 
@@ -923,16 +806,11 @@ async def test_cut_autosave_gate_notice(
     includes a 'switched to buffered' notice. The deletion is staged in buffer,
     NOT flushed to disk immediately.
     """
-    sid = _unique_sid()
+    _unique_sid()
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": "clip_src.txt",
-            "autosave": True,
-        },
+        arguments={"action": "open", "file_path": "clip_src.txt", "autosave": True},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -941,7 +819,6 @@ async def test_cut_autosave_gate_notice(
         "clipboard",
         arguments={
             "action": "cut",
-            "session_id": sid,
             "viewport_id": vpid,
             "line_start": 1,
             "line_end": 1,
@@ -958,7 +835,7 @@ async def test_cut_autosave_gate_notice(
 
     list_result = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": sid},
+        arguments={"action": "list"},
     )
     list_text = _get_text(list_result)
     assert "autosave: False" in list_text, (
@@ -980,16 +857,11 @@ async def test_cut_diff_response(client_session: Any, test_project_root: Path) -
     After cut, the response should include a unified diff showing the
     deletion, similar to diff:show output format.
     """
-    sid = _unique_sid()
+    _unique_sid()
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": "clip_src.txt",
-            "autosave": False,
-        },
+        arguments={"action": "open", "file_path": "clip_src.txt", "autosave": False},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -998,7 +870,6 @@ async def test_cut_diff_response(client_session: Any, test_project_root: Path) -
         "clipboard",
         arguments={
             "action": "cut",
-            "session_id": sid,
             "viewport_id": vpid,
             "line_start": 1,
             "line_end": 1,
@@ -1030,16 +901,11 @@ async def test_paste_diff_response(
     After paste, the response should include a unified diff showing the
     insertion, similar to diff:show output format.
     """
-    sid = _unique_sid()
+    _unique_sid()
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": "clip_other.txt",
-            "autosave": False,
-        },
+        arguments={"action": "open", "file_path": "clip_other.txt", "autosave": False},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -1048,7 +914,6 @@ async def test_paste_diff_response(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "line_start": 1,
             "line_end": 1,
@@ -1058,12 +923,7 @@ async def test_paste_diff_response(
 
     result = await client_session.call_tool(
         "clipboard",
-        arguments={
-            "action": "paste",
-            "session_id": sid,
-            "viewport_id": vpid,
-            "target_line": 2,
-        },
+        arguments={"action": "paste", "viewport_id": vpid, "target_line": 2},
     )
     text = _get_text(result)
 
@@ -1090,29 +950,19 @@ async def test_paste_empty_clipboard_is_error(
 
     A fresh session has no clipboard; paste must fail gracefully.
     """
-    sid = _unique_sid()
+    _unique_sid()
     file_path = "clip_src.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": file_path,
-            "autosave": False,
-        },
+        arguments={"action": "open", "file_path": file_path, "autosave": False},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
 
     paste_result = await client_session.call_tool(
         "clipboard",
-        arguments={
-            "action": "paste",
-            "session_id": sid,
-            "viewport_id": vpid,
-            "target_line": 1,
-        },
+        arguments={"action": "paste", "viewport_id": vpid, "target_line": 1},
     )
     assert paste_result.isError, (
         "SC-41: paste with empty clipboard must return isError=true"
@@ -1135,16 +985,11 @@ async def test_paste_ignores_stash(
     is ever wired into paste incorrectly, this test will fail because pasted
     content would diverge from clipboard content.
     """
-    sid = _unique_sid()
+    _unique_sid()
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": "clip_src.txt",
-            "autosave": False,
-        },
+        arguments={"action": "open", "file_path": "clip_src.txt", "autosave": False},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -1153,7 +998,6 @@ async def test_paste_ignores_stash(
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": sid,
             "viewport_id": vpid,
             "line_start": 2,
             "line_end": 4,
@@ -1163,7 +1007,7 @@ async def test_paste_ignores_stash(
 
     show_result = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "show", "session_id": sid},
+        arguments={"action": "show"},
     )
     show_text = _get_text(show_result)
     assert not show_result.isError, (
@@ -1181,12 +1025,7 @@ async def test_paste_ignores_stash(
 
     paste_result = await client_session.call_tool(
         "clipboard",
-        arguments={
-            "action": "paste",
-            "session_id": sid,
-            "viewport_id": vpid,
-            "target_line": 5,
-        },
+        arguments={"action": "paste", "viewport_id": vpid, "target_line": 5},
     )
     paste_text = _get_text(paste_result)
 
@@ -1209,11 +1048,7 @@ async def test_paste_ignores_stash(
 
     verify_result = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": "clip_src.txt",
-        },
+        arguments={"action": "open", "file_path": "clip_src.txt"},
     )
     verify_text = _get_text(verify_result)
 
@@ -1233,7 +1068,7 @@ async def test_paste_ignores_stash(
 
     show_after = await client_session.call_tool(
         "clipboard",
-        arguments={"action": "show", "session_id": sid},
+        arguments={"action": "show"},
     )
     show_after_text = _get_text(show_after)
     assert "beta" in show_after_text, (

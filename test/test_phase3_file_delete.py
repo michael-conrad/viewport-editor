@@ -67,11 +67,7 @@ async def test_file_delete_removes_file(
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sc30-delete",
-            "file_path": "delete_target.txt",
-        },
+        arguments={"action": "open", "file_path": "delete_target.txt"},
     )
     text_open = _get_text(result_open)
     vpid = _extract_vpid(text_open)
@@ -79,11 +75,7 @@ async def test_file_delete_removes_file(
 
     result = await client_session.call_tool(
         "file",
-        arguments={
-            "action": "delete",
-            "session_id": "test-sc30-delete",
-            "viewport_id": vpid,
-        },
+        arguments={"action": "delete", "viewport_id": vpid},
     )
     text = _get_text(result)
 
@@ -115,11 +107,7 @@ async def test_file_delete_dirty_buffer_rejects(
     """
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sc30-dirty",
-            "file_path": "dirty_delete_target.txt",
-        },
+        arguments={"action": "open", "file_path": "dirty_delete_target.txt"},
     )
     text_open = _get_text(result_open)
     vpid = _extract_vpid(text_open)
@@ -129,7 +117,6 @@ async def test_file_delete_dirty_buffer_rejects(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": "test-sc30-dirty",
             "viewport_id": vpid,
             "old_text": "original content",
             "new_text": "modified content",
@@ -138,11 +125,7 @@ async def test_file_delete_dirty_buffer_rejects(
 
     result = await client_session.call_tool(
         "file",
-        arguments={
-            "action": "delete",
-            "session_id": "test-sc30-dirty",
-            "viewport_id": vpid,
-        },
+        arguments={"action": "delete", "viewport_id": vpid},
     )
     text = _get_text(result)
 

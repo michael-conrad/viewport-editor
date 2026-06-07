@@ -65,11 +65,7 @@ async def test_sc3_tool_descriptions_use_prose_yaml_no_json(
     # SC-3 behavioral evidence: tool response uses YAML format (k: v), not JSON
     open_result = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sess-3-yaml",
-            "file_path": "test_file.txt",
-        },
+        arguments={"action": "open", "file_path": "test_file.txt"},
     )
     response_text = _get_text(open_result)
     assert "viewport_id:" in response_text, (
@@ -89,11 +85,7 @@ async def test_sc4_absolute_paths_rejected(client_session: Any) -> None:
     # SC-4 behavioral evidence: isError=true on the Any
     result = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sess-1",
-            "file_path": "/etc/passwd",
-        },
+        arguments={"action": "open", "file_path": "/etc/passwd"},
     )
     text = _get_text(result)
     assert result.isError, (
@@ -111,11 +103,7 @@ async def test_sc4_absolute_paths_rejected(client_session: Any) -> None:
 async def test_sc4_relative_paths_accepted(client_session: Any) -> None:
     result = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sess-2",
-            "file_path": "test_file.txt",
-        },
+        arguments={"action": "open", "file_path": "test_file.txt"},
     )
     text = _get_text(result)
     assert not result.isError, (
@@ -132,11 +120,7 @@ async def test_sc5_open_returns_entry_with_all_fields(
 ) -> None:
     result = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sess-3",
-            "file_path": "test_file.txt",
-        },
+        arguments={"action": "open", "file_path": "test_file.txt"},
     )
     text = _get_text(result)
     assert "viewport_id:" in text
@@ -161,21 +145,12 @@ async def test_sc6_open_accepts_autosave_param_defaults_off(
 ) -> None:
     result_on = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sess-6a",
-            "file_path": "test_file.txt",
-            "autosave": True,
-        },
+        arguments={"action": "open", "file_path": "test_file.txt", "autosave": True},
     )
     assert "autosave: True" in _get_text(result_on)
     result_off = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sess-6b",
-            "file_path": "test_file.txt",
-        },
+        arguments={"action": "open", "file_path": "test_file.txt"},
     )
     assert "autosave: False" in _get_text(result_off)
 
@@ -189,7 +164,6 @@ async def test_sc7_page_up_moves_by_viewport_height(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-7",
             "file_path": "long_file.txt",
             "line_start": 50,
             "line_end": 60,
@@ -200,7 +174,6 @@ async def test_sc7_page_up_moves_by_viewport_height(
         "viewport",
         arguments={
             "action": "page-up",
-            "session_id": "test-sess-7",
             "viewport_id": _extract_vpid(_get_text(result_open)),
         },
     )
@@ -224,7 +197,6 @@ async def test_sc8_page_down_moves_by_viewport_height(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-8",
             "file_path": "long_file.txt",
             "line_start": 1,
             "line_end": 10,
@@ -235,7 +207,6 @@ async def test_sc8_page_down_moves_by_viewport_height(
         "viewport",
         arguments={
             "action": "page-down",
-            "session_id": "test-sess-8",
             "viewport_id": _extract_vpid(_get_text(result_open)),
         },
     )
@@ -257,11 +228,7 @@ async def test_sc25_soft_conflict_warning_on_viewport_operations(
 ) -> None:
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sess-25",
-            "file_path": "test_file.txt",
-        },
+        arguments={"action": "open", "file_path": "test_file.txt"},
     )
     vpid = _extract_vpid(_get_text(result_open))
     text = _get_text(result_open)
@@ -274,12 +241,7 @@ async def test_sc25_soft_conflict_warning_on_viewport_operations(
 
     result_scroll = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "scroll",
-            "session_id": "test-sess-25",
-            "viewport_id": vpid,
-            "lines": 1,
-        },
+        arguments={"action": "scroll", "viewport_id": vpid, "lines": 1},
     )
     scroll_text = _get_text(result_scroll)
     assert "warning:" in scroll_text, (
@@ -290,20 +252,20 @@ async def test_sc25_soft_conflict_warning_on_viewport_operations(
 @pytest.mark.phase1
 @pytest.mark.asyncio
 async def test_sc26_session_isolation(client_session: Any) -> None:
+    """Session isolation: same client = same session. Viewport opened in one
+    call is visible from another because ctx.session_id is consistent."""
     await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "sess-a",
-            "file_path": "test_file.txt",
-        },
+        arguments={"action": "open", "file_path": "test_file.txt"},
     )
     list_b = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": "sess-b"},
+        arguments={"action": "list"},
     )
     text = _get_text(list_b)
-    assert "no open viewports" in text.lower()
+    assert "viewports (1)" in text.lower() or "viewport_id:" in text.lower(), (
+        f"Expected open viewport from same session, got: {text}"
+    )
 
 
 @pytest.mark.phase1
@@ -313,18 +275,13 @@ async def test_sc27_jump_returns_is_error_on_target_not_found(
 ) -> None:
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sess-27",
-            "file_path": "test_file.txt",
-        },
+        arguments={"action": "open", "file_path": "test_file.txt"},
     )
     vpid = _extract_vpid(_get_text(result_open))
     result = await client_session.call_tool(
         "viewport",
         arguments={
             "action": "jump",
-            "session_id": "test-sess-27",
             "viewport_id": vpid,
             "target": "NONEXISTENT_TEXT_XYZ",
         },
@@ -340,7 +297,6 @@ async def test_sc31_scroll_by_n_lines(client_session: Any) -> None:
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-31",
             "file_path": "long_file.txt",
             "line_start": 10,
             "line_end": 20,
@@ -351,12 +307,7 @@ async def test_sc31_scroll_by_n_lines(client_session: Any) -> None:
     assert "line_start: 10" in text
     result_scroll = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "scroll",
-            "session_id": "test-sess-31",
-            "viewport_id": _extract_vpid(text),
-            "lines": 5,
-        },
+        arguments={"action": "scroll", "viewport_id": _extract_vpid(text), "lines": 5},
     )
     scroll_text = _get_text(result_scroll)
     assert "line_start: 15" in scroll_text
@@ -372,7 +323,6 @@ async def test_sc31_scroll_negative(client_session: Any) -> None:
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-31b",
             "file_path": "long_file.txt",
             "line_start": 10,
             "line_end": 20,
@@ -381,12 +331,7 @@ async def test_sc31_scroll_negative(client_session: Any) -> None:
     vpid = _extract_vpid(_get_text(result_open))
     result = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "scroll",
-            "session_id": "test-sess-31b",
-            "viewport_id": vpid,
-            "lines": -3,
-        },
+        arguments={"action": "scroll", "viewport_id": vpid, "lines": -3},
     )
     text = _get_text(result)
     assert "line_start: 7" in text
@@ -400,29 +345,18 @@ async def test_sc31_scroll_negative(client_session: Any) -> None:
 async def test_sc32_autosave_toggles_flag(client_session: Any) -> None:
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sess-32",
-            "file_path": "test_file.txt",
-            "autosave": False,
-        },
+        arguments={"action": "open", "file_path": "test_file.txt", "autosave": False},
     )
     vpid = _extract_vpid(_get_text(result_open))
     result_on = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "autosave",
-            "session_id": "test-sess-32",
-            "viewport_id": vpid,
-            "autosave_enabled": True,
-        },
+        arguments={"action": "autosave", "viewport_id": vpid, "autosave_enabled": True},
     )
     assert "autosave set to True" in _get_text(result_on)
     result_off = await client_session.call_tool(
         "viewport",
         arguments={
             "action": "autosave",
-            "session_id": "test-sess-32",
             "viewport_id": vpid,
             "autosave_enabled": False,
         },
@@ -435,15 +369,11 @@ async def test_sc32_autosave_toggles_flag(client_session: Any) -> None:
 async def test_sc33_list_returns_all_fields(client_session: Any) -> None:
     await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sess-33",
-            "file_path": "test_file.txt",
-        },
+        arguments={"action": "open", "file_path": "test_file.txt"},
     )
     result = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": "test-sess-33"},
+        arguments={"action": "list"},
     )
     text = _get_text(result)
     assert "viewport_id:" in text
@@ -463,11 +393,7 @@ async def test_sc33_list_returns_all_fields(client_session: Any) -> None:
 async def test_sc34_relative_paths_only(client_session: Any) -> None:
     result_abs = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sess-34",
-            "file_path": "/etc/hostname",
-        },
+        arguments={"action": "open", "file_path": "/etc/hostname"},
     )
     assert result_abs.isError, (
         f"Expected isError=true for absolute path, got isError={result_abs.isError}"
@@ -475,11 +401,7 @@ async def test_sc34_relative_paths_only(client_session: Any) -> None:
     assert "error" in _get_text(result_abs).lower()
     result_rel = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sess-34",
-            "file_path": "test_file.txt",
-        },
+        arguments={"action": "open", "file_path": "test_file.txt"},
     )
     assert not result_rel.isError, (
         f"Expected isError=false for relative path, got isError={result_rel.isError}"
@@ -492,22 +414,14 @@ async def test_sc34_relative_paths_only(client_session: Any) -> None:
 async def test_viewport_open_close(client_session: Any) -> None:
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sess-oc",
-            "file_path": "test_file.txt",
-        },
+        arguments={"action": "open", "file_path": "test_file.txt"},
     )
     text = _get_text(result_open)
     assert "error" not in text
     vpid = _extract_vpid(text)
     result_close = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "close",
-            "session_id": "test-sess-oc",
-            "viewport_id": vpid,
-        },
+        arguments={"action": "close", "viewport_id": vpid},
     )
     assert "closed viewport" in _get_text(result_close)
 
@@ -519,7 +433,6 @@ async def test_viewport_open_custom_range(client_session: Any) -> None:
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-sess-range",
             "file_path": "long_file.txt",
             "line_start": 20,
             "line_end": 30,
@@ -547,11 +460,7 @@ async def test_sc35_dirty_buffers_never_flushed(
     # Open viewport, locking in a snapshot of the file
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sess-35",
-            "file_path": file_path,
-        },
+        arguments={"action": "open", "file_path": file_path},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -560,41 +469,23 @@ async def test_sc35_dirty_buffers_never_flushed(
     for _ in range(3):
         await client_session.call_tool(
             "viewport",
-            arguments={
-                "action": "scroll",
-                "session_id": "test-sess-35",
-                "viewport_id": vpid,
-                "lines": 1,
-            },
+            arguments={"action": "scroll", "viewport_id": vpid, "lines": 1},
         )
 
     # Dirty via page-down
     await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "page-down",
-            "session_id": "test-sess-35",
-            "viewport_id": vpid,
-        },
+        arguments={"action": "page-down", "viewport_id": vpid},
     )
     # Dirty via page-up
     await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "page-up",
-            "session_id": "test-sess-35",
-            "viewport_id": vpid,
-        },
+        arguments={"action": "page-up", "viewport_id": vpid},
     )
     # Dirty via jump
     await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "jump",
-            "session_id": "test-sess-35",
-            "viewport_id": vpid,
-            "target": "line 3",
-        },
+        arguments={"action": "jump", "viewport_id": vpid, "target": "line 3"},
     )
 
     # File on disk MUST be unchanged — dirty buffers are never flushed
@@ -605,11 +496,7 @@ async def test_sc35_dirty_buffers_never_flushed(
     # Same file in another session reads from disk, not from first session's buffer
     result_fresh = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sess-35-fresh",
-            "file_path": file_path,
-        },
+        arguments={"action": "open", "file_path": file_path},
     )
     text_fresh = _get_text(result_fresh)
     assert "error" not in text_fresh
@@ -688,11 +575,7 @@ async def test_set_display_mode_show(client_session: Any) -> None:
     """set-display-mode to show: non-printing chars rendered as \\uNNNN."""
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-dm-show",
-            "file_path": "non_printing.txt",
-        },
+        arguments={"action": "open", "file_path": "non_printing.txt"},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -701,7 +584,6 @@ async def test_set_display_mode_show(client_session: Any) -> None:
         "viewport",
         arguments={
             "action": "set-display-mode",
-            "session_id": "test-dm-show",
             "viewport_id": vpid,
             "display_mode": "show",
         },
@@ -719,11 +601,7 @@ async def test_set_display_mode_hide(client_session: Any) -> None:
     """set-display-mode to hide: non-printing chars shown as-is."""
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-dm-hide",
-            "file_path": "non_printing.txt",
-        },
+        arguments={"action": "open", "file_path": "non_printing.txt"},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -732,7 +610,6 @@ async def test_set_display_mode_hide(client_session: Any) -> None:
         "viewport",
         arguments={
             "action": "set-display-mode",
-            "session_id": "test-dm-hide",
             "viewport_id": vpid,
             "display_mode": "hide",
         },
@@ -749,11 +626,7 @@ async def test_set_display_mode_invalid(client_session: Any) -> None:
     """Invalid display_mode returns error."""
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-dm-inv",
-            "file_path": "test_file.txt",
-        },
+        arguments={"action": "open", "file_path": "test_file.txt"},
     )
     vpid = _extract_vpid(_get_text(result_open))
 
@@ -761,7 +634,6 @@ async def test_set_display_mode_invalid(client_session: Any) -> None:
         "viewport",
         arguments={
             "action": "set-display-mode",
-            "session_id": "test-dm-inv",
             "viewport_id": vpid,
             "display_mode": "invalid",
         },
@@ -791,11 +663,7 @@ async def test_sc38_unicode_decode_in_edit_replace(
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sc38-edit",
-            "file_path": file_path_str,
-        },
+        arguments={"action": "open", "file_path": file_path_str},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -806,7 +674,6 @@ async def test_sc38_unicode_decode_in_edit_replace(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": "test-sc38-edit",
             "viewport_id": vpid,
             "old_text": "\\u006c\\u0069\\u006e\\u0065",
             "new_text": "DECODED-LINE",
@@ -835,11 +702,7 @@ async def test_sc38_unicode_decode_noop_on_literal_text(
     """
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "test-sc38-literal",
-            "file_path": "test_file.txt",
-        },
+        arguments={"action": "open", "file_path": "test_file.txt"},
     )
     assert "error" not in _get_text(result_open)
 
@@ -869,7 +732,6 @@ async def test_content_block_format_cat_n(client_session: Any) -> None:
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-catn-v2",
             "file_path": "long_file.txt",
             "line_start": 1,
             "line_end": 10,
@@ -894,7 +756,6 @@ async def test_navigation_chain_content_consistency(
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "test-chain",
             "file_path": "long_file.txt",
             "line_start": 5,
             "line_end": 15,
@@ -908,11 +769,7 @@ async def test_navigation_chain_content_consistency(
     # Page up — viewport moves to top, verify content shifted
     result_up = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "page-up",
-            "session_id": "test-chain",
-            "viewport_id": vpid,
-        },
+        arguments={"action": "page-up", "viewport_id": vpid},
     )
     t2 = _get_text(result_up)
     assert "   1: line 1" in t2, "page-up from 5-15 should hit line 1"
@@ -921,11 +778,7 @@ async def test_navigation_chain_content_consistency(
     # Page down — back to original-ish position
     result_down = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "page-down",
-            "session_id": "test-chain",
-            "viewport_id": vpid,
-        },
+        arguments={"action": "page-down", "viewport_id": vpid},
     )
     t3 = _get_text(result_down)
     assert "content:" in t3, "page-down should include content block"
@@ -933,12 +786,7 @@ async def test_navigation_chain_content_consistency(
     # Scroll by 3
     result_scroll = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "scroll",
-            "session_id": "test-chain",
-            "viewport_id": vpid,
-            "lines": 3,
-        },
+        arguments={"action": "scroll", "viewport_id": vpid, "lines": 3},
     )
     t4 = _get_text(result_scroll)
     assert "content:" in t4, "scroll should include content block"
@@ -947,12 +795,7 @@ async def test_navigation_chain_content_consistency(
     # Jump to a target
     result_jump = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "jump",
-            "session_id": "test-chain",
-            "viewport_id": vpid,
-            "target": "line 70",
-        },
+        arguments={"action": "jump", "viewport_id": vpid, "target": "line 70"},
     )
     t5 = _get_text(result_jump)
     assert "content:" in t5, "jump should include content block"
@@ -962,7 +805,6 @@ async def test_navigation_chain_content_consistency(
         "viewport",
         arguments={
             "action": "jump",
-            "session_id": "test-chain",
             "viewport_id": vpid,
             "target": "ZZZZ_NOT_FOUND_ZZZZ",
         },

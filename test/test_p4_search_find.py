@@ -71,11 +71,7 @@ async def test_search_find_substring_default(
     """SC-17: search:find with substring (default) returns structured results with line numbers."""
     result = await search_client.call_tool(
         "search",
-        arguments={
-            "action": "find",
-            "session_id": "sc17-sub",
-            "pattern": "hello",
-        },
+        arguments={"action": "find", "pattern": "hello"},
     )
     text = _get_text(result)
     assert not result.isError, f"search:find returned error: {text[:200]}"
@@ -92,12 +88,7 @@ async def test_search_find_regex_flag(
     """SC-17: search:find with regex=True uses regex pattern matching."""
     result = await search_client.call_tool(
         "search",
-        arguments={
-            "action": "find",
-            "session_id": "sc17-regex",
-            "pattern": r"def \w+",
-            "regex": True,
-        },
+        arguments={"action": "find", "pattern": r"def \w+", "regex": True},
     )
     text = _get_text(result)
     assert not result.isError, f"search:find regex returned error: {text[:200]}"
@@ -115,7 +106,6 @@ async def test_search_find_scope_file(
         "search",
         arguments={
             "action": "find",
-            "session_id": "sc17-sf",
             "pattern": "hello",
             "scope": "file",
             "file_path": "alpha.py",
@@ -135,11 +125,7 @@ async def test_search_find_scope_viewport(
     """SC-17: search:find scoped to viewport searches only within the open viewport."""
     open_result = await search_client.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "sc17-sv",
-            "file_path": "alpha.py",
-        },
+        arguments={"action": "open", "file_path": "alpha.py"},
     )
     open_text = _get_text(open_result)
     vpid = _extract_vpid(open_text)
@@ -148,7 +134,6 @@ async def test_search_find_scope_viewport(
         "search",
         arguments={
             "action": "find",
-            "session_id": "sc17-sv",
             "pattern": "hello",
             "scope": "viewport",
             "viewport_id": vpid,
@@ -169,29 +154,16 @@ async def test_search_find_scope_all_open(
     """SC-17: search:find scoped to all_open searches across all open viewports."""
     await search_client.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "sc17-ao",
-            "file_path": "alpha.py",
-        },
+        arguments={"action": "open", "file_path": "alpha.py"},
     )
     await search_client.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "sc17-ao",
-            "file_path": "beta.py",
-        },
+        arguments={"action": "open", "file_path": "beta.py"},
     )
 
     result = await search_client.call_tool(
         "search",
-        arguments={
-            "action": "find",
-            "session_id": "sc17-ao",
-            "pattern": "hello",
-            "scope": "all_open",
-        },
+        arguments={"action": "find", "pattern": "hello", "scope": "all_open"},
     )
     text = _get_text(result)
     assert not result.isError, (

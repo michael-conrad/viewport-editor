@@ -71,18 +71,13 @@ async def test_autosave_on_file_save_noop(
     GREEN: file:save with autosave=on returns "no pending changes" or
     equivalent no-op response instead of performing a redundant flush.
     """
-    sid = _unique_sid()
+    _unique_sid()
     file_path = "autosave_gate.txt"
     original = (test_project_root / file_path).read_text()
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": file_path,
-            "autosave": True,
-        },
+        arguments={"action": "open", "file_path": file_path, "autosave": True},
     )
     text_open = _get_text(result_open)
     vpid = _extract_vpid(text_open)
@@ -92,7 +87,6 @@ async def test_autosave_on_file_save_noop(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": sid,
             "viewport_id": vpid,
             "old_text": "beta",
             "new_text": "BETA",
@@ -106,11 +100,7 @@ async def test_autosave_on_file_save_noop(
 
     result = await client_session.call_tool(
         "file",
-        arguments={
-            "action": "save",
-            "session_id": sid,
-            "viewport_id": vpid,
-        },
+        arguments={"action": "save", "viewport_id": vpid},
     )
     text = _get_text(result)
 
@@ -143,17 +133,12 @@ async def test_autosave_on_diff_show_empty(
     "no pending changes (autosave: on)" explicitly — not just rely on the
     natural side effect that buffer and disk stay in sync.
     """
-    sid = _unique_sid()
+    _unique_sid()
     file_path = "autosave_gate.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": file_path,
-            "autosave": True,
-        },
+        arguments={"action": "open", "file_path": file_path, "autosave": True},
     )
     text_open = _get_text(result_open)
     vpid = _extract_vpid(text_open)
@@ -163,7 +148,6 @@ async def test_autosave_on_diff_show_empty(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": sid,
             "viewport_id": vpid,
             "old_text": "gamma",
             "new_text": "GAMMA",
@@ -172,11 +156,7 @@ async def test_autosave_on_diff_show_empty(
 
     result = await client_session.call_tool(
         "diff",
-        arguments={
-            "action": "show",
-            "session_id": sid,
-            "viewport_id": vpid,
-        },
+        arguments={"action": "show", "viewport_id": vpid},
     )
     text = _get_text(result)
 
@@ -206,17 +186,12 @@ async def test_autosave_on_discard_empty(
     GREEN: file:discard with autosave=on returns "no pending changes" or
     equivalent no-op because autosave already keeps buffer and disk in sync.
     """
-    sid = _unique_sid()
+    _unique_sid()
     file_path = "autosave_gate.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": file_path,
-            "autosave": True,
-        },
+        arguments={"action": "open", "file_path": file_path, "autosave": True},
     )
     text_open = _get_text(result_open)
     vpid = _extract_vpid(text_open)
@@ -224,11 +199,7 @@ async def test_autosave_on_discard_empty(
 
     result = await client_session.call_tool(
         "file",
-        arguments={
-            "action": "discard",
-            "session_id": sid,
-            "viewport_id": vpid,
-        },
+        arguments={"action": "discard", "viewport_id": vpid},
     )
     text = _get_text(result)
 
@@ -260,18 +231,13 @@ async def test_viewport_close_dirty_auto_saves(
     Opens a file with autosave=on, edits it, then closes. Verifies the
     modified content is on disk after close (not silently discarded).
     """
-    sid = _unique_sid()
+    _unique_sid()
     file_path = "autosave_close.txt"
     original = (test_project_root / file_path).read_text()
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": file_path,
-            "autosave": True,
-        },
+        arguments={"action": "open", "file_path": file_path, "autosave": True},
     )
     text_open = _get_text(result_open)
     vpid = _extract_vpid(text_open)
@@ -281,7 +247,6 @@ async def test_viewport_close_dirty_auto_saves(
         "edit",
         arguments={
             "action": "replace",
-            "session_id": sid,
             "viewport_id": vpid,
             "old_text": "original line one",
             "new_text": "MODIFIED LINE ONE",
@@ -290,11 +255,7 @@ async def test_viewport_close_dirty_auto_saves(
 
     await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "close",
-            "session_id": sid,
-            "viewport_id": vpid,
-        },
+        arguments={"action": "close", "viewport_id": vpid},
     )
 
     after_close = (test_project_root / file_path).read_text()
@@ -320,16 +281,12 @@ async def test_viewport_close_already_closed_noop(
     because the viewport no longer exists in the session. This is the
     correct no-op behavior — you can't close what's already closed.
     """
-    sid = _unique_sid()
+    _unique_sid()
     file_path = "autosave_gate.txt"
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": file_path,
-        },
+        arguments={"action": "open", "file_path": file_path},
     )
     text_open = _get_text(result_open)
     vpid = _extract_vpid(text_open)
@@ -337,11 +294,7 @@ async def test_viewport_close_already_closed_noop(
 
     result_close = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "close",
-            "session_id": sid,
-            "viewport_id": vpid,
-        },
+        arguments={"action": "close", "viewport_id": vpid},
     )
     assert "error" not in _get_text(result_close).lower(), (
         f"First close should succeed: {_get_text(result_close)[:200]}"
@@ -349,11 +302,7 @@ async def test_viewport_close_already_closed_noop(
 
     result_double_close = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "close",
-            "session_id": sid,
-            "viewport_id": vpid,
-        },
+        arguments={"action": "close", "viewport_id": vpid},
     )
     text_double = _get_text(result_double_close)
 
@@ -380,17 +329,13 @@ async def test_viewport_close_clean_noop(
     The file on disk must remain byte-identical to the original (no
     unnecessary write). Additionally, close should succeed without error.
     """
-    sid = _unique_sid()
+    _unique_sid()
     file_path = "autosave_clean.txt"
     original = (test_project_root / file_path).read_bytes()
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": sid,
-            "file_path": file_path,
-        },
+        arguments={"action": "open", "file_path": file_path},
     )
     text_open = _get_text(result_open)
     vpid = _extract_vpid(text_open)
@@ -398,7 +343,7 @@ async def test_viewport_close_clean_noop(
 
     list_result = await client_session.call_tool(
         "viewport",
-        arguments={"action": "list", "session_id": sid},
+        arguments={"action": "list"},
     )
     list_text = _get_text(list_result)
     assert "dirty: True" not in list_text, (
@@ -407,11 +352,7 @@ async def test_viewport_close_clean_noop(
 
     result_close = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "close",
-            "session_id": sid,
-            "viewport_id": vpid,
-        },
+        arguments={"action": "close", "viewport_id": vpid},
     )
     close_text = _get_text(result_close)
     assert "error" not in close_text.lower(), (
