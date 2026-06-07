@@ -63,34 +63,38 @@ All operations are exposed through 6 tools with an `action` parameter. This keep
 
 No setup required. The project root is the current working directory at server start.
 
-### OpenCode
+### Installation-Free (uvx — from GitHub release tag)
+
+Run directly from the tagged release — no PyPI install, no repo clone needed:
 
 ```jsonc
+// OpenCode
 "mcp": {
     "viewport-editor": {
       "type": "local",
-      "command": ["uvx", "viewport-editor"],
+      "command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.2.0", "viewport-editor"],
       "enabled": true
     }
 }
 ```
 
-### Other MCP Clients (Claude, Cursor, etc.)
-
 ```json
 {
+  // Other MCP Clients (Claude, Cursor, etc.)
   "mcpServers": {
     "viewport-editor": {
       "command": "uvx",
-      "args": ["viewport-editor"]
+      "args": ["--from", "git+https://github.com/michael-conrad/viewport-editor@v0.2.0", "viewport-editor"]
     }
   }
 }
 ```
 
-Alternatively, run directly from the repo checkout:
+### From repo checkout
 
 ```
+git clone git@github.com:michael-conrad/viewport-editor.git
+cd viewport-editor
 uv run viewport-editor
 ```
 
