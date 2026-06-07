@@ -52,14 +52,10 @@ def _extract_vpid(text: str) -> str:
 @pytest.mark.phase4
 async def test_diff_apply_stages_into_buffer(client_session: Any) -> None:
     """SC-23: diff:apply stages diff into buffer and returns diff summary."""
-    sid = f"test-apply-stage-{uuid.uuid4().hex[:8]}"
+    f"test-apply-stage-{uuid.uuid4().hex[:8]}"
     result = await client_session.call_tool(
         "viewport",
-        {
-            "action": "open",
-            "session_id": sid,
-            "file_path": "diff_target.txt",
-        },
+        {"action": "open", "file_path": "diff_target.txt"},
     )
     vpid = _extract_vpid(_get_text(result))
 
@@ -67,12 +63,7 @@ async def test_diff_apply_stages_into_buffer(client_session: Any) -> None:
 
     result = await client_session.call_tool(
         "diff",
-        {
-            "action": "apply",
-            "session_id": sid,
-            "viewport_id": vpid,
-            "patch": patch,
-        },
+        {"action": "apply", "viewport_id": vpid, "patch": patch},
     )
     text = _get_text(result)
     assert "error" not in text.lower() or "applied" in text.lower(), (
@@ -81,11 +72,7 @@ async def test_diff_apply_stages_into_buffer(client_session: Any) -> None:
 
     result = await client_session.call_tool(
         "diff",
-        {
-            "action": "show",
-            "session_id": sid,
-            "viewport_id": vpid,
-        },
+        {"action": "show", "viewport_id": vpid},
     )
     diff_text = _get_text(result)
     assert "-beta" in diff_text, (
@@ -99,18 +86,13 @@ async def test_diff_apply_stages_into_buffer(client_session: Any) -> None:
 @pytest.mark.phase4
 async def test_diff_apply_auto_loads_unopened(client_session: Any) -> None:
     """SC-23: diff:apply auto-loads file if not in any viewport."""
-    sid = f"test-apply-autoload-{uuid.uuid4().hex[:8]}"
+    f"test-apply-autoload-{uuid.uuid4().hex[:8]}"
 
     patch = "--- a/autolaod_target.txt\n+++ b/autolaod_target.txt\n@@ -1,2 +1,2 @@\n-auto line one\n+auto line ONE\n auto line two\n"
 
     result = await client_session.call_tool(
         "diff",
-        {
-            "action": "apply",
-            "session_id": sid,
-            "file_path": "autolaod_target.txt",
-            "patch": patch,
-        },
+        {"action": "apply", "file_path": "autolaod_target.txt", "patch": patch},
     )
     text = _get_text(result)
     assert "error" not in text.lower() or "applied" in text.lower(), (
@@ -120,10 +102,7 @@ async def test_diff_apply_auto_loads_unopened(client_session: Any) -> None:
     diff_text = _get_text(
         await client_session.call_tool(
             "viewport",
-            {
-                "action": "list",
-                "session_id": sid,
-            },
+            {"action": "list"},
         )
     )
     assert "autolaod_target.txt" in diff_text, (
@@ -134,14 +113,10 @@ async def test_diff_apply_auto_loads_unopened(client_session: Any) -> None:
 @pytest.mark.phase4
 async def test_diff_apply_fuzzy_context_matching(client_session: Any) -> None:
     """SC-23: diff:apply applies with modified context lines (fuzzy matching)."""
-    sid = f"test-apply-fuzzy-{uuid.uuid4().hex[:8]}"
+    f"test-apply-fuzzy-{uuid.uuid4().hex[:8]}"
     result = await client_session.call_tool(
         "viewport",
-        {
-            "action": "open",
-            "session_id": sid,
-            "file_path": "fuzzy_target.txt",
-        },
+        {"action": "open", "file_path": "fuzzy_target.txt"},
     )
     vpid = _extract_vpid(_get_text(result))
 
@@ -159,12 +134,7 @@ async def test_diff_apply_fuzzy_context_matching(client_session: Any) -> None:
 
     result = await client_session.call_tool(
         "diff",
-        {
-            "action": "apply",
-            "session_id": sid,
-            "viewport_id": vpid,
-            "patch": patch,
-        },
+        {"action": "apply", "viewport_id": vpid, "patch": patch},
     )
     text = _get_text(result)
     assert "error" not in text.lower() or "applied" in text.lower(), (
@@ -174,11 +144,7 @@ async def test_diff_apply_fuzzy_context_matching(client_session: Any) -> None:
     diff_text = _get_text(
         await client_session.call_tool(
             "diff",
-            {
-                "action": "show",
-                "session_id": sid,
-                "viewport_id": vpid,
-            },
+            {"action": "show", "viewport_id": vpid},
         )
     )
     assert "-plain line" in diff_text, (
@@ -192,14 +158,10 @@ async def test_diff_apply_fuzzy_context_matching(client_session: Any) -> None:
 @pytest.mark.phase4
 async def test_diff_apply_no_match_rejects(client_session: Any) -> None:
     """SC-23: diff:apply returns isError when context doesn't match anywhere."""
-    sid = f"test-apply-nomatch-{uuid.uuid4().hex[:8]}"
+    f"test-apply-nomatch-{uuid.uuid4().hex[:8]}"
     result = await client_session.call_tool(
         "viewport",
-        {
-            "action": "open",
-            "session_id": sid,
-            "file_path": "diff_target.txt",
-        },
+        {"action": "open", "file_path": "diff_target.txt"},
     )
     vpid = _extract_vpid(_get_text(result))
 
@@ -215,12 +177,7 @@ async def test_diff_apply_no_match_rejects(client_session: Any) -> None:
 
     result = await client_session.call_tool(
         "diff",
-        {
-            "action": "apply",
-            "session_id": sid,
-            "viewport_id": vpid,
-            "patch": patch,
-        },
+        {"action": "apply", "viewport_id": vpid, "patch": patch},
     )
     text = _get_text(result)
     assert result.isError, (
@@ -234,15 +191,10 @@ async def test_diff_apply_no_match_rejects(client_session: Any) -> None:
 @pytest.mark.phase4
 async def test_diff_apply_autosave_gate(client_session: Any) -> None:
     """SC-23: diff:apply triggers autosave gate — switches to buffered mode."""
-    sid = f"test-apply-autosavegate-{uuid.uuid4().hex[:8]}"
+    f"test-apply-autosavegate-{uuid.uuid4().hex[:8]}"
     result = await client_session.call_tool(
         "viewport",
-        {
-            "action": "open",
-            "session_id": sid,
-            "file_path": "diff_target.txt",
-            "autosave": True,
-        },
+        {"action": "open", "file_path": "diff_target.txt", "autosave": True},
     )
     vpid = _extract_vpid(_get_text(result))
 
@@ -250,12 +202,7 @@ async def test_diff_apply_autosave_gate(client_session: Any) -> None:
 
     result = await client_session.call_tool(
         "diff",
-        {
-            "action": "apply",
-            "session_id": sid,
-            "viewport_id": vpid,
-            "patch": patch,
-        },
+        {"action": "apply", "viewport_id": vpid, "patch": patch},
     )
     text = _get_text(result)
     assert (

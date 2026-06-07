@@ -44,7 +44,6 @@ async def test_red_sc1_viewport_line_start_end(client_session: Any) -> None:
         "viewport",
         arguments={
             "action": "open",
-            "session_id": "red-sc1",
             "file_path": "red_test.txt",
             "line_start": 1,
             "line_end": 3,
@@ -63,11 +62,7 @@ async def test_red_sc2_autosave_enabled(client_session: Any) -> None:
     """Call viewport autosave action with autosave_enabled — fails on old code."""
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "red-sc2",
-            "file_path": "red_test.txt",
-        },
+        arguments={"action": "open", "file_path": "red_test.txt"},
     )
     open_text = _get_text(result_open)
     vpid = ""
@@ -79,12 +74,7 @@ async def test_red_sc2_autosave_enabled(client_session: Any) -> None:
     assert vpid, "could not extract viewport_id"
     result = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "autosave",
-            "session_id": "red-sc2",
-            "viewport_id": vpid,
-            "autosave_enabled": True,
-        },
+        arguments={"action": "autosave", "viewport_id": vpid, "autosave_enabled": True},
     )
     text = _get_text(result)
     assert "autosave set to True" in text
@@ -97,11 +87,7 @@ async def test_red_sc3_clipboard_line_start_end(client_session: Any) -> None:
     """Call clipboard with line_start/line_end — fails on old code."""
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={
-            "action": "open",
-            "session_id": "red-sc3",
-            "file_path": "red_test.txt",
-        },
+        arguments={"action": "open", "file_path": "red_test.txt"},
     )
     open_text = _get_text(result_open)
     vpid = ""
@@ -115,7 +101,6 @@ async def test_red_sc3_clipboard_line_start_end(client_session: Any) -> None:
         "clipboard",
         arguments={
             "action": "copy",
-            "session_id": "red-sc3",
             "viewport_id": vpid,
             "line_start": 1,
             "line_end": 3,

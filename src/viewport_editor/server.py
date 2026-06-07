@@ -55,7 +55,6 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
     def viewport(
         ctx: Context,
         action: str = "",
-        session_id: str = "",
         file_path: Optional[str] = None,
         line_start: Optional[int] = None,
         line_end: Optional[int] = None,
@@ -71,6 +70,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         Actions: open, close, list, scroll, page-up, page-down, jump, autosave, set-display-mode
 
         All responses use prose + YAML format. File paths must be relative to project root."""
+        session_id = ctx.session_id
         if _manager is None:
             return "error: server not initialized"
 
@@ -100,7 +100,6 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
     def edit(
         ctx: Context,
         action: str = "",
-        session_id: str = "",
         viewport_id: str = "",
         old_text: str = "",
         new_text: str = "",
@@ -114,6 +113,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         """Edit text content in an open viewport's buffer. All edits stage into buffer; flush to disk only on explicit save (file:save) or if autosave is enabled on the viewport.
 
         Actions: replace, replace-all, insert-lines, delete-lines, swap-lines, move-lines"""
+        session_id = ctx.session_id
         if _manager is None:
             return "error: server not initialized"
 
@@ -139,7 +139,6 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
     def file(
         ctx: Context,
         action: str = "",
-        session_id: str = "",
         viewport_id: str = "",
         file_path: str = "",
         force: bool = False,
@@ -147,6 +146,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         """File system operations for viewport-editor buffers. Persist pending edits to disk or discard them.
 
         Actions: save, discard, new, save-as"""
+        session_id = ctx.session_id
         if _manager is None:
             return "error: server not initialized"
 
@@ -166,7 +166,6 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
     def diff(
         ctx: Context,
         action: str = "",
-        session_id: str = "",
         viewport_id: str = "",
         file_path: str = "",
         patch: str = "",
@@ -174,6 +173,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         """Show unified diff of pending buffer changes, or apply a diff patch.
 
         Actions: show, apply"""
+        session_id = ctx.session_id
         if _manager is None:
             return "error: server not initialized"
 
@@ -193,7 +193,6 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
     def clipboard(
         ctx: Context,
         action: str = "",
-        session_id: str = "",
         viewport_id: Optional[str] = None,
         line_start: Optional[int] = None,
         line_end: Optional[int] = None,
@@ -203,6 +202,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         """Clipboard tool for copying, cutting, pasting, and stashing content from viewports.
 
         Actions: copy, cut, paste, show, stash, pop, swap, stash-list"""
+        session_id = ctx.session_id
         if _manager is None:
             return "error: server not initialized"
 
@@ -224,7 +224,6 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
     def search(
         ctx: Context,
         action: str = "",
-        session_id: str = "",
         pattern: str = "",
         regex: Optional[bool] = None,
         scope: Optional[str] = None,
@@ -236,6 +235,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         Actions: find
 
         Scopes: file (single file), viewport (open viewport), all_open (all open viewports), or project-wide (default)"""
+        session_id = ctx.session_id
         if _manager is None:
             return "error: server not initialized"
 
