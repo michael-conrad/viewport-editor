@@ -1,7 +1,7 @@
 ---
 issue_number: 38
 title: "[SPEC-FIX] Remove agent-provided session_id, derive from MCP connection context"
-state: open
+state: closed
 labels:
   - "SPEC-FIX"
 created: 2026-06-03T14:26:34Z
@@ -29,10 +29,11 @@ phase_plan:
     title: "SC-6 Observational Test"
     depends_on: card_1
     description: "Empirical test documenting two-client session behavior. No assertions, observational only."
-    status: pending
+    status: completed
+    pr: 51
   card_3:
     title: "Observational Documentation + Rollback"
     depends_on: card_2
     description: "docs/mcp-plugin-behavior.md citing test output from SC-1 through SC-6. Tag fix/pre-session-id-refactor, close issue #38."
-    status: pending
+    status: completed
 ---
