@@ -15,7 +15,7 @@ from __future__ import annotations
 import tempfile
 import uuid
 from pathlib import Path
-from typing import AsyncIterator, Any
+from typing import Any
 
 import pytest
 
@@ -199,9 +199,7 @@ async def test_copy_line_aligned_only(
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_copy_cross_file(
-    client_session: Any, test_project_root: Path
-) -> None:
+async def test_copy_cross_file(client_session: Any, test_project_root: Path) -> None:
     """SC-39: clipboard:copy provenance tracks correct source file across viewports.
 
     RED: clipboard tool does not exist; call_tool will fail.
@@ -425,9 +423,7 @@ async def test_cut_stages_deletion_in_buffer(
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_cut_autosave_gate(
-    client_session: Any, test_project_root: Path
-) -> None:
+async def test_cut_autosave_gate(client_session: Any, test_project_root: Path) -> None:
     """SC-40: cut with autosave=on switches to buffered mode.
 
     Cut is a write operation — unlike copy, it stages a deletion. When
@@ -978,9 +974,7 @@ async def test_cut_autosave_gate_notice(
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_cut_diff_response(
-    client_session: Any, test_project_root: Path
-) -> None:
+async def test_cut_diff_response(client_session: Any, test_project_root: Path) -> None:
     """SC-42: cut returns diff in tool response (matching diff:show format).
 
     After cut, the response should include a unified diff showing the

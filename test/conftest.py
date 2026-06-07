@@ -8,9 +8,8 @@ Co-authored with AI: OpenCode (deepseek-v4-flash)
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
-from typing import AsyncIterator, Any
+from typing import Any, AsyncIterator
 
 import pytest
 from fastmcp import Client
@@ -29,7 +28,9 @@ class _CompatResult:
     def __init__(self, text: str, is_error: bool = False) -> None:
         self.isError = is_error
         self.content = [
-            type("TextContent", (), {"type": "text", "text": text, "annotations": None})()
+            type(
+                "TextContent", (), {"type": "text", "text": text, "annotations": None}
+            )()
         ]
 
     def __repr__(self) -> str:
@@ -50,7 +51,9 @@ class _CompatClient:
     def __getattr__(self, name: str) -> Any:
         return getattr(self._client, name)
 
-    async def call_tool(self, name: str, arguments: dict[str, Any] | None = None, **kwargs: Any) -> Any:
+    async def call_tool(
+        self, name: str, arguments: dict[str, Any] | None = None, **kwargs: Any
+    ) -> Any:
         try:
             result = await self._client.call_tool(name, arguments=arguments, **kwargs)
             result.isError = result.is_error

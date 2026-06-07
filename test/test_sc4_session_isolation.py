@@ -17,8 +17,6 @@ from pathlib import Path
 import pytest
 from fastmcp import Client, Context, FastMCP
 
-from viewport_editor.server import create_server
-
 
 @pytest.mark.asyncio
 async def test_sc4_unique_session_ids() -> None:

@@ -16,7 +16,7 @@ from __future__ import annotations
 import tempfile
 import uuid
 from pathlib import Path
-from typing import AsyncIterator, Any
+from typing import Any
 
 import pytest
 
@@ -135,9 +135,7 @@ async def test_stash_copies_clipboard(
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_stash_overwrite(
-    client_session: Any, test_project_root: Path
-) -> None:
+async def test_stash_overwrite(client_session: Any, test_project_root: Path) -> None:
     """SC-43: stash to same name overwrites previous slot content.
 
     RED: clipboard stash action does not exist; call_tool will fail.
@@ -362,9 +360,7 @@ async def test_pop_nonexistent_slot_is_error(
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_swap_exchanges(
-    client_session: Any, test_project_root: Path
-) -> None:
+async def test_swap_exchanges(client_session: Any, test_project_root: Path) -> None:
     """SC-45: swap exchanges clipboard and named slot.
 
     RED: clipboard swap action does not exist; call_tool will fail.

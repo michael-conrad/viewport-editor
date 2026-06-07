@@ -16,7 +16,7 @@ from __future__ import annotations
 import tempfile
 import uuid
 from pathlib import Path
-from typing import AsyncIterator, Any
+from typing import Any
 
 import pytest
 

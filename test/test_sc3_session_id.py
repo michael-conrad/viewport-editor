@@ -61,6 +61,4 @@ async def test_sc3_two_clients_different_session_ids() -> None:
         await c2.call_tool("probe", arguments={})
 
     assert len(ids) == 2, f"Expected 2 session IDs, got {len(ids)}"
-    assert ids[0] != ids[1], (
-        f"Two clients should have different session IDs: {ids}"
-    )
+    assert ids[0] != ids[1], f"Two clients should have different session IDs: {ids}"

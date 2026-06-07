@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import AsyncIterator, Any
+from typing import Any
 
 import pytest
 
@@ -148,8 +148,7 @@ async def test_red_sc4_ctx_is_not_in_schema(client_session: Any) -> None:
         t = tools_by_name[name]
         props = list(t.inputSchema.get("properties", {}).keys())
         assert "ctx" not in props, (
-            f"{name}: ctx should not be in schema with fastmcp. "
-            f"Params: {props}"
+            f"{name}: ctx should not be in schema with fastmcp. Params: {props}"
         )
 
 

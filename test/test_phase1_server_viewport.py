@@ -11,7 +11,7 @@ from __future__ import annotations
 import time
 import tempfile
 from pathlib import Path
-from typing import AsyncIterator, Any
+from typing import Any
 
 # Unit test imports for display mode helpers
 from viewport_editor.server import _render_content_line, _decode_unicode_escapes
