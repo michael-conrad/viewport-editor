@@ -1,0 +1,130 @@
+domain: spec-38-session-id
+types:
+  - {name: file}
+  - {name: phase}
+
+objects:
+  - {name: server_py, type: file}
+  - {name: viewport_py, type: file}
+  - {name: buffer_py, type: file}
+  - {name: exception_py, type: file}
+  - {name: test_files, type: file}
+  - {name: phase_a, type: phase}
+  - {name: phase_b, type: phase}
+  - {name: phase_c, type: phase}
+
+fluents:
+  - name: session_id_removed
+    params:
+      - {name: f, type: file}
+  - name: ctx_session_id_extracted
+  - name: sc1_pass
+  - name: sc2_pass
+  - name: sc3_pass
+  - name: sc4_pass
+  - name: sc5_pass
+  - name: sc6_pass
+  - name: sc7_complete
+  - name: phase_done
+    params:
+      - {name: p, type: phase}
+
+actions:
+  - name: phase_a_extract_ctx_session_id
+    effects:
+      - ctx_session_id_extracted
+
+  - name: phase_a_remove_session_id_from_stubs
+    preconditions:
+      - ctx_session_id_extracted
+    effects:
+      - session_id_removed(server_py)
+
+  - name: phase_b_remove_from_viewport
+    preconditions:
+      - session_id_removed(server_py)
+    effects:
+      - session_id_removed(viewport_py)
+
+  - name: phase_b_remove_from_buffer
+    preconditions:
+      - session_id_removed(server_py)
+    effects:
+      - session_id_removed(buffer_py)
+
+  - name: phase_b_remove_from_tests
+    preconditions:
+      - session_id_removed(server_py)
+    effects:
+      - session_id_removed(test_files)
+
+  - name: mark_phase_a_done
+    preconditions:
+      - session_id_removed(server_py)
+      - ctx_session_id_extracted
+    effects:
+      - phase_done(phase_a)
+
+  - name: mark_phase_b_done
+    preconditions:
+      - session_id_removed(viewport_py)
+      - session_id_removed(buffer_py)
+      - session_id_removed(test_files)
+    effects:
+      - phase_done(phase_b)
+
+  - name: verify_sc1
+    preconditions:
+      - session_id_removed(server_py)
+    effects:
+      - sc1_pass
+
+  - name: verify_sc2
+    preconditions:
+      - ctx_session_id_extracted
+    effects:
+      - sc2_pass
+
+  - name: verify_sc3
+    preconditions:
+      - phase_done(phase_a)
+    effects:
+      - sc3_pass
+
+  - name: verify_sc4
+    preconditions:
+      - phase_done(phase_a)
+    effects:
+      - sc4_pass
+
+  - name: verify_sc5
+    preconditions:
+      - phase_done(phase_b)
+    effects:
+      - sc5_pass
+
+  - name: verify_sc6
+    preconditions:
+      - phase_done(phase_b)
+    effects:
+      - sc6_pass
+
+  - name: phase_c_produce_docs
+    preconditions:
+      - sc1_pass
+      - sc2_pass
+      - sc3_pass
+      - sc4_pass
+      - sc5_pass
+      - sc6_pass
+    effects:
+      - sc7_complete
+      - phase_done(phase_c)
+
+init:
+  - session_id_removed(exception_py)
+
+goals:
+  - phase_done(phase_a)
+  - phase_done(phase_b)
+  - phase_done(phase_c)
