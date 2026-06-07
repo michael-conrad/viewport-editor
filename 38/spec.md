@@ -6,17 +6,17 @@
 
 **Root Cause / Motivation:** The original design used the official `mcp` SDK which lacked `ctx.session_id`. The codebase compensated by routing a user-supplied `session_id: str` parameter through every layer. Prerequisite #46 (switch to standalone `fastmcp`) provides `ctx.session_id`, making the compensation removable.
 
-**Approach Chosen:** Derive session identity from `ctx.session_id` at the tool entry point in `server.py`. Remove `session_id` from all tool parameters, handler signatures, ViewportManager methods, BufferManager methods, and test fixtures. Three-phase: core derivation, manager cleanup, documentation.
+**Approach Chosen:** Derive session identity from `ctx.session_id` at the tool entry point in `server.py`. Remove `session_id` from all tool parameters and handler signatures. Two-pass: core derivation (Card 1), observational documentation (Cards 2-3). Manager-method signatures left unchanged — managers are internal API never called by agents, and every viable removal approach introduces structural risk (breaks session isolation or introduces concurrency bugs).
 
 **Alternatives Considered & Why Discarded:**
 - **Keep `session_id` parameter + `ctx.session_id` side-by-side:** Adds complexity, dual session sources create confusion. Discarded because `ctx.session_id` is always available post-handshake — no scenario where the agent needs to override it.
 - **Store `session_id` on Manager objects (constructor injection):** Would require creating per-session Manager instances. Cleaner from OO perspective but introduces lifecycle complexity — managers would need to be created/destroyed per connection. Discarded because current design uses string-keyed dicts (`_entries: Dict[str, Dict[str, ViewportEntry]]`) which work correctly with `ctx.session_id` as the key.
-- **Switch to `Session` object references instead of string keys:** Would be cleaner but requires larger refactor. Discarded for Phase B scope — Phase B removes `session_id` parameter but keeps string-keyed internals. `Session`-object refactoring deferred to future enhancement.
+- **Phase B (manager-level cleanup) — CANCELLED after research.** Three approaches were examined during feasibility analysis: (a) `current_session` instance variable introduces mutable shared state and a thread-safety bug under concurrent clients; (b) per-session constructor injection is incompatible with the singleton pattern and test structure; (c) flattening data structures removes session-level keying but destroys session isolation (contradicts SC-4). Managers are internal API never called by agents — the real vulnerability (agent-controlled session injection) was already fixed by Card 1. Cancelled with zero residual risk.
 
 **Key Design Decisions:**
 1. Extract `ctx.session_id` at the tool entry point in `server.py`, pass it down as the session string key — minimal surface change.
 2. ViewportManager and BufferManager keep string-keyed dicts internally; only the *source* of the string changes.
-3. Phase B makes the managers receive `session_id` implicitly (from their caller, which got it from `ctx`) — the key is no longer agent-controllable.
+3. Manager method signatures retain `session_id` parameter — they are internal API, never agent-exposed. The agent already cannot control session identity (Card 1). Removing the parameter from signatures adds structural risk without security benefit.
 
 ## Objective
 
@@ -51,9 +51,9 @@ Files that never use `session_id`: `editor.py`, `file_ops.py`, `diff_engine.py`,
 
 ## Fix Approach
 
-Three-phase implementation:
+Two-pass implementation:
 
-### Phase A: Core Session Derivation (depends on #46)
+### Pass 1: Core Session Derivation — Card 1 (COMPLETE, PR #49)
 
 In `server.py`:
 
@@ -64,18 +64,13 @@ In `server.py`:
 
 The `regex` tool never had a `session_id` parameter — no change needed.
 
-### Phase B: Manager-Level Session Cleanup (depends on Phase A)
+### Pass 2: Observational Session Behavior — Card 2 (SC-6)
 
-1. **`viewport.py`**: Remove `session_id: str` from all ViewportManager method signatures (~29 methods). Callers pass it implicitly.
-2. **`buffer.py`**: Remove `session_id: str` from all BufferManager method signatures (~9 methods).
-3. **`exceptions.py`**: `SessionNotFoundError(session_id) OK` — keep as informational.
-4. **All 16 test files**: Remove `"session_id":` key-value pairs from all tool call `arguments={}` dicts (~303 refs).
+Write empirical test that documents session behavior of two `Client(transport=server)` connections. No assertions — observational only. See SC-6 section below.
 
-### Phase C: MCP Plugin Behavioral Documentation (post-implementation)
+### Pass 3: Documentation — Card 3
 
-Produce `docs/mcp-plugin-behavior.md` documenting observed session behavior from an opencode user's perspective. Runs after SC-1 through SC-6 are all completed (implemented, verified, VbC'd, adversarially audited). Observational only — no pass/fail assertions.
-
-Topics: transport continuity, session reconnection, connection lifecycle, error recovery, tool discovery, concurrent session isolation. See full SC-6 test spec below and SC-7 doc template.
+Produce `docs/mcp-plugin-behavior.md` documenting observed session behavior from test output only. No code reading as evidence.
 
 ## Prerequisites
 
@@ -95,10 +90,8 @@ Topics: transport continuity, session reconnection, connection lifecycle, error 
 | `src/viewport_editor/server.py` | 6 tool stubs (viewport, edit, file, diff, clipboard, search) | Remove `session_id: str = ""` param; extract `ctx.session_id` and pass to handlers |
 | `src/viewport_editor/server.py` | `_handle_viewport_action`, `_action_open/close/list/scroll/page_up/page_down/jump/autosave/set_display_mode` | Remove `session_id` param (19 handlers) |
 | `src/viewport_editor/server.py` | `_handle_edit_action`, `_handle_file_action`, `_handle_diff_action`, `_handle_clipboard_action`, `_handle_search_action`, `_action_find` | Remove `session_id` param |
-| `src/viewport_editor/viewport.py` | All ViewportManager methods (~29) | Remove `session_id: str` param |
-| `src/viewport_editor/buffer.py` | All BufferManager methods (~9) | Remove `session_id: str` param |
 | `src/viewport_editor/session.py` | `Session.__init__`, `create_session`, `get_session`, `remove_session`, `get_session_ids` | Keep as-is (keys remain strings) |
-| `test/` (16 files) | All tool call `arguments={}` dicts | Remove `"session_id":` entries (~303 refs) |
+| `test/test_sc6_subagent_session_observation.py` | New file | SC-6 observational test — two-client transport observation |
 
 ## Constraints & Assumptions
 
@@ -129,62 +122,35 @@ Topics: transport continuity, session reconnection, connection lifecycle, error 
 | SC-4 | Viewports opened via different Clients have isolated state | `behavioral` | Same file edit in two clients — independent buffers | [`test/test_sc4_session_isolation.py`] |
 | SC-5 | All existing tests pass after fixture update (`session_id` removed from call args) | `behavioral` | `uv run pytest test/` | N/A (regression suite) |
 | SC-6 | Two Clients simulating orchestrator + clean-room sub-agent — one opens viewport, other lists viewports. Documents whether session forwarding is needed. | `behavioral` (observational) | Python test using in-memory `Client(transport=server)` with probe tool | [`test/test_sc6_subagent_session_observation.py`] |
-| SC-7 | `docs/mcp-plugin-behavior.md` exists and documents observed behavior from opencode user's perspective for all investigation topics | `behavioral` (observational) | Phase C test prompts run via opencode-cli against registered MCP plugin | N/A (documentation artifact) |
+| SC-7 | `docs/mcp-plugin-behavior.md` exists and documents observed session behavior from test output | `behavioral` (observational) | SC-1 through SC-6 test output as evidence; no code-reading | N/A (documentation artifact) |
 
-## SC-6: Observational Test Specification
+## SC-7: Observational Documentation Specification
 
 ### Rationale
 
-SC-3/SC-4 tests prove fastmcp assigns unique `ctx.session_id` per `Client(transport=server)`. This is correct at the library level. However, the viewport-editor also needs to know what happens when opencode dispatches a clean-room sub-agent — does the sub-agent's tool call arrive on a new transport connection (different `session_id`, isolated state) or share the orchestrator's connection (same `session_id`, shared state)?
+SC-7 documents what was observed from running the behavioral test suite (SC-1 through SC-6). All evidence must come from test output — no code reading, no source inspection, no claims about implementation internals.
 
-This observation determines whether Phase A/B implementation is sufficient or whether session forwarding is needed. No pass/fail — documents actual behavior.
+### Investigation Topics (from test output only)
 
-### Test Structure
+1. **Schema change** — `list_tools()` output from SC-1 shows tools without `session_id` parameter
+2. **Connection-derived identity** — `ctx.session_id` values printed by SC-2 test show UUIDs per connection
+3. **Same-connection sharing** — SC-3 test output shows clipboard content shared across viewports
+4. **Cross-connection isolation** — SC-4 test output shows different session IDs and independent buffers
+5. **Sub-agent transport continuity** — SC-6 test output shows whether C2 sees C1's viewports
 
-`ctx.session_id` is only accessible inside tool handlers. Register a probe tool on the server that echoes `ctx.session_id` back, following the same pattern as `test_sc3_session_id.py`:
+### Evidence Sources
 
-```python
-@pytest.mark.asyncio
-async def test_sc6_subagent_session_observation(tmp_path: Path) -> None:
-    """Observational test: does a second Client see viewports opened by the first?"""
-    test_file = tmp_path / "test.txt"
-    test_file.write_text("line 1\nline 2\nline 3\n")
-
-    from viewport_editor.server import create_server
-    server = create_server(str(tmp_path))
-    captured: dict[str, str] = {}
-
-    from fastmcp import Context
-
-    @server.tool()
-    def probe_sid(ctx: Context, label: str) -> str:
-        captured[label] = ctx.session_id
-        return f"{label}: {ctx.session_id}"
-
-    async with Client(transport=server) as c1:
-        r1 = await c1.call_tool("viewport", arguments={
-            "action": "open", "file_path": "test.txt",
-        })
-        await c1.call_tool("probe_sid", arguments={"label": "c1"})
-
-    async with Client(transport=server) as c2:
-        r2 = await c2.call_tool("viewport", arguments={
-            "action": "list",
-        })
-        await c2.call_tool("probe_sid", arguments={"label": "c2"})
-
-    c1_output = r1.content[0].text
-    c2_output = r2.content[0].text
-
-    print(f"C1 session_id: {captured.get('c1', 'UNKNOWN')}")
-    print(f"C2 session_id: {captured.get('c2', 'UNKNOWN')}")
-    print(f"C1 same as C2? {captured.get('c1') == captured.get('c2')}")
-    print(f"C2 sees viewports: {c2_output}")
-```
+| Topic | Evidence Source | Method |
+|-------|----------------|--------|
+| Schema | SC-1 tool parameter inspection | `list_tools()` response printed by test |
+| Session ID | SC-2 `ctx.session_id` echo | Test output showing UUID values |
+| Session sharing | SC-3 clipboard paste across viewports | Test output showing paste success |
+| Session isolation | SC-4 two-client edit test | Test output showing independent buffers |
+| Sub-agent transport | SC-6 probe_sid observation | Test output showing C1/C2 session comparison |
 
 ### Phasing
 
-Phase C runs AFTER all other SCs (SC-1 through SC-6) are completed — implemented, verified by VbC, and adversarially audited. It is the final phase before rollback tagging.
+SC-6 runs after Card 1 (which is DONE). Phase C docs run after SC-6.
 
 ## Related Issues
 

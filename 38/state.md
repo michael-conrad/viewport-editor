@@ -5,7 +5,7 @@ state: open
 labels:
   - "SPEC-FIX"
 created: 2026-06-03T14:26:34Z
-updated: 2026-06-07T04:15:00Z
+updated: 2026-06-07T18:00:00Z
 prerequisites:
   - issue: 39
     title: "Parameter name normalization"
@@ -19,16 +19,25 @@ workflow_phase: spec_ready
 branch: TBD
 blockers: []
 phase_plan:
-  phase_a:
+  card_1:
     title: "Core Session Derivation"
     depends_on: 46
     description: "Remove session_id from 6 tool stubs + 19 handlers in server.py. Extract ctx.session_id at entry point."
-  phase_b:
-    title: "Manager-Level Cleanup"
-    depends_on: phase_a
-    description: "Remove session_id from ViewportManager (29 methods), BufferManager (9 methods), and 16 test files"
-  phase_c:
-    title: "MCP Plugin Behavioral Documentation"
-    depends_on: phase_a + phase_b
-    description: "Produce docs/mcp-plugin-behavior.md documenting observed session behavior"
+    status: completed
+    pr: 49
+  card_2:
+    title: "SC-6 Observational Test"
+    depends_on: card_1
+    description: "Empirical test documenting two-client session behavior. No assertions, observational only."
+    status: pending
+  card_3:
+    title: "Phase C Observational Documentation"
+    depends_on: card_2
+    description: "docs/mcp-plugin-behavior.md citing test output from SC-1 through SC-6. No code reading."
+    status: pending
+  card_4:
+    title: "Rollback Tag + Issue Close"
+    depends_on: card_3
+    description: "Tag fix/pre-session-id-refactor, close issue #38"
+    status: pending
 ---

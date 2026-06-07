@@ -1,110 +1,73 @@
-# Card Catalogue — Spec #38: Remove agent-provided session_id
+# Card Catalogue — Spec #38 (Revised): Remove agent-provided session_id
 
 ## Dependency Order
 
 ```
-Card 1 (server.py — tool stubs + handlers) → Card 2 (viewport.py — ViewportManager)
-                                                                      ↓
-Card 3 (buffer.py — BufferManager)
-Card 4 (test fixtures — 16 files)              ← requires Card 1
-Card 5 (SC-1 through SC-5 verification)        ← requires Cards 1-4
-Card 6 (SC-6 observational test)               ← independent
-Card 7 (Phase C — docs/mcp-plugin-behavior.md)  ← requires SC-6 complete
+Card 1 — server.py tool stubs/handlers .......... DONE (PR #49, merged dev)
+Card 2 — SC-6 observational test ............... PENDING
+Card 3 — Phase C docs (observational) ........... PENDING
+Card 4 — rollback tag + issue close ............ PENDING
 ```
 
-## Card 1 — Core Session Derivation (Phase A)
+**Phase B (manager method signatures) — CANCELLED** after feasibility research.
+Managers are internal API never called by agents. Every approach to remove
+`session_id` from manager signatures either breaks session isolation
+(contradicts SC-4), introduces concurrency bugs, or changes nothing meaningful.
 
+## Card 1 — Core Session Derivation
+
+**Status:** DONE (PR #49, merged to dev)
 **Target:** `src/viewport_editor/server.py`
-
 **Scope:** 6 tool stubs + 19 handler functions
+**Related files:** All SC-1 through SC-5 tests, 10 migrated test files
+**Verification:** SC-1 through SC-5 PASS (behavioral tests at 149/149)
 
-**Required changes:**
-- Remove `session_id: str = ""` from all 6 tool stub signatures (viewport, edit, file, diff, clipboard, search)
-- Add `session_id = ctx.session_id` inside each stub before calling handler
-- Remove `session_id` parameter from all `_action_*` and `_handle_*` handler signatures
-- Handlers continue to receive session_id as a positional string arg — source changes from agent-provided to ctx-derived
+## Card 2 — SC-6 Observational Test
 
-**Excluded from scope:** `regex` tool — never had `session_id` parameter
-
-**Verification:** SC-1 (list_tools inspection), SC-2 (tool returns session_id)
-
-## Card 2 — ViewportManager Session Cleanup (Phase B)
-
-**Target:** `src/viewport_editor/viewport.py`
-
-**Scope:** 29 methods on ViewportManager
-
-**Required changes:**
-- Remove `session_id: str` parameter from all method signatures (close, list, scroll, jump, apply_edit, etc.)
-- Callers in server.py already receive `session_id` from `ctx.session_id` — pass as positional arg
-- Internal dict keying (string-keyed `_entries`) remains unchanged — only the *source* of the string changes
-
-**Excluded from scope:** `sweep_stale_sessions`, `check_conflict`, `format_conflict_warning` — these do not take `session_id`
-
-**Verification:** SC-5 regression (all tests pass)
-
-## Card 3 — BufferManager Session Cleanup (Phase B)
-
-**Target:** `src/viewport_editor/buffer.py`
-
-**Scope:** 9 methods on BufferManager
-
-**Required changes:**
-- Remove `session_id: str` parameter from all method signatures (get_or_create, get_lines, set_content, etc.)
-- Callers in server.py already receive `session_id` from `ctx.session_id` — pass as positional arg
-- Internal dict keying (string-keyed `_buffers`) remains unchanged
-
-**Verification:** SC-5 regression (all tests pass)
-
-## Card 4 — Test Fixture Cleanup (Phase B)
-
-**Target:** 16 test files across `test/`
-
-**Scope:** Remove every `"session_id":` key-value pair from all `arguments={}` dicts in tool calls
-
-**Required behavior:** Once Card 1 removes the session_id parameter from tool stubs, FastMCP strict validation will reject undeclared kwargs. Every test that passes `"session_id": "..."` will fail.
-
-**Verification:** SC-5 regression (`uv run pytest test/`)
-
-## Card 5 — Verification (SCs 1-5)
-
-**Target:** Behavioral test files + `uv run pytest test/`
-
-**Scope:** 5 behavioral SCs
-
-**Required behavior:**
-- SC-1: No tool in MCP schema accepts `session_id` as parameter — verified by `list_tools` inspection
-- SC-2: Each tool handler uses `ctx.session_id` as session key — verified by tool returning session_id in response
-- SC-3: Two viewports via same Client share session (clipboard, stashes) — verified by copy/paste across viewports
-- SC-4: Two Clients have isolated state — verified by independent buffer state
-- SC-5: All existing tests pass without `session_id` in call args — verified by `uv run pytest test/`
-
-## Card 6 — SC-6 Observational Test
-
+**Status:** PENDING
 **Target:** `test/test_sc6_subagent_session_observation.py`
 
-**Scope:** Single observational test examining whether a second Client sees viewports opened by the first
+**Clean-room implementation spec:**
 
-**Required behavior:**
-- Register a `probe_sid` tool on the server that echoes `ctx.session_id` back in response
-- Client 1 opens a viewport, Client 2 lists viewports
-- No pass/fail assertion — the test documents actual behavior
-- The finding (same or different session_id) determines whether session forwarding is needed for sub-agent workflows
+```
+Write test_sc6_subagent_session_observation.py:
+  - Own server: create_server(str(tmp_path)), NOT conftest fixtures
+  - Register probe_sid(ctx: Context, label: str) -> str tool echoing ctx.session_id
+  - Two sequential Client(transport=server) connections
+  - C1: viewport open test.txt, probe session_id
+  - C2: viewport list, probe session_id
+  - Print: C1 sid, C2 sid, same/different, C2 viewport list result
+  - ZERO assertions — observational only
+  - Lint: ruff clean
+```
 
-**Verification:** Non-blocking — observational documentation
+**Verification:** `uv run pytest test/test_sc6_subagent_session_observation.py -v --tb=short` — 1 PASS
+**Adversarial audit:** Dual cross-family auditor verification required
+**PR:** Single branch, targets dev
 
-## Card 7 — Phase C Documentation
+## Card 3 — Phase C Observational Documentation
 
+**Status:** PENDING
 **Target:** `docs/mcp-plugin-behavior.md`
 
-**Scope:** 6 investigation topics
+**Evidence constraint:** ALL content must cite test output from SC-1 through SC-6.
+No code reading, no source inspection, no claims about implementation internals.
 
 **Required topics:**
-1. Transport continuity — does a sub-agent share transport with orchestrator?
-2. Session reconnection — what happens when MCP server restarts mid-conversation?
-3. Connection lifecycle — tool calls before handshake or after disconnect?
-4. Error recovery — agent response to tool errors (retry? report? halt?)
-5. Tool discovery — agent correctly enumerates tools from MCP schema?
-6. Concurrent session isolation — two opencode sessions sharing same plugin?
+1. Schema — SC-1 `list_tools()` output shows no `session_id` parameter
+2. Connection identity — SC-2 test shows `ctx.session_id` UUIDs per connection
+3. Same-connection sharing — SC-3 test shows clipboard shared across viewports
+4. Cross-connection isolation — SC-4 test shows independent buffer state
+5. Sub-agent transport — SC-6 test shows C2 viewport isolation vs C1
 
-**Verification:** Non-blocking — documentation artifact
+**Verification:** File exists. Evidence source cited for every claim.
+No code-reading claims present.
+**PR:** Single branch, targets dev (may combine with Card 2 branch).
+
+## Card 4 — Rollback Tag + Issue Close
+
+**Target:** Git tag + GitHub issue
+1. Tag: `git tag fix/pre-session-id-refactor` at commit before PR #49 base
+2. Close: `github_issue_write(method="update", state="closed", state_reason="completed")`
+3. Comment: PR #49 ref + SC-1 through SC-6 verification summary
+4. Remove `approved-for-*` labels if present

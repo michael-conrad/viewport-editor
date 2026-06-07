@@ -1,24 +1,14 @@
-domain: spec-38-four-passes
+domain: spec-38-revised
 
-# Each pass (1-4) repeats the 14-step pipeline independently.
-# Model each pass's step as a distinct fluent so the planner can
-# schedule all 4 passes sequentially.
-
-types: []
-
-objects: []
+# REVISED: Phase B (manager cleanup) CANCELLED — managers are internal API.
+# Card 1 already delivers the real goal: session_id removed from agent-facing tool stubs.
+# Remaining: SC-6 observational test + Phase C docs + rollback + close.
 
 fluents:
   - name: p1_done
-  - name: p2_done
-  - name: p3_done
-  - name: p4_done
+    comment: "Card 1 — server.py tool stubs/handlers (PR #49, merged)"
 
-  # Pass 1 steps: coherence, pre_red, red, red_check, green, commit, structure, green_check, vbc, audit, crossval, regression, review, exec
-  - name: p1_coherence
-  - name: p1_pre_red
-  - name: p1_red
-  - name: p1_red_check
+  # Pass 1 steps (already complete)
   - name: p1_green
   - name: p1_commit
   - name: p1_structure
@@ -30,11 +20,8 @@ fluents:
   - name: p1_review
   - name: p1_exec
 
-  # Pass 2 steps
+  # Pass 2 steps: SC-6 observational test (reduced pipeline)
   - name: p2_coherence
-  - name: p2_pre_red
-  - name: p2_red
-  - name: p2_red_check
   - name: p2_green
   - name: p2_commit
   - name: p2_structure
@@ -42,291 +29,101 @@ fluents:
   - name: p2_vbc
   - name: p2_audit
   - name: p2_crossval
-  - name: p2_regression
   - name: p2_review
   - name: p2_exec
+  - name: p2_done
+    comment: "SC-6 observational test"
 
-  # Pass 3 steps (verification, no code change — reduced pipeline)
-  - name: p3_coherence
+  # Pass 3 steps: Phase C docs + rollback tag + issue close
   - name: p3_green
   - name: p3_commit
   - name: p3_structure
-  - name: p3_green_check
-  - name: p3_vbc
-  - name: p3_audit
-  - name: p3_crossval
-  - name: p3_deploy
-
-  # Pass 4 steps (docs only — reduced pipeline)
-  - name: p4_green
-  - name: p4_commit
-  - name: p4_structure
-  - name: p4_review
-  - name: p4_exec
+  - name: p3_review
+  - name: p3_exec
+  - name: p3_done
+    comment: "Phase C docs + rollback tag + issue close"
 
 actions:
-  # ===== PASS 1: server.py changes (full 14-step pipeline) =====
-  - name: p1_step1_coherence
-    preconditions:
-      - not p1_coherence
-    effects:
-      - p1_coherence
-  - name: p1_step2_pre_red
-    preconditions:
-      - p1_coherence
-      - not p1_pre_red
-    effects:
-      - p1_pre_red
-  - name: p1_step3_red
-    preconditions:
-      - p1_pre_red
-      - not p1_red
-    effects:
-      - p1_red
-  - name: p1_step4_red_check
-    preconditions:
-      - p1_red
-      - not p1_red_check
-    effects:
-      - p1_red_check
-  - name: p1_step5_green
-    preconditions:
-      - p1_red_check
-      - not p1_green
-    effects:
-      - p1_green
-  - name: p1_step6_commit
-    preconditions:
-      - p1_green
-      - not p1_commit
-    effects:
-      - p1_commit
-  - name: p1_step7_structure
-    preconditions:
-      - p1_commit
-      - not p1_structure
-    effects:
-      - p1_structure
-  - name: p1_step8_green_check
-    preconditions:
-      - p1_structure
-      - not p1_green_check
-    effects:
-      - p1_green_check
-  - name: p1_step9_vbc
-    preconditions:
-      - p1_green_check
-      - not p1_vbc
-    effects:
-      - p1_vbc
-  - name: p1_step10_audit
-    preconditions:
-      - p1_vbc
-      - not p1_audit
-    effects:
-      - p1_audit
-  - name: p1_step11_crossval
-    preconditions:
-      - p1_audit
-      - not p1_crossval
-    effects:
-      - p1_crossval
-  - name: p1_step12_regression
-    preconditions:
-      - p1_crossval
-      - not p1_regression
-    effects:
-      - p1_regression
-  - name: p1_step13_review
-    preconditions:
-      - p1_regression
-      - not p1_review
-    effects:
-      - p1_review
-  - name: p1_step14_exec
-    preconditions:
-      - p1_review
-      - not p1_exec
-    effects:
-      - p1_exec
-      - p1_done
+  # ===== PASS 1: server.py (COMPLETE) =====
+  - name: p1_step1_green
+    preconditions: [not p1_green]
+    effects: [p1_green]
+  - name: p1_step2_commit
+    preconditions: [p1_green, not p1_commit]
+    effects: [p1_commit]
+  - name: p1_step3_structure
+    preconditions: [p1_commit, not p1_structure]
+    effects: [p1_structure]
+  - name: p1_step4_green_check
+    preconditions: [p1_structure, not p1_green_check]
+    effects: [p1_green_check]
+  - name: p1_step5_vbc
+    preconditions: [p1_green_check, not p1_vbc]
+    effects: [p1_vbc]
+  - name: p1_step6_audit
+    preconditions: [p1_vbc, not p1_audit]
+    effects: [p1_audit]
+  - name: p1_step7_crossval
+    preconditions: [p1_audit, not p1_crossval]
+    effects: [p1_crossval]
+  - name: p1_step8_regression
+    preconditions: [p1_crossval, not p1_regression]
+    effects: [p1_regression]
+  - name: p1_step9_review
+    preconditions: [p1_regression, not p1_review]
+    effects: [p1_review]
+  - name: p1_step10_exec
+    preconditions: [p1_review, not p1_exec]
+    effects: [p1_exec, p1_done]
 
-  # ===== PASS 2: viewport + buffer + tests (full 14-step pipeline) =====
+  # ===== PASS 2: SC-6 observational test (after p1_done) =====
   - name: p2_step1_coherence
-    preconditions:
-      - p1_done
-      - not p2_coherence
-    effects:
-      - p2_coherence
-  - name: p2_step2_pre_red
-    preconditions:
-      - p2_coherence
-      - not p2_pre_red
-    effects:
-      - p2_pre_red
-  - name: p2_step3_red
-    preconditions:
-      - p2_pre_red
-      - not p2_red
-    effects:
-      - p2_red
-  - name: p2_step4_red_check
-    preconditions:
-      - p2_red
-      - not p2_red_check
-    effects:
-      - p2_red_check
-  - name: p2_step5_green
-    preconditions:
-      - p2_red_check
-      - not p2_green
-    effects:
-      - p2_green
-  - name: p2_step6_commit
-    preconditions:
-      - p2_green
-      - not p2_commit
-    effects:
-      - p2_commit
-  - name: p2_step7_structure
-    preconditions:
-      - p2_commit
-      - not p2_structure
-    effects:
-      - p2_structure
-  - name: p2_step8_green_check
-    preconditions:
-      - p2_structure
-      - not p2_green_check
-    effects:
-      - p2_green_check
-  - name: p2_step9_vbc
-    preconditions:
-      - p2_green_check
-      - not p2_vbc
-    effects:
-      - p2_vbc
-  - name: p2_step10_audit
-    preconditions:
-      - p2_vbc
-      - not p2_audit
-    effects:
-      - p2_audit
-  - name: p2_step11_crossval
-    preconditions:
-      - p2_audit
-      - not p2_crossval
-    effects:
-      - p2_crossval
-  - name: p2_step12_regression
-    preconditions:
-      - p2_crossval
-      - not p2_regression
-    effects:
-      - p2_regression
-  - name: p2_step13_review
-    preconditions:
-      - p2_regression
-      - not p2_review
-    effects:
-      - p2_review
-  - name: p2_step14_exec
-    preconditions:
-      - p2_review
-      - not p2_exec
-    effects:
-      - p2_exec
-      - p2_done
+    preconditions: [p1_done, not p2_coherence]
+    effects: [p2_coherence]
+  - name: p2_step2_green
+    preconditions: [p2_coherence, not p2_green]
+    effects: [p2_green]
+  - name: p2_step3_commit
+    preconditions: [p2_green, not p2_commit]
+    effects: [p2_commit]
+  - name: p2_step4_structure
+    preconditions: [p2_commit, not p2_structure]
+    effects: [p2_structure]
+  - name: p2_step5_green_check
+    preconditions: [p2_structure, not p2_green_check]
+    effects: [p2_green_check]
+  - name: p2_step6_vbc
+    preconditions: [p2_green_check, not p2_vbc]
+    effects: [p2_vbc]
+  - name: p2_step7_audit
+    preconditions: [p2_vbc, not p2_audit]
+    effects: [p2_audit]
+  - name: p2_step8_crossval
+    preconditions: [p2_audit, not p2_crossval]
+    effects: [p2_crossval]
+  - name: p2_step9_review
+    preconditions: [p2_crossval, not p2_review]
+    effects: [p2_review]
+  - name: p2_step10_exec
+    preconditions: [p2_review, not p2_exec]
+    effects: [p2_exec, p2_done]
 
-  # ===== PASS 3: verification + SC-6 (reduced pipeline — no RED) =====
-  - name: p3_step1_coherence
-    preconditions:
-      - p2_done
-      - not p3_coherence
-    effects:
-      - p3_coherence
-  - name: p3_step2_green
-    preconditions:
-      - p3_coherence
-      - not p3_green
-    effects:
-      - p3_green
-  - name: p3_step3_commit
-    preconditions:
-      - p3_green
-      - not p3_commit
-    effects:
-      - p3_commit
-  - name: p3_step4_structure
-    preconditions:
-      - p3_commit
-      - not p3_structure
-    effects:
-      - p3_structure
-  - name: p3_step5_green_check
-    preconditions:
-      - p3_structure
-      - not p3_green_check
-    effects:
-      - p3_green_check
-  - name: p3_step6_vbc
-    preconditions:
-      - p3_green_check
-      - not p3_vbc
-    effects:
-      - p3_vbc
-  - name: p3_step7_audit
-    preconditions:
-      - p3_vbc
-      - not p3_audit
-    effects:
-      - p3_audit
-  - name: p3_step8_crossval
-    preconditions:
-      - p3_audit
-      - not p3_crossval
-    effects:
-      - p3_crossval
-  - name: p3_step9_review
-    preconditions:
-      - p3_crossval
-      - not p3_deploy
-    effects:
-      - p3_deploy
-      - p3_done
-
-  # ===== PASS 4: Phase C docs (reduced pipeline — green + commit + lint + review + exec) =====
-  - name: p4_step1_green
-    preconditions:
-      - p3_done
-      - not p4_green
-    effects:
-      - p4_green
-  - name: p4_step2_commit
-    preconditions:
-      - p4_green
-      - not p4_commit
-    effects:
-      - p4_commit
-  - name: p4_step3_structure
-    preconditions:
-      - p4_commit
-      - not p4_structure
-    effects:
-      - p4_structure
-  - name: p4_step4_review
-    preconditions:
-      - p4_structure
-      - not p4_review
-    effects:
-      - p4_review
-  - name: p4_step5_exec
-    preconditions:
-      - p4_review
-      - not p4_exec
-    effects:
-      - p4_exec
-      - p4_done
+  # ===== PASS 3: Phase C docs + rollback tag + issue close (after p2_done) =====
+  - name: p3_step1_green
+    preconditions: [p2_done, not p3_green]
+    effects: [p3_green]
+  - name: p3_step2_commit
+    preconditions: [p3_green, not p3_commit]
+    effects: [p3_commit]
+  - name: p3_step3_structure
+    preconditions: [p3_commit, not p3_structure]
+    effects: [p3_structure]
+  - name: p3_step4_review
+    preconditions: [p3_structure, not p3_review]
+    effects: [p3_review]
+  - name: p3_step5_exec
+    preconditions: [p3_review, not p3_exec]
+    effects: [p3_exec, p3_done]
 
 init: []
 
@@ -334,4 +131,3 @@ goals:
   - p1_done
   - p2_done
   - p3_done
-  - p4_done
