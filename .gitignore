@@ -1,7 +1,8 @@
-.worktrees/
-.venv/
 __pycache__/
 *.pyc
-.python-version
-tmp/
+.issues/
+.opencode/
 .tools/
+.worktrees/
+tmp/
+.srclight/

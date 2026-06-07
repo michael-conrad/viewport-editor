@@ -1,11 +1,29 @@
 # SPDX-FileCopyrightText: 2026 Michael Conrad
 # SPDX-License-Identifier: MIT
 # Provenance: AI-generated
-"""Support python -m viewport_editor.
+"""Entry point for viewport-editor MCP server.
 
-Co-authored with AI: OpenCode (ollama-cloud/deepseek-v4-flash)
+Co-authored with AI: OpenCode (deepseek-v4-flash)
 """
 
-from . import main
+import argparse
+import os
 
-main()
+from .server import create_server
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="viewport-editor MCP server")
+    parser.add_argument(
+        "--project-root",
+        default=os.environ.get("VIEWPORT_PROJECT_ROOT", os.getcwd()),
+        help="Root directory for file operations (default: cwd or $VIEWPORT_PROJECT_ROOT)",
+    )
+    args = parser.parse_args()
+
+    server = create_server(project_root=args.project_root)
+    server.run()
+
+
+if __name__ == "__main__":
+    main()
