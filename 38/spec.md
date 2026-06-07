@@ -17,12 +17,12 @@
 
 **Root Cause / Motivation:** The original design used the official `mcp` SDK which lacked `ctx.session_id`. The codebase compensated by routing a user-supplied `session_id: str` parameter through every layer. Prerequisite #46 (switch to standalone `fastmcp`) provides `ctx.session_id`, making the compensation removable.
 
-**Approach Chosen:** Derive session identity from `ctx.session_id` at the tool entry point in `server.py`. Remove `session_id` from all tool parameters and handler signatures. Two-pass: core derivation (Card 1), observational documentation (Cards 2-3). Manager-method signatures left unchanged — managers are internal API never called by agents, and every viable removal approach introduces structural risk (breaks session isolation or introduces concurrency bugs).
+**Approach Chosen:** Derive session identity from `ctx.session_id` at the tool entry point in `server.py`. Remove `session_id` from all tool parameters and handler signatures. Three-pass: core derivation (Card 1), SC-6 observational test (Card 2), documentation + rollback (Card 3). Manager-method signatures left unchanged — managers are internal API never called by agents, and every viable removal approach introduces structural risk (breaks session isolation or introduces concurrency bugs).
 
 **Alternatives Considered & Why Discarded:**
 - **Keep `session_id` parameter + `ctx.session_id` side-by-side:** Adds complexity, dual session sources create confusion. Discarded because `ctx.session_id` is always available post-handshake — no scenario where the agent needs to override it.
 - **Store `session_id` on Manager objects (constructor injection):** Would require creating per-session Manager instances. Cleaner from OO perspective but introduces lifecycle complexity — managers would need to be created/destroyed per connection. Discarded because current design uses string-keyed dicts (`_entries: Dict[str, Dict[str, ViewportEntry]]`) which work correctly with `ctx.session_id` as the key.
-- **Phase B (manager-level cleanup) — CANCELLED after research.** Three approaches were examined during feasibility analysis: (a) `current_session` instance variable introduces mutable shared state and a thread-safety bug under concurrent clients; (b) per-session constructor injection is incompatible with the singleton pattern and test structure; (c) flattening data structures removes session-level keying but destroys session isolation (contradicts SC-4). Managers are internal API never called by agents — the real vulnerability (agent-controlled session injection) was already fixed by Card 1. Cancelled with zero residual risk.
+- **Manager method signatures left unchanged.** Managers are internal API never called by agents — the real vulnerability (agent-controlled session injection) was already fixed by Card 1. Three approaches were examined during feasibility analysis: (a) `current_session` instance variable introduces mutable shared state and a thread-safety bug under concurrent clients; (b) per-session constructor injection is incompatible with the singleton pattern and test structure; (c) flattening data structures removes session-level keying but destroys session isolation (contradicts SC-4). All three rejected — managers stay as-is with zero residual risk.
 
 **Key Design Decisions:**
 1. Extract `ctx.session_id` at the tool entry point in `server.py`, pass it down as the session string key — minimal surface change.
@@ -79,9 +79,7 @@ The `regex` tool never had a `session_id` parameter — no change needed.
 
 Write empirical test that documents session behavior of two `Client(transport=server)` connections. No assertions — observational only. See SC-6 section below.
 
-**Note:** Phase B (manager-level cleanup) was CANCELLED after research. See §Alternatives Considered above and `spec-artifacts/cards.md` for the feasibility analysis.
-
-### Pass 3: Documentation — Card 3
+### Pass 3: Documentation & Rollback — Card 3
 
 Produce `docs/mcp-plugin-behavior.md` documenting observed session behavior from test output only. No code reading as evidence.
 
@@ -163,13 +161,13 @@ SC-7 documents what was observed from running the behavioral test suite (SC-1 th
 
 ### Phasing
 
-SC-6 runs after Card 1 (which is DONE). Phase C docs run after SC-6.
+SC-6 runs after Card 1 (which is DONE). Pass 3 docs run after SC-6.
 
 ## Related Issues
 
 | Issue | Relationship | URL |
 |-------|-------------|-----|
-| #46 — Switch to standalone fastmcp | Prerequisite — provides `ctx.session_id` via `fastmcp>=3.0,<4.0`. Must be resolved before Phase A. | https://github.com/michael-conrad/viewport-editor/issues/46 |
+| #46 — Switch to standalone fastmcp | Prerequisite — provides `ctx.session_id` via `fastmcp>=3.0,<4.0`. Must be resolved before Pass 1. | https://github.com/michael-conrad/viewport-editor/issues/46 |
 | #39/#45 — Parameter name normalization | Prerequisite — moves `ctx` to first parameter position for clean `Context` typing. | https://github.com/michael-conrad/viewport-editor/issues/39 |
 
 ## Rollback

@@ -5,14 +5,10 @@
 ```
 Card 1 — server.py tool stubs/handlers .......... DONE (PR #49, merged dev)
 Card 2 — SC-6 observational test ............... PENDING
-Card 3 — Phase C docs (observational) ........... PENDING
-Card 4 — rollback tag + issue close ............ PENDING
+Card 3 — docs + rollback tag + issue close ..... PENDING
 ```
 
-**Phase B (manager method signatures) — CANCELLED** after feasibility research.
-Managers are internal API never called by agents. Every approach to remove
-`session_id` from manager signatures either breaks session isolation
-(contradicts SC-4), introduces concurrency bugs, or changes nothing meaningful.
+Managers are internal API never called by agents — left unchanged after feasibility analysis.
 
 ## Card 1 — Core Session Derivation
 
@@ -45,10 +41,10 @@ Write test_sc6_subagent_session_observation.py:
 **Adversarial audit:** Dual cross-family auditor verification required
 **PR:** Single branch, targets dev
 
-## Card 3 — Phase C Observational Documentation
+## Card 3 — Observational Documentation + Rollback
 
 **Status:** PENDING
-**Target:** `docs/mcp-plugin-behavior.md`
+**Target:** `docs/mcp-plugin-behavior.md` + git tag + GitHub issue close
 
 **Evidence constraint:** ALL content must cite test output from SC-1 through SC-6.
 No code reading, no source inspection, no claims about implementation internals.
@@ -60,13 +56,7 @@ No code reading, no source inspection, no claims about implementation internals.
 4. Cross-connection isolation — SC-4 test shows independent buffer state
 5. Sub-agent transport — SC-6 test shows C2 viewport isolation vs C1
 
-**Verification:** File exists. Evidence source cited for every claim.
-No code-reading claims present.
-**PR:** Single branch, targets dev (may combine with Card 2 branch).
-
-## Card 4 — Rollback Tag + Issue Close
-
-**Target:** Git tag + GitHub issue
+**Rollback steps:**
 1. Tag: `git tag fix/pre-session-id-refactor` at commit before PR #49 base
 2. Close: `github_issue_write(method="update", state="closed", state_reason="completed")`
 3. Comment: PR #49 ref + SC-1 through SC-6 verification summary

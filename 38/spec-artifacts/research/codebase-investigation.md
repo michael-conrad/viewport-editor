@@ -23,7 +23,7 @@ All 6 tool stubs receive `session_id: str = ""` as user-supplied param:
 
 **Key finding:** `ctx: Context` annotation already present (from #46). `ctx.session_id` is never extracted or used anywhere in `src/`.
 
-### Handler Functions (phase_a scope: remove session_id param)
+### Handler Functions (Pass 1 scope: remove session_id param)
 
 | Handler | Line | Takes session_id |
 |---------|------|------------------|
@@ -35,7 +35,7 @@ All 6 tool stubs receive `session_id: str = ""` as user-supplied param:
 | `_handle_search_action` | 1252 | YES |
 | `_handle_regex_action` | 278 | NO |
 
-### Action Functions (phase_a scope: remove session_id param)
+### Action Functions (Pass 1 scope: remove session_id param)
 
 | Action | Line | Takes session_id |
 |--------|------|------------------|
@@ -52,7 +52,7 @@ All 6 tool stubs receive `session_id: str = ""` as user-supplied param:
 | `_action_regex_test` | 289 | NO |
 | `_action_regex_escape` | 330 | NO |
 
-## viewport.py — ViewportManager (phase_b scope)
+## viewport.py — ViewportManager (left unchanged after feasibility analysis)
 
 29 methods all take `session_id: str` as first positional param:
 
@@ -91,7 +91,7 @@ All 6 tool stubs receive `session_id: str = ""` as user-supplied param:
 
 **NOT taking session_id:** `sweep_stale_sessions` (83), `check_conflict` (369), `format_conflict_warning` (456)
 
-## buffer.py — BufferManager (phase_b scope)
+## buffer.py — BufferManager (left unchanged after feasibility analysis)
 
 9 methods all take `session_id: str`:
 
@@ -136,7 +136,7 @@ server.py (gets session_id from agent)
   → session.py _sessions: Dict[str, Session]  (keyed by session_id)
 ```
 
-After Phase B, the stack becomes:
+After Pass 1 (server.py), the stack becomes:
 
 ```
 server.py (extracts session_id from ctx.session_id)
@@ -146,6 +146,8 @@ server.py (extracts session_id from ctx.session_id)
 ```
 
 The only change is the *source* of the session string. Dict keying patterns are unchanged. This minimizes risk.
+
+Managers are left unchanged after feasibility analysis — every approach to remove `session_id` from manager signatures either breaks session isolation (contradicts SC-4), introduces thread-safety bugs, or changes nothing meaningful.
 
 ## Test File Count
 

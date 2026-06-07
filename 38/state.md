@@ -31,13 +31,8 @@ phase_plan:
     description: "Empirical test documenting two-client session behavior. No assertions, observational only."
     status: pending
   card_3:
-    title: "Phase C Observational Documentation"
+    title: "Observational Documentation + Rollback"
     depends_on: card_2
-    description: "docs/mcp-plugin-behavior.md citing test output from SC-1 through SC-6. No code reading."
-    status: pending
-  card_4:
-    title: "Rollback Tag + Issue Close"
-    depends_on: card_3
-    description: "Tag fix/pre-session-id-refactor, close issue #38"
+    description: "docs/mcp-plugin-behavior.md citing test output from SC-1 through SC-6. Tag fix/pre-session-id-refactor, close issue #38."
     status: pending
 ---

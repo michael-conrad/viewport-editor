@@ -6,23 +6,23 @@
 > Before any implementation dispatch for issue #38, the implementing agent MUST load this file and follow its dispatch table for the current pass. Each step maps to a specific skill task to be invoked via `task(subagent_type="general")`. Steps are hard gates — skipping any step is a pipeline violation.
 
 **Domain:** spec-38-revised
-**Plan length:** 24 steps (across 3 sequential passes)
+**Plan length:** 42 steps (across 3 sequential passes, 14 steps each)
 **Status:** SOLVED_SATISFICING
 
 ## Pass Structure
 
-Each pass runs the mandatory implementation pipeline steps appropriate to the work type:
-- **Pass 1 (full 14-step):** server.py — tool stubs + handlers (COMPLETE, PR #49)
-- **Pass 2 (reduced 10-step):** SC-6 observational test (no RED/GREEN — test is observational only)
-- **Pass 3 (reduced 4-step):** Phase C docs + rollback tag + issue close
+Each pass runs the full 14-step implementation pipeline. All steps are mandatory:
+- **Pass 1 (14-step, full pipeline):** server.py — tool stubs + handlers (COMPLETE, PR #49)
+- **Pass 2 (14-step, full pipeline):** SC-6 observational test (no RED assertions — test is observational only)
+- **Pass 3 (14-step, full pipeline):** docs + rollback tag + issue close
 
 ## Generated Plan
 
 ### Pass 1: server.py (COMPLETE — PR #49)
 
-| # | Step | Pipeline Action | Dispatches To |
-|---|------|----------------|---------------|
-| 1 | coherence | `p1_step1_coherence()` | `adversarial-audit --task coherence-extraction` |
+| # | Step Label | Pipeline Action | Dispatches To |
+|---|------------|----------------|---------------|
+| 1 | sc-coherence-gate | `p1_step1_coherence()` | `adversarial-audit --task coherence-extraction` |
 | 2 | pre-red-baseline | `p1_step2_pre_red()` | `implementation-pipeline --task pre-red-baseline` |
 | 3 | red-phase | `p1_step3_red()` | `test-driven-development --task red` |
 | 4 | red-doublecheck | `p1_step4_red_check()` | `verification-before-completion --task verify` |
@@ -39,33 +39,49 @@ Each pass runs the mandatory implementation pipeline steps appropriate to the wo
 
 ### Pass 2: SC-6 observational test (after p1_done)
 
-**Note:** Phase B (manager-level cleanup) was CANCELLED after feasibility analysis identified structural risks. See spec.md §Alternatives Considered and cards.md. Pass 2 is the SC-6 observational test only — no viewport.py, buffer.py, or test fixture changes.
+Full 14-step pipeline. SC-6 is an observational test (zero assertions) so RED phase writes the test body that is expected to PASS — no assertion-based RED failure.
 
-| # | Step | Pipeline Action | Dispatches To |
-|---|------|----------------|---------------|
-| 15 | coherence | `p2_step1_coherence()` | `adversarial-audit --task coherence-extraction` |
-| 16 | green-phase | `p2_step2_green()` | `test-driven-development --task green` |
-| 17 | checkpoint-commit | `p2_step3_commit()` | `git-workflow --task commit-prep` |
-| 18 | structural-checks | `p2_step4_structure()` | `finishing-a-development-branch --task checklist` |
-| 19 | green-doublecheck | `p2_step5_green_check()` | `verification-before-completion --task verify` |
-| 20 | green-vbc | `p2_step6_vbc()` | `verification-before-completion --task completion` |
-| 21 | adversarial-audit | `p2_step7_audit()` | `adversarial-audit --task verification-audit` |
-| 22 | cross-validate | `p2_step8_crossval()` | `adversarial-audit --task cross-validate` |
-| 23 | review-prep | `p2_step9_review()` | `git-workflow --task review-prep` |
-| 24 | exec-summary | `p2_step10_exec()` | `completion-core --task completion` |
+| # | Step Label | Pipeline Action | Dispatches To |
+|---|------------|----------------|---------------|
+| 15 | sc-coherence-gate | `p2_step1_coherence()` | `adversarial-audit --task coherence-extraction` |
+| 16 | pre-red-baseline | `p2_step2_pre_red()` | `implementation-pipeline --task pre-red-baseline` |
+| 17 | red-phase | `p2_step3_red()` | `test-driven-development --task red` — write test, runs PASS (observational, no assertions) |
+| 18 | red-doublecheck | `p2_step4_red_check()` | `verification-before-completion --task verify` — confirm test runs PASS |
+| 19 | green-phase | `p2_step5_green()` | `test-driven-development --task green` — adjust if needed |
+| 20 | checkpoint-commit | `p2_step6_commit()` | `git-workflow --task commit-prep` |
+| 21 | structural-checks | `p2_step7_structure()` | `finishing-a-development-branch --task checklist` |
+| 22 | green-doublecheck | `p2_step8_green_check()` | `verification-before-completion --task verify` |
+| 23 | green-vbc | `p2_step9_vbc()` | `verification-before-completion --task completion` |
+| 24 | adversarial-audit | `p2_step10_audit()` | `adversarial-audit --task verification-audit` |
+| 25 | cross-validate | `p2_step11_crossval()` | `adversarial-audit --task cross-validate` |
+| 26 | regression-check | `p2_step12_regression()` | `test-driven-development --task patterns` |
+| 27 | review-prep | `p2_step13_review()` | `git-workflow --task review-prep` |
+| 28 | exec-summary | `p2_step14_exec()` | `completion-core --task completion` |
 
-### Pass 3: Phase C docs + rollback tag + issue close (after p2_done)
+### Pass 3: docs + rollback tag + issue close (after p2_done)
 
-| # | Step | Pipeline Action | Dispatches To |
-|---|------|----------------|---------------|
-| 25 | green-phase | `p3_step1_green()` | `test-driven-development --task green` |
-| 26 | checkpoint-commit | `p3_step2_commit()` | `git-workflow --task commit-prep` |
-| 27 | review-prep | `p3_step4_review()` | `git-workflow --task review-prep` |
-| 28 | exec-summary | `p3_step5_exec()` | `completion-core --task completion` |
+Full 14-step pipeline. GREEN phase writes `docs/mcp-plugin-behavior.md` from test output (SC-1 through SC-6). Rollback tag applied during structural-checks.
+
+| # | Step Label | Pipeline Action | Dispatches To |
+|---|------------|----------------|---------------|
+| 29 | sc-coherence-gate | `p3_step1_coherence()` | `adversarial-audit --task coherence-extraction` |
+| 30 | pre-red-baseline | `p3_step2_pre_red()` | `implementation-pipeline --task pre-red-baseline` |
+| 31 | red-phase | `p3_step3_red()` | `test-driven-development --task red` — no code assertions; verify docs structure |
+| 32 | red-doublecheck | `p3_step4_red_check()` | `verification-before-completion --task verify` |
+| 33 | green-phase | `p3_step5_green()` | `test-driven-development --task green` — write `docs/mcp-plugin-behavior.md` |
+| 34 | checkpoint-commit | `p3_step6_commit()` | `git-workflow --task commit-prep` |
+| 35 | structural-checks | `p3_step7_structure()` | `finishing-a-development-branch --task checklist` — includes rollback tag `fix/pre-session-id-refactor` |
+| 36 | green-doublecheck | `p3_step8_green_check()` | `verification-before-completion --task verify` |
+| 37 | green-vbc | `p3_step9_vbc()` | `verification-before-completion --task completion` |
+| 38 | adversarial-audit | `p3_step10_audit()` | `adversarial-audit --task verification-audit` |
+| 39 | cross-validate | `p3_step11_crossval()` | `adversarial-audit --task cross-validate` |
+| 40 | regression-check | `p3_step12_regression()` | `test-driven-development --task patterns` |
+| 41 | review-prep | `p3_step13_review()` | `git-workflow --task review-prep` |
+| 42 | exec-summary | `p3_step14_exec()` | `completion-core --task completion` — close issue #38 as completed |
 
 ## Dependency Constraints (enforced by state machine)
 
-Pass 2 can only begin after Pass 1 completes (`p1_done → p2_coherence`). Pass 3 requires Pass 2. Each individual pass enforces internal pipeline step ordering via Z3-validated state machine preconditions.
+Pass 2 can only begin after Pass 1 completes (`p1_done → p2_coherence`). Pass 3 requires Pass 2 (`p2_done → p3_coherence`). Each individual pass enforces internal pipeline step ordering via Z3-validated state machine preconditions.
 
 ## State Management
 
@@ -77,4 +93,4 @@ solve check --state-path ./tmp/state/38/pipeline/state.yaml --contract-path .ope
 
 ## Problem Domain
 
-Model file: `spec-artifacts/problem.yaml` — 3 passes, 28 actions, 3 goals, SOLVED_SATISFICING by Tamer.
+Model file: `spec-artifacts/problem.yaml` — 3 passes, 42 actions, 3 goals, SOLVED_SATISFICING by Tamer.
