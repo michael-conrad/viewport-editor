@@ -16,12 +16,9 @@ from __future__ import annotations
 import tempfile
 import uuid
 from pathlib import Path
-from typing import AsyncIterator
+from typing import Any
 
 import pytest
-from mcp.client.session import ClientSession
-from mcp.client.stdio import StdioServerParameters, stdio_client
-from mcp.types import CallToolResult
 
 
 @pytest.fixture(scope="module")
@@ -32,37 +29,7 @@ def test_project_root() -> Path:
     return tmpdir
 
 
-@pytest.fixture(scope="module")
-def server_params(test_project_root: Path) -> StdioServerParameters:
-    return StdioServerParameters(
-        command="uv",
-        args=[
-            "run",
-            "python",
-            "-m",
-            "viewport_editor",
-            "--project-root",
-            str(test_project_root),
-        ],
-    )
-
-
-@pytest.fixture
-async def client_session(
-    server_params: StdioServerParameters,
-) -> AsyncIterator[ClientSession]:
-    try:
-        async with stdio_client(server_params) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                yield session
-    except RuntimeError as exc:
-        msg = str(exc)
-        if "Attempted to exit cancel scope in a different task" not in msg:
-            raise
-
-
-def _get_text(result: CallToolResult) -> str:
+def _get_text(result: Any) -> str:
     parts: list[str] = []
     if result.content:
         for item in result.content:
@@ -89,7 +56,7 @@ def _unique_sid() -> str:
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_stash_copies_clipboard(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-43: stash copies clipboard contents to named slot; clipboard stays intact.
 
@@ -168,9 +135,7 @@ async def test_stash_copies_clipboard(
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_stash_overwrite(
-    client_session: ClientSession, test_project_root: Path
-) -> None:
+async def test_stash_overwrite(client_session: Any, test_project_root: Path) -> None:
     """SC-43: stash to same name overwrites previous slot content.
 
     RED: clipboard stash action does not exist; call_tool will fail.
@@ -255,7 +220,7 @@ async def test_stash_overwrite(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_stash_empty_clipboard_is_error(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-43: stash with empty clipboard returns isError.
 
@@ -281,7 +246,7 @@ async def test_stash_empty_clipboard_is_error(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_pop_replaces_clipboard(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-44: pop replaces clipboard contents with named slot contents; slot remains intact.
 
@@ -370,7 +335,7 @@ async def test_pop_replaces_clipboard(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_pop_nonexistent_slot_is_error(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-44: pop with nonexistent slot returns isError.
 
@@ -395,9 +360,7 @@ async def test_pop_nonexistent_slot_is_error(
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_swap_exchanges(
-    client_session: ClientSession, test_project_root: Path
-) -> None:
+async def test_swap_exchanges(client_session: Any, test_project_root: Path) -> None:
     """SC-45: swap exchanges clipboard and named slot.
 
     RED: clipboard swap action does not exist; call_tool will fail.
@@ -489,7 +452,7 @@ async def test_swap_exchanges(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_swap_empty_clipboard_is_error(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-45: swap with empty clipboard returns isError.
 
@@ -584,7 +547,7 @@ async def test_swap_empty_clipboard_is_error(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_stash_list_shows_metadata(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-47: stash-list returns name, source_file, line_range, line_count, first_line_preview.
 
@@ -661,7 +624,7 @@ async def test_stash_list_shows_metadata(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_stash_list_empty_returns_empty(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-47: stash-list with no stashes returns empty list.
 
@@ -694,7 +657,7 @@ async def test_stash_list_empty_returns_empty(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_stash_list_after_multiple_stash(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-47: multiple stashes all appear in stash-list.
 

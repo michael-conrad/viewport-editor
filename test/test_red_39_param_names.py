@@ -14,12 +14,9 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import AsyncIterator
+from typing import Any
 
 import pytest
-from mcp.client.session import ClientSession
-from mcp.client.stdio import StdioServerParameters, stdio_client
-from mcp.types import CallToolResult
 
 
 @pytest.fixture(scope="module")
@@ -29,37 +26,7 @@ def test_project_root() -> Path:
     return tmpdir
 
 
-@pytest.fixture(scope="module")
-def server_params(test_project_root: Path) -> StdioServerParameters:
-    return StdioServerParameters(
-        command="uv",
-        args=[
-            "run",
-            "python",
-            "-m",
-            "viewport_editor",
-            "--project-root",
-            str(test_project_root),
-        ],
-    )
-
-
-@pytest.fixture
-async def client_session(
-    server_params: StdioServerParameters,
-) -> AsyncIterator[ClientSession]:
-    try:
-        async with stdio_client(server_params) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                yield session
-    except RuntimeError as exc:
-        msg = str(exc)
-        if "Attempted to exit cancel scope in a different task" not in msg:
-            raise
-
-
-def _get_text(result: CallToolResult) -> str:
+def _get_text(result: Any) -> str:
     parts: list[str] = []
     if result.content:
         for item in result.content:
@@ -71,7 +38,7 @@ def _get_text(result: CallToolResult) -> str:
 # SC-1: viewport uses line_start/line_end (RED — will fail with old code)
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_red_sc1_viewport_line_start_end(client_session: ClientSession) -> None:
+async def test_red_sc1_viewport_line_start_end(client_session: Any) -> None:
     """Call viewport with line_start/line_end — fails on old code, passes on new."""
     result = await client_session.call_tool(
         "viewport",
@@ -92,7 +59,7 @@ async def test_red_sc1_viewport_line_start_end(client_session: ClientSession) ->
 # SC-2: viewport uses autosave_enabled (RED — will fail with old code)
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_red_sc2_autosave_enabled(client_session: ClientSession) -> None:
+async def test_red_sc2_autosave_enabled(client_session: Any) -> None:
     """Call viewport autosave action with autosave_enabled — fails on old code."""
     result_open = await client_session.call_tool(
         "viewport",
@@ -126,7 +93,7 @@ async def test_red_sc2_autosave_enabled(client_session: ClientSession) -> None:
 # SC-3: clipboard uses line_start/line_end (RED — will fail with old code)
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_red_sc3_clipboard_line_start_end(client_session: ClientSession) -> None:
+async def test_red_sc3_clipboard_line_start_end(client_session: Any) -> None:
     """Call clipboard with line_start/line_end — fails on old code."""
     result_open = await client_session.call_tool(
         "viewport",
@@ -161,8 +128,11 @@ async def test_red_sc3_clipboard_line_start_end(client_session: ClientSession) -
 # SC-4: ctx is first parameter in all 7 tools (RED — viewport/clipboard have it last)
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_red_sc4_ctx_is_first_param(client_session: ClientSession) -> None:
-    """Check inputSchema property order — ctx should be first in all tools."""
+async def test_red_sc4_ctx_is_not_in_schema(client_session: Any) -> None:
+    """Check that ctx is NOT in inputSchema — fastmcp auto-injects ctx: Context.
+
+    Unlike the bundled MCP SDK, standalone fastmcp strips ctx from the
+    tool schema since it's an auto-injected framework parameter."""
     result = await client_session.list_tools()
     tools_by_name = {t.name: t for t in result.tools}
     expected_tools = {
@@ -177,18 +147,15 @@ async def test_red_sc4_ctx_is_first_param(client_session: ClientSession) -> None
     for name in sorted(expected_tools):
         t = tools_by_name[name]
         props = list(t.inputSchema.get("properties", {}).keys())
-        # On RED: viewport and clipboard have ctx at end — this check fails
-        # On GREEN: viewport and clipboard have ctx at front — this passes
-        assert props[0] == "ctx", (
-            f"{name}: ctx is not first param. First param is {props[0]}. "
-            f"Params: {props}"
+        assert "ctx" not in props, (
+            f"{name}: ctx should not be in schema with fastmcp. Params: {props}"
         )
 
 
 # SC-5: ctx_pattern removed from regex (RED — it still exists)
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_red_sc5_no_ctx_pattern(client_session: ClientSession) -> None:
+async def test_red_sc5_no_ctx_pattern(client_session: Any) -> None:
     """ctx_pattern should not be in regex tool properties."""
     result = await client_session.list_tools()
     tools_by_name = {t.name: t for t in result.tools}
@@ -204,7 +171,7 @@ async def test_red_sc5_no_ctx_pattern(client_session: ClientSession) -> None:
 # SC-6: file_path removed from edit (RED — it still exists)
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_red_sc6_no_file_path_edit(client_session: ClientSession) -> None:
+async def test_red_sc6_no_file_path_edit(client_session: Any) -> None:
     """file_path should not be in edit tool properties."""
     result = await client_session.list_tools()
     tools_by_name = {t.name: t for t in result.tools}

@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncIterator, Optional
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import Context, FastMCP
 
 from .clipboard import ClipboardEntry, apply_copy, apply_cut, apply_paste
 from .exceptions import DiffApplyError, ViewportError
@@ -53,7 +53,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
     @mcp.tool()
     def viewport(
-        ctx: Any = None,
+        ctx: Context,
         action: str = "",
         session_id: str = "",
         file_path: Optional[str] = None,
@@ -98,7 +98,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
     @mcp.tool()
     def edit(
-        ctx: Any = None,
+        ctx: Context,
         action: str = "",
         session_id: str = "",
         viewport_id: str = "",
@@ -137,7 +137,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
     @mcp.tool()
     def file(
-        ctx: Any = None,
+        ctx: Context,
         action: str = "",
         session_id: str = "",
         viewport_id: str = "",
@@ -164,7 +164,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
     @mcp.tool()
     def diff(
-        ctx: Any = None,
+        ctx: Context,
         action: str = "",
         session_id: str = "",
         viewport_id: str = "",
@@ -191,7 +191,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
     @mcp.tool()
     def clipboard(
-        ctx: Any = None,
+        ctx: Context,
         action: str = "",
         session_id: str = "",
         viewport_id: Optional[str] = None,
@@ -222,7 +222,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
     @mcp.tool()
     def search(
-        ctx: Any = None,
+        ctx: Context,
         action: str = "",
         session_id: str = "",
         pattern: str = "",
@@ -255,7 +255,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
     @mcp.tool()
     def regex(
-        ctx: Any = None,
+        ctx: Context,
         action: str = "",
         pattern: Optional[str] = None,
         text: Optional[str] = None,

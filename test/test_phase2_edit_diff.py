@@ -15,12 +15,9 @@ from __future__ import annotations
 import time
 import tempfile
 from pathlib import Path
-from typing import AsyncIterator
+from typing import Any
 
 import pytest
-from mcp.client.session import ClientSession
-from mcp.client.stdio import StdioServerParameters, stdio_client
-from mcp.types import CallToolResult
 
 
 @pytest.fixture(scope="module")
@@ -39,37 +36,7 @@ def test_project_root() -> Path:
     return tmpdir
 
 
-@pytest.fixture(scope="module")
-def server_params(test_project_root: Path) -> StdioServerParameters:
-    return StdioServerParameters(
-        command="uv",
-        args=[
-            "run",
-            "python",
-            "-m",
-            "viewport_editor",
-            "--project-root",
-            str(test_project_root),
-        ],
-    )
-
-
-@pytest.fixture
-async def client_session(
-    server_params: StdioServerParameters,
-) -> AsyncIterator[ClientSession]:
-    try:
-        async with stdio_client(server_params) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                yield session
-    except RuntimeError as exc:
-        msg = str(exc)
-        if "Attempted to exit cancel scope in a different task" not in msg:
-            raise
-
-
-def _get_text(result: CallToolResult) -> str:
+def _get_text(result: Any) -> str:
     parts: list[str] = []
     if result.content:
         for item in result.content:
@@ -92,7 +59,7 @@ def _extract_vpid(text: str) -> str:
 @pytest.mark.phase2
 @pytest.mark.asyncio
 async def test_sc9_edit_replace_stages_in_buffer_autosave_off(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-9: edit:replace with autosave=off stages change in buffer without writing to disk.
 
@@ -120,7 +87,6 @@ async def test_sc9_edit_replace_stages_in_buffer_autosave_off(
             "action": "replace",
             "session_id": "test-sc9",
             "viewport_id": vpid,
-            "file_path": file_path_str,
             "old_text": "line 3",
             "new_text": "modified line 3",
         },
@@ -149,7 +115,7 @@ async def test_sc9_edit_replace_stages_in_buffer_autosave_off(
 @pytest.mark.phase2
 @pytest.mark.asyncio
 async def test_sc10_diff_show_returns_unified_diff(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     """SC-10: diff:show returns unified diff of pending buffer changes vs disk original.
 
@@ -173,7 +139,6 @@ async def test_sc10_diff_show_returns_unified_diff(
             "action": "replace",
             "session_id": "test-sc10",
             "viewport_id": vpid,
-            "file_path": "edit_test.txt",
             "old_text": "line 3",
             "new_text": "CHANGED",
         },
@@ -202,7 +167,7 @@ async def test_sc10_diff_show_returns_unified_diff(
 @pytest.mark.phase2
 @pytest.mark.asyncio
 async def test_sc11_file_save_rejects_stale_mtime(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-11: file:save with stale mtime returns isError.
 
@@ -244,7 +209,7 @@ async def test_sc11_file_save_rejects_stale_mtime(
 @pytest.mark.phase2
 @pytest.mark.asyncio
 async def test_sc11_file_save_rejects_missing_file(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     """SC-11: file:save on missing file returns isError."""
     result_open = await client_session.call_tool(
@@ -278,7 +243,7 @@ async def test_sc11_file_save_rejects_missing_file(
 @pytest.mark.phase2
 @pytest.mark.asyncio
 async def test_sc11_file_save_force_overrides_stale(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-11: file:save with force=true overrides stale mtime/size check."""
     result_open = await client_session.call_tool(
@@ -328,7 +293,7 @@ async def test_sc11_file_save_force_overrides_stale(
 
 @pytest.mark.phase2
 @pytest.mark.asyncio
-async def test_sc12_file_discard_reverts_buffer(client_session: ClientSession) -> None:
+async def test_sc12_file_discard_reverts_buffer(client_session: Any) -> None:
     """SC-12: file:discard reverts buffer to disk state, clearing dirty flag.
 
     RED: stub returns 'not yet implemented'.
@@ -352,7 +317,6 @@ async def test_sc12_file_discard_reverts_buffer(client_session: ClientSession) -
             "action": "replace",
             "session_id": "test-sc12",
             "viewport_id": vpid,
-            "file_path": "edit_test.txt",
             "old_text": "line 3",
             "new_text": "DIRTY",
         },
@@ -394,7 +358,7 @@ async def test_sc12_file_discard_reverts_buffer(client_session: ClientSession) -
 @pytest.mark.phase2
 @pytest.mark.asyncio
 async def test_sc13_edit_replace_autosave_on_writes_to_disk(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-13: edit:replace with autosave=on writes to disk atomically.
 
@@ -421,7 +385,6 @@ async def test_sc13_edit_replace_autosave_on_writes_to_disk(
             "action": "replace",
             "session_id": "test-sc13",
             "viewport_id": vpid,
-            "file_path": file_path_str,
             "old_text": "line 3",
             "new_text": "AUTO SAVED",
         },
@@ -439,7 +402,7 @@ async def test_sc13_edit_replace_autosave_on_writes_to_disk(
 
 @pytest.mark.phase2
 @pytest.mark.asyncio
-async def test_sc18_replace_all_multi_occurrence(client_session: ClientSession) -> None:
+async def test_sc18_replace_all_multi_occurrence(client_session: Any) -> None:
     """SC-18: replace-all replaces all occurrences of old_text in the buffer."""
     result_open = await client_session.call_tool(
         "viewport",
@@ -457,7 +420,6 @@ async def test_sc18_replace_all_multi_occurrence(client_session: ClientSession) 
             "action": "replace-all",
             "session_id": "test-sc18",
             "viewport_id": vpid,
-            "file_path": "multi.txt",
             "old_text": "apple",
             "new_text": "orange",
         },
@@ -489,7 +451,7 @@ async def test_sc18_replace_all_multi_occurrence(client_session: ClientSession) 
 
 @pytest.mark.phase2
 @pytest.mark.asyncio
-async def test_sc19_insert_lines_at_position(client_session: ClientSession) -> None:
+async def test_sc19_insert_lines_at_position(client_session: Any) -> None:
     """SC-19: insert-lines inserts lines at specified line position."""
     result_open = await client_session.call_tool(
         "viewport",
@@ -507,7 +469,6 @@ async def test_sc19_insert_lines_at_position(client_session: ClientSession) -> N
             "action": "insert-lines",
             "session_id": "test-sc19",
             "viewport_id": vpid,
-            "file_path": "lines.txt",
             "line_start": 3,
             "lines": ["inserted A", "inserted B"],
         },
@@ -538,7 +499,7 @@ async def test_sc19_insert_lines_at_position(client_session: ClientSession) -> N
 
 @pytest.mark.phase2
 @pytest.mark.asyncio
-async def test_sc20_delete_lines_at_position(client_session: ClientSession) -> None:
+async def test_sc20_delete_lines_at_position(client_session: Any) -> None:
     """SC-20: delete-lines removes lines at specified range."""
     result_open = await client_session.call_tool(
         "viewport",
@@ -556,7 +517,6 @@ async def test_sc20_delete_lines_at_position(client_session: ClientSession) -> N
             "action": "delete-lines",
             "session_id": "test-sc20",
             "viewport_id": vpid,
-            "file_path": "lines.txt",
             "line_start": 2,
             "line_end": 4,
         },
@@ -590,7 +550,7 @@ async def test_sc20_delete_lines_at_position(client_session: ClientSession) -> N
 
 @pytest.mark.phase2
 @pytest.mark.asyncio
-async def test_sc21_swap_lines(client_session: ClientSession) -> None:
+async def test_sc21_swap_lines(client_session: Any) -> None:
     """SC-21: swap-lines swaps two line ranges in the buffer."""
     result_open = await client_session.call_tool(
         "viewport",
@@ -608,7 +568,6 @@ async def test_sc21_swap_lines(client_session: ClientSession) -> None:
             "action": "swap-lines",
             "session_id": "test-sc21",
             "viewport_id": vpid,
-            "file_path": "lines.txt",
             "line_start": 1,
             "line_end": 2,
             "target_line_start": 4,
@@ -644,7 +603,7 @@ async def test_sc21_swap_lines(client_session: ClientSession) -> None:
 
 @pytest.mark.phase2
 @pytest.mark.asyncio
-async def test_sc22_move_lines(client_session: ClientSession) -> None:
+async def test_sc22_move_lines(client_session: Any) -> None:
     """SC-22: move-lines moves a line range to another position in the buffer."""
     result_open = await client_session.call_tool(
         "viewport",
@@ -662,7 +621,6 @@ async def test_sc22_move_lines(client_session: ClientSession) -> None:
             "action": "move-lines",
             "session_id": "test-sc22",
             "viewport_id": vpid,
-            "file_path": "lines.txt",
             "line_start": 5,
             "line_end": 7,
             "target_line": 2,
@@ -704,7 +662,7 @@ async def test_sc22_move_lines(client_session: ClientSession) -> None:
 @pytest.mark.phase2
 @pytest.mark.asyncio
 async def test_sc25_soft_conflict_warning_on_edit(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-25: edit operations warn when file changed externally before edit.
 
@@ -732,7 +690,6 @@ async def test_sc25_soft_conflict_warning_on_edit(
             "action": "replace",
             "session_id": "test-sc25",
             "viewport_id": vpid,
-            "file_path": "conflict_test.txt",
             "old_text": "original content",
             "new_text": "conflicting edit",
         },
@@ -754,7 +711,7 @@ async def test_sc25_soft_conflict_warning_on_edit(
 @pytest.mark.phase2
 @pytest.mark.asyncio
 async def test_sc13_atomic_write_integrity(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-13-FIX: file:save writes fully, no orphaned .tmp files, content correct.
 
@@ -783,7 +740,6 @@ async def test_sc13_atomic_write_integrity(
             "action": "replace",
             "session_id": "test-sc13-atomic",
             "viewport_id": vpid,
-            "file_path": file_path_str,
             "old_text": "line c",
             "new_text": "ATOMIC SAVED",
         },
@@ -809,7 +765,7 @@ async def test_sc13_atomic_write_integrity(
 @pytest.mark.phase2
 @pytest.mark.asyncio
 async def test_sc_lf1_crlf_preserved_after_save(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     # SC-LF-1: flush_entry opens temp file with newline="" — CRLF files
     # preserve \r\n after save.
@@ -841,7 +797,6 @@ async def test_sc_lf1_crlf_preserved_after_save(
             "action": "replace",
             "session_id": "test-sc-lf1",
             "viewport_id": vpid,
-            "file_path": file_path_str,
             "old_text": "line two",
             "new_text": "LINE TWO",
         },
@@ -868,7 +823,7 @@ async def test_sc_lf1_crlf_preserved_after_save(
 @pytest.mark.phase2
 @pytest.mark.asyncio
 async def test_sc_tmp1_flush_entry_uses_mkstemp(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     # SC-TMP-1: flush_entry uses tempfile.mkstemp(dir=...) instead of
     # string concatenation for temp path.
@@ -899,7 +854,6 @@ async def test_sc_tmp1_flush_entry_uses_mkstemp(
             "action": "replace",
             "session_id": "test-sc-tmp1",
             "viewport_id": vpid,
-            "file_path": file_path_str,
             "old_text": "mkstemp test",
             "new_text": "MKSTEMP TEST",
         },
@@ -1022,7 +976,7 @@ def test_sc24_close_dirty_autosave_off_discards() -> None:
 @pytest.mark.phase2
 @pytest.mark.asyncio
 async def test_sc36_crlf_roundtrip(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     # SC-36: Full CRLF round-trip: open CRLF file → edit → save → verify
     # disk still contains \r\n.
@@ -1053,7 +1007,6 @@ async def test_sc36_crlf_roundtrip(
             "action": "replace",
             "session_id": "test-sc36",
             "viewport_id": vpid,
-            "file_path": file_path_str,
             "old_text": "beta",
             "new_text": "BETA",
         },
@@ -1088,7 +1041,7 @@ async def test_sc36_crlf_roundtrip(
 @pytest.mark.phase2
 @pytest.mark.asyncio
 async def test_sc38_unicode_escape_decodes_in_buffer(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     # SC-38: Behavioral test verifies \uNNNN input decodes to real Unicode
     # character in buffer. When edit is called with \u0009 (tab), the buffer
@@ -1119,7 +1072,6 @@ async def test_sc38_unicode_escape_decodes_in_buffer(
             "action": "replace",
             "session_id": "test-sc38",
             "viewport_id": vpid,
-            "file_path": file_path_str,
             "old_text": "hello world",
             "new_text": "hello\\u0009world",
         },
@@ -1150,7 +1102,7 @@ async def test_sc38_unicode_escape_decodes_in_buffer(
 @pytest.mark.phase2
 @pytest.mark.asyncio
 async def test_sc_test_atomic_crlf_and_mkstemp(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     # SC-TEST-ATOMIC: Behavioral test for atomic write verifies:
     # 1. CRLF preservation (flush_entry uses newline="")
@@ -1184,7 +1136,6 @@ async def test_sc_test_atomic_crlf_and_mkstemp(
             "action": "replace",
             "session_id": "test-sc-atomic",
             "viewport_id": vpid,
-            "file_path": file_path_str,
             "old_text": "beta",
             "new_text": "BETA",
         },
@@ -1227,7 +1178,7 @@ async def test_sc_test_atomic_crlf_and_mkstemp(
 
 @pytest.mark.phase2
 @pytest.mark.asyncio
-async def test_phase2_tools_listed(client_session: ClientSession) -> None:
+async def test_phase2_tools_listed(client_session: Any) -> None:
     """Verify edit, file, diff tools are present in tool listing."""
     result = await client_session.list_tools()
     names = [t.name for t in result.tools]

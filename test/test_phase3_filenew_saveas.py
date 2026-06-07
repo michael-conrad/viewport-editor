@@ -21,12 +21,9 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import AsyncIterator
+from typing import Any
 
 import pytest
-from mcp.client.session import ClientSession
-from mcp.client.stdio import StdioServerParameters, stdio_client
-from mcp.types import CallToolResult
 
 
 @pytest.fixture(scope="module")
@@ -38,37 +35,7 @@ def test_project_root() -> Path:
     return tmpdir
 
 
-@pytest.fixture(scope="module")
-def server_params(test_project_root: Path) -> StdioServerParameters:
-    return StdioServerParameters(
-        command="uv",
-        args=[
-            "run",
-            "python",
-            "-m",
-            "viewport_editor",
-            "--project-root",
-            str(test_project_root),
-        ],
-    )
-
-
-@pytest.fixture
-async def client_session(
-    server_params: StdioServerParameters,
-) -> AsyncIterator[ClientSession]:
-    try:
-        async with stdio_client(server_params) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                yield session
-    except RuntimeError as exc:
-        msg = str(exc)
-        if "Attempted to exit cancel scope in a different task" not in msg:
-            raise
-
-
-def _get_text(result: CallToolResult) -> str:
+def _get_text(result: Any) -> str:
     parts: list[str] = []
     if result.content:
         for item in result.content:
@@ -91,7 +58,7 @@ def _extract_vpid(text: str) -> str:
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_sc15_file_new_creates_file_and_opens_viewport(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-15: file:new creates a new file on disk and opens a viewport with autosave=off.
 
@@ -141,7 +108,7 @@ async def test_sc15_file_new_creates_file_and_opens_viewport(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_sc15_file_new_rejects_existing_file(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     """SC-15: file:new rejects when a file with the same name already exists.
 
@@ -172,7 +139,7 @@ async def test_sc15_file_new_rejects_existing_file(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_sc16_save_as_rejects_existing_target_without_force(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     """SC-16: file:save-as with force=false rejects when target file exists.
 
@@ -217,7 +184,7 @@ async def test_sc16_save_as_rejects_existing_target_without_force(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_sc16_save_as_overwrites_existing_target_with_force(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-16: file:save-as with force=true overwrites existing target file.
 
@@ -265,7 +232,7 @@ async def test_sc16_save_as_overwrites_existing_target_with_force(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_sc16_save_as_creates_new_file(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-16: file:save-as to a non-existent path creates a new file with buffer content.
 
@@ -317,7 +284,7 @@ async def test_sc16_save_as_creates_new_file(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_sc_lf2_save_as_preserves_crlf(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-LF-2: save-as handler opens temp file with newline="" — CRLF files preserved after save-as.
 
@@ -364,7 +331,7 @@ async def test_sc_lf2_save_as_preserves_crlf(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_sc_tmp2_save_as_uses_mkstemp(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-TMP-2: save-as handler uses tempfile.mkstemp(dir=...) for temp path.
 
@@ -427,7 +394,7 @@ async def test_sc_tmp2_save_as_uses_mkstemp(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_sc_lf3_file_new_opens_with_newline_empty(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-LF-3: file:new opens file with newline="" for consistency.
 
@@ -486,7 +453,7 @@ async def test_sc_lf3_file_new_opens_with_newline_empty(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_sc_lf3_file_new_crlf_write_preserved(
-    client_session: ClientSession, test_project_root: Path
+    client_session: Any, test_project_root: Path
 ) -> None:
     """SC-LF-3 extended: file:new creates viewport correctly; writing CRLF content then saving preserves \\r\\n.
 
@@ -518,7 +485,6 @@ async def test_sc_lf3_file_new_crlf_write_preserved(
             "action": "insert-lines",
             "session_id": "test-sc-lf3-crlf",
             "viewport_id": vpid,
-            "file_path": new_file,
             "line_start": 1,
             "lines": ["line one", "line two", "line three"],
         },
@@ -556,7 +522,7 @@ async def test_sc_lf3_file_new_crlf_write_preserved(
 @pytest.mark.phase3
 @pytest.mark.asyncio
 async def test_sc16_save_as_updates_viewport_file_reference(
-    client_session: ClientSession,
+    client_session: Any,
 ) -> None:
     """SC-16: file:save-as updates viewport to track the new target file path.
 
@@ -602,7 +568,7 @@ async def test_sc16_save_as_updates_viewport_file_reference(
 
 @pytest.mark.phase3
 @pytest.mark.asyncio
-async def test_phase3_tools_listed(client_session: ClientSession) -> None:
+async def test_phase3_tools_listed(client_session: Any) -> None:
     """Verify file tool is present in tool listing (existing tool, regression guard)."""
     result = await client_session.list_tools()
     names = [t.name for t in result.tools]
