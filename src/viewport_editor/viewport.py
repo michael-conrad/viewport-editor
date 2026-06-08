@@ -227,7 +227,7 @@ class ViewportManager:
             found = False
             new_start = 1
             for i, line in enumerate(file_lines):
-                if target_str in line:
+                if target_str in line.lower():
                     new_start = max(1, i + 1)
                     found = True
                     break
