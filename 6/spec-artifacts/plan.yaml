@@ -1,0 +1,66 @@
+# Plan: Phase 5 Integration Tests (Issue #6)
+# Dependency chain verified via Z3: SAT (all 29 prerequisite SCs TRUE + invariants)
+# Phases decomposed per incremental build discipline
+
+phases:
+  - phase: 1
+    name: Test Infrastructure
+    description: Create setup script, fixture files, and shared harness
+    items:
+      - Create fixture files (6 files with specific line endings)
+      - Create setup-viewport-test.sh script
+      - Create shared helper library for behavioral scripts
+      - Create instruction card patterns
+
+  - phase: 2
+    name: Core Workflow Scenarios
+    description: SC-1 (buffered workflow), SC-2 (autosave=on), SC-3 (autosave toggle)
+    depends_on: [1]
+    items:
+      - SC-1: viewport-buffered-workflow.sh
+      - SC-2: viewport-autosave-on.sh
+      - SC-3: viewport-autosave-toggle.sh
+
+  - phase: 3
+    name: Edge Case Scenarios
+    description: SC-4 (session isolation), SC-5 (conflict detection)
+    depends_on: [1]
+    items:
+      - SC-4: viewport-session-isolation.sh
+      - SC-5: viewport-conflict-detection.sh
+
+  - phase: 4
+    name: Clipboard Workflow Scenarios
+    description: SC-6 (clipboard cross-viewport), SC-7 (stash-pop-swap)
+    depends_on: [1]
+    items:
+      - SC-6: viewport-clipboard-cross-viewport.sh
+      - SC-7: viewport-stash-pop-swap.sh
+
+  - phase: 5
+    name: Navigation Scenarios
+    description: SC-8 (search and navigate), SC-9 (code navigation)
+    depends_on: [1]
+    items:
+      - SC-8: viewport-search-navigate.sh
+      - SC-9: viewport-code-navigation.sh
+
+  - phase: 6
+    name: Completeness Gate
+    description: Verify all 9 scripts exist and run individually
+    depends_on: [2, 3, 4, 5]
+
+  - phase: 7
+    name: Full Suite Verification
+    description: Run all 9 scenarios as full suite
+    depends_on: [6]
+
+  - phase: 8
+    name: Adversarial Audit
+    description: Cross-family auditor review of test scripts and suite
+    depends_on: [7]
+
+  - phase: 9
+    name: Finishing + Review Prep + PR
+    description: Finishing checklist, review-prep, PR creation
+    depends_on: [8]
