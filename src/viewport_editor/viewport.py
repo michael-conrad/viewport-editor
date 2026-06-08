@@ -210,8 +210,15 @@ class ViewportManager:
         file_lines = self._buffer_mgr.get_lines(session_id, entry.file)
         total = len(file_lines)
         height = entry.line_end - entry.line_start
-        target_str = target.strip()
-        if target_str.isdigit():
+        target_str = target.strip().lower()
+        if target_str == "top":
+            new_start = 1
+        elif target_str == "bottom":
+            if total == 0:
+                new_start = 1
+            else:
+                new_start = max(1, total - height)
+        elif target_str.isdigit():
             line_num = int(target_str)
             if line_num < 1 or line_num > total:
                 raise JumpLineOutOfRangeError(line_num, total)
