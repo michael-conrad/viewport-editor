@@ -69,6 +69,8 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
 
         Actions: open, close, list, scroll, page-up, page-down, jump, autosave, set-display-mode
 
+        Jump target: a line number, text to search for, "top" (start of file), or "bottom" (end of file).
+
         All responses use prose + YAML format. File paths must be relative to project root."""
         session_id = ctx.session_id
         if _manager is None:
