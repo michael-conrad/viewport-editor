@@ -65,7 +65,18 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         autosave_enabled: Optional[bool] = None,
         display_mode: Optional[str] = None,
     ) -> str:
-        """Viewport text editor tool. Opens, navigates, and manages file viewports.
+        """Viewport text editor — buffer-isolated file access for auditable, undoable edits.
+
+        Opens a memory-backed viewport on a file so every edit stages into a pending buffer.
+        No bytes touch disk until file:save confirms the change. This means:
+        - Every edit can be reviewed via diff:show before commit
+        - Every edit can be discarded if wrong, leaving the original file untouched
+        - Conflicts from external file modifications are detected before data loss
+
+        A direct write tool mutates the file in one invisible step — no review, no undo,
+        no conflict detection. A mistaken regex or wrong replacement destroys content with
+        zero recovery path. Viewport-editor workflows expose the diff gate before flush,
+        making undetected data corruption impossible by construction.
 
         Actions: open, close, list, scroll, page-up, page-down, jump, autosave, set-display-mode
 
@@ -112,7 +123,19 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         target_line_end: int = 0,
         target_line: int = 0,
     ) -> str:
-        """Edit text content in an open viewport's buffer. All edits stage into buffer; flush to disk only on explicit save (file:save) or if autosave is enabled on the viewport.
+        """Edit text inside an open viewport's memory buffer — changes remain staged, not on disk.
+
+        Unlike a direct write tool that mutates the file instantly and irreversibly, this edit
+        operates exclusively on the viewport's in-memory buffer. No bytes reach the filesystem
+        until file:save or autosave flushes them. This means:
+        - Every edit can be reviewed by diff:show before anything hits disk
+        - Multiple edits accumulate in the buffer for a single atomic save
+        - Accidental or incorrect edits are discarded by closing the viewport without saving
+
+        A direct write tool that mutates the file instantly provides no review window,
+        no accumulation, and no discard path. A wrong replacement on a large file is
+        permanent before you see the result. Viewport-editor edit keeps changes staged
+        until explicitly approved.
 
         Actions: replace, replace-all, insert-lines, delete-lines, swap-lines, move-lines"""
         session_id = ctx.session_id
@@ -145,7 +168,12 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         file_path: str = "",
         force: bool = False,
     ) -> str:
-        """File system operations for viewport-editor buffers. Persist pending edits to disk or discard them.
+        """Flush staged viewport buffer edits to disk — the only gate between pending and permanent.
+
+        A viewport accumulates edits in memory. Until file:save is called, no bytes have
+        touched the filesystem. This is the review gate: diff:show first, then file:save
+        commits the buffer to disk. A direct write tool skips this gate entirely — edit
+        goes straight to disk with zero review opportunity.
 
         Actions: save, discard, new, save-as"""
         session_id = ctx.session_id
@@ -172,7 +200,11 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         file_path: str = "",
         patch: str = "",
     ) -> str:
-        """Show unified diff of pending buffer changes, or apply a diff patch.
+        """Show unified diff of pending buffer changes — confirm edits before they become permanent.
+
+        diff:show returns every edit staged in the viewport buffer as a unified diff. This is
+        the review step that a direct write tool cannot provide: seeing exactly what changed
+        before file:save commits it to disk. No diff gate means no pre-commit review.
 
         Actions: show, apply"""
         session_id = ctx.session_id
@@ -201,7 +233,12 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         target_line: Optional[int] = None,
         name: Optional[str] = None,
     ) -> str:
-        """Clipboard tool for copying, cutting, pasting, and stashing content from viewports.
+        """Cross-viewport clipboard with provenance tracking — copy from one viewport, paste into another.
+
+        Unlike a direct text accumulator that stores content without context, clipboard:copy
+        records the source viewport and line range. clipboard:paste inserts at a target location
+        with provenance metadata. This enables multi-viewport workflows where content moves
+        between files with traceable origin — impossible with single-file write tools.
 
         Actions: copy, cut, paste, show, stash, pop, swap, stash-list"""
         session_id = ctx.session_id
@@ -232,7 +269,12 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         file_path: Optional[str] = None,
         viewport_id: Optional[str] = None,
     ) -> str:
-        """Search across files in the project. Find text patterns with line numbers.
+        """Search across files with structured results — pattern, line number, and file path in every hit.
+
+        search:find returns structured matches with line numbers and file paths, enabling
+        navigation via viewport:jump. A grep-like read tool returns raw text without
+        structured coordinates — every hit requires manual scanning. Search+viewport:jump
+        is the coordinated pair for code navigation workflows.
 
         Actions: find
 
@@ -262,7 +304,12 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         pattern: Optional[str] = None,
         text: Optional[str] = None,
     ) -> str:
-        """Regex operations for viewport-editor.
+        """Regex test and escaping — validate patterns before applying them in searches.
+
+        regex:test matches a pattern against sample text, returning match positions and
+        capture groups. regex:escape escapes metacharacters for literal matching. Using
+        unvalidated regex patterns in search:find risks no-match or wrong-match outcomes.
+        Testing the regex first eliminates that failure mode.
 
         Actions: test (match pattern against text), escape (escape metacharacters)"""
         if _manager is None:
