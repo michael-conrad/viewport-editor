@@ -292,6 +292,150 @@ async def test_sc27_jump_returns_is_error_on_target_not_found(
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
+async def test_sc50_jump_top_sets_line_start_to_1(client_session: Any) -> None:
+    """SC-1: jump("top") sets viewport line_start to 1."""
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": "long_file.txt"},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+    result = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "jump", "viewport_id": vpid, "target": "top"},
+    )
+    text = _get_text(result)
+    assert "line_start: 1" in text, f"Expected line_start: 1, got: {text}"
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc50_jump_bottom_sets_line_end_to_last_line(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-2: jump("bottom") sets viewport line_end to last line of file (100)."""
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": "long_file.txt"},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+    result = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "jump", "viewport_id": vpid, "target": "bottom"},
+    )
+    text = _get_text(result)
+    assert "line_end: 100" in text, f"Expected line_end: 100, got: {text}"
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc50_jump_bottom_empty_file(client_session: Any, test_project_root: Path) -> None:
+    """SC-6: jump("bottom") on empty file produces line_start=1, line_end=0."""
+    empty = Path(test_project_root) / "empty.txt"
+    empty.write_text("")
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": "empty.txt"},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+    result = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "jump", "viewport_id": vpid, "target": "bottom"},
+    )
+    text = _get_text(result)
+    assert "line_start: 1" in text, f"Expected line_start: 1, got: {text}"
+    assert "line_end: 0" in text, f"Expected line_end: 0, got: {text}"
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc50_numeric_jump_unchanged(client_session: Any) -> None:
+    """SC-4: Existing numeric jump("42") unchanged."""
+    # Open with small range so numeric jump actually moves line_start
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={
+            "action": "open",
+            "file_path": "long_file.txt",
+            "line_start": 1,
+            "line_end": 10,
+        },
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+    result = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "jump", "viewport_id": vpid, "target": "42"},
+    )
+    text = _get_text(result)
+    assert "line_start: 42" in text, f"Expected line_start: 42, got: {text}"
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc50_text_search_jump_unchanged(client_session: Any) -> None:
+    """SC-5: Existing text-search jump unchanged."""
+    # Open with small range so text-search jump actually moves line_start
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={
+            "action": "open",
+            "file_path": "long_file.txt",
+            "line_start": 1,
+            "line_end": 10,
+        },
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+    result = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "jump", "viewport_id": vpid, "target": "line 50"},
+    )
+    text = _get_text(result)
+    assert "line_start: 50" in text, f"Expected line_start: 50, got: {text}"
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc50_jump_top_case_insensitive(client_session: Any) -> None:
+    """SC-1/SC-3: Case-insensitive keywords — "Top" and "TOP" also work."""
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": "long_file.txt"},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+    result = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "jump", "viewport_id": vpid, "target": "Top"},
+    )
+    text = _get_text(result)
+    assert "line_start: 1" in text, f"Case-insensitive 'Top' failed: {text}"
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc50_jump_keyword_not_text_search(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-3: Keywords are exact literal matches — text-search does NOT fire for "top"."""
+    # Write keyword_test.txt INSIDE project root (server only accepts relative paths)
+    kw_file = Path(test_project_root) / "keyword_test.txt"
+    kw_file.write_text("line 1\nline 2\ntop of page\nline 4\nline 5\n")
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": "keyword_test.txt"},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+    result = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "jump", "viewport_id": vpid, "target": "top"},
+    )
+    text = _get_text(result)
+    # Should jump to line 1 (keyword match), NOT line 3 (text-search match)
+    assert "line_start: 1" in text, (
+        f"Keyword 'top' should set line_start=1, but text-search may have matched: {text}"
+    )
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
 async def test_sc31_scroll_by_n_lines(client_session: Any) -> None:
     result_open = await client_session.call_tool(
         "viewport",
