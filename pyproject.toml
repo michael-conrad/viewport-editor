@@ -1,6 +1,6 @@
 [project]
 name = "viewport-editor"
-version = "0.1.0"
+version = "0.2.0"
 description = "MCP server for viewport-based file editing"
 requires-python = ">=3.12"
 dependencies = [
@@ -8,6 +8,10 @@ dependencies = [
     "pydantic>=2.0.0",
     "fastmcp>=3.0,<4.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/michael-conrad/viewport-editor"
+Repository = "https://github.com/michael-conrad/viewport-editor"
 
 [project.scripts]
 viewport-editor = "viewport_editor.__main__:main"

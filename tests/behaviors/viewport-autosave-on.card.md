@@ -1,0 +1,1 @@
+Use the viewport-editor MCP tools: open `dorian-gray.txt` with autosave enabled using the `viewport` tool. Replace every occurrence of "odour" with "odor" using the `edit` tool. Do NOT call file:save — the changes should auto-flush. Close the viewport using the `viewport` tool.
