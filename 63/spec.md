@@ -203,6 +203,8 @@ Test scripts are pure artifact generators. Each script calls `behavior_run()` fr
 
 The existing test harness handles test repo project folder setup and uvx plugin routing — test scripts are thin wrappers around `behavior_run()` with scenario-specific prompts and tool configs. Scripts live in `test/tool-selection/` within this repo.
 
+Timeout discipline is a hard requirement per bug #1076. The bash tool timeout MUST NOT be set lower than `behavior_run()`'s internal `BEHAVIOR_TIMEOUT` (default 420s) plus retry buffer. Setting a shorter bash timeout causes the shell process to be killed while `opencode-cli run` and its MCP subprocesses continue as orphaned children — producing hung processes and corrupted test state. Bash tool timeout must be either 0 (no timeout) or exceed `BEHAVIOR_TIMEOUT × (BEHAVIOR_MAX_RETRIES + 1) + BEHAVIOR_RETRY_DELAY × BEHAVIOR_MAX_RETRIES`.
+
 ### Clean-Room Sub-Agent Evaluation
 
 Evaluation is performed by a clean-room sub-agent dispatched from the implementation pipeline. The sub-agent receives:

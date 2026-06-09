@@ -176,25 +176,31 @@ body: "# [SPEC] Composite Action Tools for Agent Intent Matching\n\n## Problem\n
   \ verdicts.\n\nThe existing test harness handles test repo project folder setup\
   \ and uvx plugin routing — test scripts are thin wrappers around `behavior_run()`\
   \ with scenario-specific prompts and tool configs. Scripts live in `test/tool-selection/`\
-  \ within this repo.\n\n### Clean-Room Sub-Agent Evaluation\n\nEvaluation is performed\
-  \ by a clean-room sub-agent dispatched from the implementation pipeline. The sub-agent\
-  \ receives:\n\n- The artifact directory path (containing stdout.log, stderr.log,\
-  \ manifest.yaml)\n- A structured evaluation prompt specifying what to assess\n\n\
-  The sub-agent reads the artifacts and applies semantic judgment to determine:\n\n\
-  - **selected_tool:** Which tool the agent ultimately called (from stderr tool dispatch\
-  \ trace)\n- **deliberation_evidence:** Whether the agent's reasoning trace (stdout)\
-  \ shows it considered multiple tools before selecting one\n- **almost_correct:**\
-  \ The agent nearly selected the composite tool but switched away, or nearly selected\
-  \ the built-in but switched to the composite\n- **confusion_indicators:** Specific\
-  \ phrases or reasoning patterns suggesting the agent misunderstood the tool's purpose\
-  \ or scope\n- **reasoning_quality:** Qualitative assessment of whether the agent's\
-  \ tool selection reasoning was sound\n\nThe sub-agent receives ONLY the artifact\
-  \ directory path and the evaluation prompt — no orchestrator reasoning, no expected\
-  \ outcomes, no cached results. This is a clean-room assessment per the DISPATCH_GATE\
-  \ protocol.\n\n### Result Artifact Storage\n\nEvaluation results are stored as a\
-  \ structured file (YAML or JSON) in the same artifact directory as the test run\
-  \ they evaluate:\n\n```\ntmp/behavioral-evidence-<scenario>-<phase>-<model>/\n \
-  \ manifest.yaml        — Test run metadata\n  stdout.log           — Agent prose\
+  \ within this repo.\n\nTimeout discipline is a hard requirement per bug #1076. The\
+  \ bash tool timeout MUST NOT be set lower than `behavior_run()`'s internal `BEHAVIOR_TIMEOUT`\
+  \ (default 420s) plus retry buffer. Setting a shorter bash timeout causes the shell\
+  \ process to be killed while `opencode-cli run` and its MCP subprocesses continue\
+  \ as orphaned children — producing hung processes and corrupted test state. Bash\
+  \ tool timeout must be either 0 (no timeout) or exceed `BEHAVIOR_TIMEOUT × (BEHAVIOR_MAX_RETRIES\
+  \ + 1) + BEHAVIOR_RETRY_DELAY × BEHAVIOR_MAX_RETRIES`.\n\n### Clean-Room Sub-Agent\
+  \ Evaluation\n\nEvaluation is performed by a clean-room sub-agent dispatched from\
+  \ the implementation pipeline. The sub-agent receives:\n\n- The artifact directory\
+  \ path (containing stdout.log, stderr.log, manifest.yaml)\n- A structured evaluation\
+  \ prompt specifying what to assess\n\nThe sub-agent reads the artifacts and applies\
+  \ semantic judgment to determine:\n\n- **selected_tool:** Which tool the agent ultimately\
+  \ called (from stderr tool dispatch trace)\n- **deliberation_evidence:** Whether\
+  \ the agent's reasoning trace (stdout) shows it considered multiple tools before\
+  \ selecting one\n- **almost_correct:** The agent nearly selected the composite tool\
+  \ but switched away, or nearly selected the built-in but switched to the composite\n\
+  - **confusion_indicators:** Specific phrases or reasoning patterns suggesting the\
+  \ agent misunderstood the tool's purpose or scope\n- **reasoning_quality:** Qualitative\
+  \ assessment of whether the agent's tool selection reasoning was sound\n\nThe sub-agent\
+  \ receives ONLY the artifact directory path and the evaluation prompt — no orchestrator\
+  \ reasoning, no expected outcomes, no cached results. This is a clean-room assessment\
+  \ per the DISPATCH_GATE protocol.\n\n### Result Artifact Storage\n\nEvaluation results\
+  \ are stored as a structured file (YAML or JSON) in the same artifact directory\
+  \ as the test run they evaluate:\n\n```\ntmp/behavioral-evidence-<scenario>-<phase>-<model>/\n\
+  \  manifest.yaml        — Test run metadata\n  stdout.log           — Agent prose\
   \ response\n  stderr.log           — Tool dispatch trace\n  evaluation.yaml    \
   \  — Sub-agent evaluation results (added after evaluation pass)\n```\n\nThis keeps\
   \ the evaluation results co-located with the source artifacts they assess. The evaluation.yaml\
@@ -330,4 +336,4 @@ body: "# [SPEC] Composite Action Tools for Agent Intent Matching\n\n## Problem\n
   \ (RQ4), Over-Specification Paradox (S* ~0.509), constructional determinacy — all\
   \ apply directly to tool naming and description engineering.\n"
 created_at: '2026-06-09T00:20:56+00:00'
-updated_at: '2026-06-09T01:09:57+00:00'
+updated_at: '2026-06-09T01:13:58+00:00'
