@@ -334,19 +334,30 @@ Full evaluation details (per-run breakdowns, confusion matrices, qualitative fin
 
 ### Trace Report (Post-Cycle Aggregation)
 
-After each full test cycle (all V1–V5 runs for all models), a dedicated clean-room sub-agent reads ALL `evaluation.yaml` files from all artifact directories and produces a trace report. This is a separate step from per-run evaluation — it aggregates across variables, variants, models, and iterations.
+After each full test cycle, a dedicated clean-room sub-agent reads ALL `evaluation.yaml` files from all artifact directories and produces a cycle trace report with archive. The prior trace is preserved — each cycle produces a new entry.
 
-**Trace report contents:**
+**Archive structure:**
 
-- Per-variable summary tables: variant tested, selection rate per model, declared winner
-- Per-model bias profile: how each model responded across all variables
-- Confusion matrix for write/edit overlap (V1)
-- Lessons learned: qualitative findings from evaluator notes across all runs
-- Winning configuration lock: final naming, description level, framing, and coexistence strategy per tool
+```
+test/tool-selection/trace-archive/
+  trace-cycle-001.yaml           — Structured data for cycle 1
+  trace-cycle-001.md             — Human-readable narrative for cycle 1
+  trace-cycle-002.yaml           — Cycle 2 (includes progress vs cycle 1)
+  trace-cycle-002.md
+  ...
+```
 
-**Storage:** `test/tool-selection/trace-report.yaml` (structured data) and `test/tool-selection/trace-report.md` (human-readable narrative). Both regenerated on each cycle — old trace report wiped, new one produced from current artifacts.
+**Per-cycle report contents:**
 
-**Frugal contract:** The trace sub-agent returns only `status: DONE` or `blocker_reason` if data is insufficient to declare winners. Full details go into the trace report files — never into the result contract.
+- **Run metadata:** cycle number, date range, models tested, variables covered, iteration count per variant
+- **Per-variable summary tables:** variant tested, selection rate per model, declared winner
+- **Progress since prior cycle:** selection rate deltas, confusion deltas, new winning configurations
+- **Per-model bias profile:** how each model responded across all variables
+- **Confusion matrix** for write/edit overlap (V1)
+- **Lessons learned:** qualitative findings from evaluator notes across all runs
+- **Winning configuration lock:** final naming, description level, framing, and coexistence strategy per tool
+
+**Frugal contract:** The trace sub-agent returns only `status: DONE` or `blocker_reason` if data is insufficient to declare winners. Full details go into the trace archive files — never into the result contract.
 
 ## Branch and Tagging Strategy
 

@@ -251,21 +251,24 @@ body: "# [SPEC] Composite Action Tools for Agent Intent Matching\n\n## Problem\n
   \ tmp/behavioral-evidence-v1-verb-class-deepseek/\nblocker_reason: null\n```\n\n\
   Full evaluation details (per-run breakdowns, confusion matrices, qualitative findings)\
   \ go into `evaluation.yaml` in the artifact directory — never into the result contract.\n\
-  \n### Trace Report (Post-Cycle Aggregation)\n\nAfter each full test cycle (all V1–V5\
-  \ runs for all models), a dedicated clean-room sub-agent reads ALL `evaluation.yaml`\
-  \ files from all artifact directories and produces a trace report. This is a separate\
-  \ step from per-run evaluation — it aggregates across variables, variants, models,\
-  \ and iterations.\n\n**Trace report contents:**\n\n- Per-variable summary tables:\
-  \ variant tested, selection rate per model, declared winner\n- Per-model bias profile:\
-  \ how each model responded across all variables\n- Confusion matrix for write/edit\
-  \ overlap (V1)\n- Lessons learned: qualitative findings from evaluator notes across\
-  \ all runs\n- Winning configuration lock: final naming, description level, framing,\
-  \ and coexistence strategy per tool\n\n**Storage:** `test/tool-selection/trace-report.yaml`\
-  \ (structured data) and `test/tool-selection/trace-report.md` (human-readable narrative).\
-  \ Both regenerated on each cycle — old trace report wiped, new one produced from\
-  \ current artifacts.\n\n**Frugal contract:** The trace sub-agent returns only `status:\
+  \n### Trace Report (Post-Cycle Aggregation)\n\nAfter each full test cycle, a dedicated\
+  \ clean-room sub-agent reads ALL `evaluation.yaml` files from all artifact directories\
+  \ and produces a cycle trace report with archive. The prior trace is preserved —\
+  \ each cycle produces a new entry.\n\n**Archive structure:**\n\n```\ntest/tool-selection/trace-archive/\n\
+  \  trace-cycle-001.yaml           — Structured data for cycle 1\n  trace-cycle-001.md\
+  \             — Human-readable narrative for cycle 1\n  trace-cycle-002.yaml   \
+  \        — Cycle 2 (includes progress vs cycle 1)\n  trace-cycle-002.md\n  ...\n\
+  ```\n\n**Per-cycle report contents:**\n\n- **Run metadata:** cycle number, date\
+  \ range, models tested, variables covered, iteration count per variant\n- **Per-variable\
+  \ summary tables:** variant tested, selection rate per model, declared winner\n\
+  - **Progress since prior cycle:** selection rate deltas, confusion deltas, new winning\
+  \ configurations\n- **Per-model bias profile:** how each model responded across\
+  \ all variables\n- **Confusion matrix** for write/edit overlap (V1)\n- **Lessons\
+  \ learned:** qualitative findings from evaluator notes across all runs\n- **Winning\
+  \ configuration lock:** final naming, description level, framing, and coexistence\
+  \ strategy per tool\n\n**Frugal contract:** The trace sub-agent returns only `status:\
   \ DONE` or `blocker_reason` if data is insufficient to declare winners. Full details\
-  \ go into the trace report files — never into the result contract.\n\n## Branch\
+  \ go into the trace archive files — never into the result contract.\n\n## Branch\
   \ and Tagging Strategy\n\n### Feature Branch\n\nA dedicated feature branch `feature/63-composite-tools`\
   \ tracks all work for this spec: test scripts, implementation code, and description\
   \ rewrites. The test harness sources the correct tool definitions via `opencode.jsonc`\
@@ -388,4 +391,4 @@ body: "# [SPEC] Composite Action Tools for Agent Intent Matching\n\n## Problem\n
   \ (RQ4), Over-Specification Paradox (S* ~0.509), constructional determinacy — all\
   \ apply directly to tool naming and description engineering.\n"
 created_at: '2026-06-09T00:20:56+00:00'
-updated_at: '2026-06-09T02:44:33+00:00'
+updated_at: '2026-06-09T02:47:30+00:00'
