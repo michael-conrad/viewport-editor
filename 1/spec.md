@@ -52,9 +52,9 @@ Build an MCP server providing a **windowed viewport editor**. The agent opens a 
 
 Full design document at [`DESIGN.md`](https://github.com/michael-conrad/viewport-editor/blob/main/DESIGN.md) in this repo.
 
-## Tool Surface (6 Tools)
+## Tool Surface (6 Tools + Composites)
 
-All operations consolidated into 6 tools with an `action` parameter:
+All operations consolidated into 6 tools with an `action` parameter, plus 5 composite tools added by [spec #63](https://github.com/michael-conrad/viewport-editor/tree/issues-data/63/spec.md):
 
 1. **viewport** — open, close, list, scroll, page-up, page-down, jump, autosave, set-display-mode
 2. **edit** — replace, replace-all, insert-lines, delete-lines, swap-lines, move-lines
@@ -63,11 +63,15 @@ All operations consolidated into 6 tools with an `action` parameter:
 5. **search** — find
 6. **regex** — test, escape
 
+**Composite tools (additive, per spec #63):** `read`, `write`, `edit`, `find`, `diff` — single-call verbs that internally delegate to the viewport/edit/file pipeline. Final names subject to iterative testing.
+
+Tool descriptions may be revised per the agent-facing style requirements in spec #63 R1.
+
 ## Success Criteria
 
 | ID | Criterion | Evidence Type |
 |----|-----------|---------------|
-| SC-1 | MCP server starts and exposes exactly 6 tools with action parameters | behavioral |
+| SC-1 | MCP server starts and exposes the core 6 tools with action parameters | behavioral |
 | SC-2 | list_tools is the only discovery mechanism; no dedicated help tool | behavioral |
 | SC-3 | All tool descriptions and response content use prose + YAML. Protocol-mandated JSON Schema for MCP inputSchema at the transport layer is exempt. No JSON in agent-readable output. | behavioral |
 | SC-4 | File paths are relative to configured project root; no absolute paths accepted | behavioral |
@@ -115,6 +119,12 @@ All operations consolidated into 6 tools with an `action` parameter:
 | P3 | #5 | File Operations + Autosave | file_ops.py, viewport.py |
 | P4 | #8 | Diff, Search, Regex Tools | diff_engine.py, search.py, regex_ops.py |
 | P5 | #6 | Integration Tests | test/ |
+
+## Revision History
+
+| Date | Change | Author |
+|------|--------|--------|
+| 2026-06-09 | Revised SC-1 to remove "exactly" — server exposes core 6 + composite tools per spec #63. Added composite tool surface section and cross-reference to spec #63. | Spec #63 revisions |
 
 ---
 

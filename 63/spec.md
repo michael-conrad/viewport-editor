@@ -203,7 +203,9 @@ Test scripts are pure artifact generators. Each script calls `behavior_run()` fr
 
 The existing test harness handles test repo project folder setup and uvx plugin routing — test scripts are thin wrappers around `behavior_run()` with scenario-specific prompts and tool configs. Scripts live in `test/tool-selection/` within this repo.
 
-Timeout discipline is a hard requirement per bug #1076. The bash tool timeout MUST NOT be set lower than `behavior_run()`'s internal `BEHAVIOR_TIMEOUT` (default 420s) plus retry buffer. Setting a shorter bash timeout causes the shell process to be killed while `opencode-cli run` and its MCP subprocesses continue as orphaned children — producing hung processes and corrupted test state. Bash tool timeout must be either 0 (no timeout) or exceed `BEHAVIOR_TIMEOUT × (BEHAVIOR_MAX_RETRIES + 1) + BEHAVIOR_RETRY_DELAY × BEHAVIOR_MAX_RETRIES`.
+Timeout discipline is a hard requirement per bug #1076. The bash tool's native timeout parameter is the **sole timeout boundary** — no `timeout` command wrapping inside the bash invocation, and `behavior_run()` MUST NOT use an internal timer. Nested timeouts (bash tool timeout + internal timer inside the script) cause the shell to be killed while `opencode-cli run` and its MCP subprocesses continue as orphaned children. Bash tool timeout must be either 0 (no timeout) or set to the maximum acceptable wall-clock duration for the full run including retries.
+
+**SSE Read Timeout:** The `opencode.jsonc` model configuration for all ollama/ models must set a reasonable `sse_read_timeout` value to prevent "blackholed" connections (connections that accept but never send data) from blocking test runs indefinitely. This is a platform-level setting in the opencode configuration, not a test harness concern. The test environment's opencode.jsonc must be verified to have this configured before any V1–V5 testing begins.
 
 ### Clean-Room Sub-Agent Evaluation
 
