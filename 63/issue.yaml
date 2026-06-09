@@ -169,38 +169,76 @@ body: "# [SPEC] Composite Action Tools for Agent Intent Matching\n\n## Problem\n
   \ The constraint-statement level is the expected winner per Anthropic's findings,\
   \ but must be confirmed empirically. If the elaborated level wins for any model,\
   \ investigate whether the S* threshold varies by model architecture.\n\n## Evaluation\
-  \ Methodology\n\n### Artifact-Only Test Scripts\n\nTest scripts are pure artifact\
-  \ generators. Each script calls `behavior_run()` from `.opencode/tests/behaviors/helpers.sh`\
-  \ with the appropriate tool configuration and prompt, captures stdout and stderr,\
-  \ and exits 0 unconditionally. No assertions, no evaluation logic, no PASS/FAIL\
-  \ verdicts.\n\nThe existing test harness handles test repo project folder setup\
-  \ and uvx plugin routing — test scripts are thin wrappers around `behavior_run()`\
-  \ with scenario-specific prompts and tool configs. Scripts live in `test/tool-selection/`\
-  \ within this repo.\n\nTimeout discipline is a hard requirement per bug #1076. The\
-  \ bash tool timeout MUST NOT be set lower than `behavior_run()`'s internal `BEHAVIOR_TIMEOUT`\
-  \ (default 420s) plus retry buffer. Setting a shorter bash timeout causes the shell\
-  \ process to be killed while `opencode-cli run` and its MCP subprocesses continue\
-  \ as orphaned children — producing hung processes and corrupted test state. Bash\
-  \ tool timeout must be either 0 (no timeout) or exceed `BEHAVIOR_TIMEOUT × (BEHAVIOR_MAX_RETRIES\
-  \ + 1) + BEHAVIOR_RETRY_DELAY × BEHAVIOR_MAX_RETRIES`.\n\n### Clean-Room Sub-Agent\
-  \ Evaluation\n\nEvaluation is performed by a clean-room sub-agent dispatched from\
-  \ the implementation pipeline. The sub-agent receives:\n\n- The artifact directory\
-  \ path (containing stdout.log, stderr.log, manifest.yaml)\n- A structured evaluation\
-  \ prompt specifying what to assess\n\nThe sub-agent reads the artifacts and applies\
-  \ semantic judgment to determine:\n\n- **selected_tool:** Which tool the agent ultimately\
-  \ called (from stderr tool dispatch trace)\n- **deliberation_evidence:** Whether\
-  \ the agent's reasoning trace (stdout) shows it considered multiple tools before\
-  \ selecting one\n- **almost_correct:** The agent nearly selected the composite tool\
-  \ but switched away, or nearly selected the built-in but switched to the composite\n\
-  - **confusion_indicators:** Specific phrases or reasoning patterns suggesting the\
-  \ agent misunderstood the tool's purpose or scope\n- **reasoning_quality:** Qualitative\
-  \ assessment of whether the agent's tool selection reasoning was sound\n\nThe sub-agent\
-  \ receives ONLY the artifact directory path and the evaluation prompt — no orchestrator\
-  \ reasoning, no expected outcomes, no cached results. This is a clean-room assessment\
-  \ per the DISPATCH_GATE protocol.\n\n### Result Artifact Storage\n\nEvaluation results\
-  \ are stored as a structured file (YAML or JSON) in the same artifact directory\
-  \ as the test run they evaluate:\n\n```\ntmp/behavioral-evidence-<scenario>-<phase>-<model>/\n\
-  \  manifest.yaml        — Test run metadata\n  stdout.log           — Agent prose\
+  \ Methodology\n\n### Test Configs and Directory Structure\n\nTool configs are per-variant\
+  \ YAML files in `test/tool-selection/configs/`. Each config specifies the tool name,\
+  \ description text, variant label, and metadata needed by the test harness. Configs\
+  \ are prompt-level — since composite tools don't exist yet, descriptions are embedded\
+  \ in scenario prompts rather than MCP server definitions.\n\n```\ntest/tool-selection/\n\
+  \  run.sh                          — Convenience runner (--variable, --model, --iterations,\
+  \ --gating, --quick, --dry-run)\n  run_v1_verb_class.sh            — V1: verb vs\
+  \ verb_noun across 5 tools\n  run_v2_description.sh           — V2: minimal vs constraint\
+  \ vs elaborated\n  run_v3_framing.sh               — V3: bare vs positive differentiation\n\
+  \  run_v4_position.sh              — V4: composite-first vs composite-last vs composite-middle\n\
+  \  run_v5_coexistence.sh           — V5: neutral vs instructional vs preference-hinting\n\
+  \  configs/\n    v1_verb_class/\n      read-verb.yaml\n      read-verb_noun.yaml\n\
+  \      write-verb.yaml\n      write-verb_noun.yaml\n      edit-verb.yaml\n     \
+  \ edit-verb_noun.yaml\n      find-verb.yaml\n      find-verb_noun.yaml\n      diff.yaml\
+  \                   (no noun variant)\n    v2_description/\n      read-minimal.yaml\n\
+  \      read-constraint.yaml\n      read-elaborated.yaml\n      ...per-tool...\n\
+  \    v3_framing/\n      read-bare.yaml\n      read-positive_diff.yaml\n      ...per-tool...\n\
+  \    v4_position/\n      composite-first.yaml\n      composite-last.yaml\n     \
+  \ composite-middle.yaml\n    v5_coexistence/\n      read-neutral.yaml\n      read-instructional.yaml\n\
+  \      read-preference-hinting.yaml\n      ...per-tool...\n  README.md         \
+  \              — How to run tests, interpret results\n```\n\n### Config File Schema\n\
+  \n```yaml\n# Common fields for all configs\nvariable: v1                      #\
+  \ v1|v2|v3|v4|v5\nvariant: verb                     # Variant label (e.g. \"verb\"\
+  , \"verb_noun\", \"minimal\")\ntool: read                        # MCP tool name\n\
+  composite: true\ntarget_intent: \"read a file\"      # Agent intent this tool targets\n\
+  expected_alternative: \"read\"      # Built-in tool this competes with\ndescription:\
+  \ \"...\"                # Tool description text (the variable being tested)\n```\n\
+  \n### Scenario Naming Convention\n\nEach `behavior_run()` call uses a scenario name\
+  \ encoding: variable, tool, variant, model, iteration number.\n\nFormat: `v<VAR>-<TOOL>-<VARIANT>-<MODEL_SLUG>-<ITERATION>`\n\
+  \nExamples:\n- `v1-read-verb-deepseek-01`\n- `v1-read-verb_noun-deepseek-01`\n-\
+  \ `v2-read-constraint-nemotron-05`\n- `v3-read-positive_diff-qwen-10`\n\nThis produces\
+  \ artifact directories like:\n`tmp/behavioral-evidence-v1-read-verb-deepseek-01-GREEN-ollama-deepseek-v4-flash-cloud/`\n\
+  \n### Iteration Logic\n\nEach run script iterates over (configs × models × iterations)\
+  \ with a flat loop:\n```\nfor config in configs/v1_verb_class/*.yaml:\n  for model\
+  \ in [deepseek, gpt-oss, nemotron, qwen]:\n    for iteration in 1..20:\n      scenario_name\
+  \ = encode(config.variable, config.tool, config.variant, model, iteration)\n   \
+  \   behavior_run(scenario_name, build_prompt(config), model)\n```\n\nThe bash tool\
+  \ sets the sole timeout boundary. No internal timer. No `timeout` command wrapping.\
+  \ No assertions.\n\n### Trace Report (Post-Cycle Aggregation)\n\nTimeout discipline\
+  \ is a hard requirement per bug #1076. The bash tool's native timeout parameter\
+  \ is the **sole timeout boundary** — no `timeout` command wrapping inside the bash\
+  \ invocation, and `behavior_run()` MUST NOT use an internal timer. Nested timeouts\
+  \ (bash tool timeout + internal timer inside the script) cause the shell to be killed\
+  \ while `opencode-cli run` and its MCP subprocesses continue as orphaned children.\
+  \ Bash tool timeout must be either 0 (no timeout) or set to the maximum acceptable\
+  \ wall-clock duration for the full run including retries.\n\n**SSE Read Timeout:**\
+  \ The `opencode.jsonc` model configuration for all ollama/ models must set a reasonable\
+  \ `sse_read_timeout` value to prevent \"blackholed\" connections (connections that\
+  \ accept but never send data) from blocking test runs indefinitely. This is a platform-level\
+  \ setting in the opencode configuration, not a test harness concern. The test environment's\
+  \ opencode.jsonc must be verified to have this configured before any V1–V5 testing\
+  \ begins.\n\n### Clean-Room Sub-Agent Evaluation\n\nEvaluation is performed by a\
+  \ clean-room sub-agent dispatched from the implementation pipeline. The sub-agent\
+  \ receives:\n\n- The artifact directory path (containing stdout.log, stderr.log,\
+  \ manifest.yaml)\n- A structured evaluation prompt specifying what to assess\n\n\
+  The sub-agent reads the artifacts and applies semantic judgment to determine:\n\n\
+  - **selected_tool:** Which tool the agent ultimately called (from stderr tool dispatch\
+  \ trace)\n- **deliberation_evidence:** Whether the agent's reasoning trace (stdout)\
+  \ shows it considered multiple tools before selecting one\n- **almost_correct:**\
+  \ The agent nearly selected the composite tool but switched away, or nearly selected\
+  \ the built-in but switched to the composite\n- **confusion_indicators:** Specific\
+  \ phrases or reasoning patterns suggesting the agent misunderstood the tool's purpose\
+  \ or scope\n- **reasoning_quality:** Qualitative assessment of whether the agent's\
+  \ tool selection reasoning was sound\n\nThe sub-agent receives ONLY the artifact\
+  \ directory path and the evaluation prompt — no orchestrator reasoning, no expected\
+  \ outcomes, no cached results. This is a clean-room assessment per the DISPATCH_GATE\
+  \ protocol.\n\n### Result Artifact Storage\n\nEvaluation results are stored as a\
+  \ structured file (YAML or JSON) in the same artifact directory as the test run\
+  \ they evaluate:\n\n```\ntmp/behavioral-evidence-<scenario>-<phase>-<model>/\n \
+  \ manifest.yaml        — Test run metadata\n  stdout.log           — Agent prose\
   \ response\n  stderr.log           — Tool dispatch trace\n  evaluation.yaml    \
   \  — Sub-agent evaluation results (added after evaluation pass)\n```\n\nThis keeps\
   \ the evaluation results co-located with the source artifacts they assess. The evaluation.yaml\
@@ -213,20 +251,34 @@ body: "# [SPEC] Composite Action Tools for Agent Intent Matching\n\n## Problem\n
   \ tmp/behavioral-evidence-v1-verb-class-deepseek/\nblocker_reason: null\n```\n\n\
   Full evaluation details (per-run breakdowns, confusion matrices, qualitative findings)\
   \ go into `evaluation.yaml` in the artifact directory — never into the result contract.\n\
-  \n## Branch and Tagging Strategy\n\n### Feature Branch\n\nA dedicated feature branch\
-  \ `feature/63-composite-tools` tracks all work for this spec: test scripts, implementation\
-  \ code, and description rewrites. The test harness sources the correct tool definitions\
-  \ via `opencode.jsonc` configuration — no PR merge boundaries needed between phases.\
-  \ The branch accumulates all changes atomically.\n\n### Rollback Tags\n\nGit tags\
-  \ mark each major checkpoint for rollback:\n\n| Tag | Point | Contents |\n|-----|-------|----------|\n\
-  | `63/checkpoint/testing-start` | Before any V1 testing begins | Clean dev branch\
-  \ state, spec finalized |\n| `63/checkpoint/v1-complete` | After V1 verb-class testing\
-  \ done | Winning verb variant determined, evaluation.yaml stored |\n| `63/checkpoint/v2-complete`\
-  \ | After V2 description specificity done | Winning description level determined\
-  \ |\n| `63/checkpoint/v3-complete` | After V3 comparison framing done | Winning\
-  \ framing determined |\n| `63/checkpoint/v4-complete` | After V4 position testing\
-  \ done | Position effect data collected |\n| `63/checkpoint/v5-complete` | After\
-  \ V5 coexistence testing done | Winning strategy determined |\n| `63/checkpoint/implementation-start`\
+  \n### Trace Report (Post-Cycle Aggregation)\n\nAfter each full test cycle (all V1–V5\
+  \ runs for all models), a dedicated clean-room sub-agent reads ALL `evaluation.yaml`\
+  \ files from all artifact directories and produces a trace report. This is a separate\
+  \ step from per-run evaluation — it aggregates across variables, variants, models,\
+  \ and iterations.\n\n**Trace report contents:**\n\n- Per-variable summary tables:\
+  \ variant tested, selection rate per model, declared winner\n- Per-model bias profile:\
+  \ how each model responded across all variables\n- Confusion matrix for write/edit\
+  \ overlap (V1)\n- Lessons learned: qualitative findings from evaluator notes across\
+  \ all runs\n- Winning configuration lock: final naming, description level, framing,\
+  \ and coexistence strategy per tool\n\n**Storage:** `test/tool-selection/trace-report.yaml`\
+  \ (structured data) and `test/tool-selection/trace-report.md` (human-readable narrative).\
+  \ Both regenerated on each cycle — old trace report wiped, new one produced from\
+  \ current artifacts.\n\n**Frugal contract:** The trace sub-agent returns only `status:\
+  \ DONE` or `blocker_reason` if data is insufficient to declare winners. Full details\
+  \ go into the trace report files — never into the result contract.\n\n## Branch\
+  \ and Tagging Strategy\n\n### Feature Branch\n\nA dedicated feature branch `feature/63-composite-tools`\
+  \ tracks all work for this spec: test scripts, implementation code, and description\
+  \ rewrites. The test harness sources the correct tool definitions via `opencode.jsonc`\
+  \ configuration — no PR merge boundaries needed between phases. The branch accumulates\
+  \ all changes atomically.\n\n### Rollback Tags\n\nGit tags mark each major checkpoint\
+  \ for rollback:\n\n| Tag | Point | Contents |\n|-----|-------|----------|\n| `63/checkpoint/testing-start`\
+  \ | Before any V1 testing begins | Clean dev branch state, spec finalized |\n| `63/checkpoint/v1-complete`\
+  \ | After V1 verb-class testing done | Winning verb variant determined, evaluation.yaml\
+  \ stored |\n| `63/checkpoint/v2-complete` | After V2 description specificity done\
+  \ | Winning description level determined |\n| `63/checkpoint/v3-complete` | After\
+  \ V3 comparison framing done | Winning framing determined |\n| `63/checkpoint/v4-complete`\
+  \ | After V4 position testing done | Position effect data collected |\n| `63/checkpoint/v5-complete`\
+  \ | After V5 coexistence testing done | Winning strategy determined |\n| `63/checkpoint/implementation-start`\
   \ | Before writing any composite tool code | All testing results finalized, winning\
   \ config locked |\n| `63/checkpoint/composite-tools` | After 5 composite tools implemented\
   \ | All 5 tools registered, tests pass |\n| `63/checkpoint/descriptions` | After\
@@ -336,4 +388,4 @@ body: "# [SPEC] Composite Action Tools for Agent Intent Matching\n\n## Problem\n
   \ (RQ4), Over-Specification Paradox (S* ~0.509), constructional determinacy — all\
   \ apply directly to tool naming and description engineering.\n"
 created_at: '2026-06-09T00:20:56+00:00'
-updated_at: '2026-06-09T01:13:58+00:00'
+updated_at: '2026-06-09T02:44:33+00:00'

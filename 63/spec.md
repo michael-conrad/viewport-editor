@@ -197,11 +197,92 @@ The winning level is determined by selection rate across all 4 models. The const
 
 ## Evaluation Methodology
 
-### Artifact-Only Test Scripts
+### Test Configs and Directory Structure
 
-Test scripts are pure artifact generators. Each script calls `behavior_run()` from `.opencode/tests/behaviors/helpers.sh` with the appropriate tool configuration and prompt, captures stdout and stderr, and exits 0 unconditionally. No assertions, no evaluation logic, no PASS/FAIL verdicts.
+Tool configs are per-variant YAML files in `test/tool-selection/configs/`. Each config specifies the tool name, description text, variant label, and metadata needed by the test harness. Configs are prompt-level — since composite tools don't exist yet, descriptions are embedded in scenario prompts rather than MCP server definitions.
 
-The existing test harness handles test repo project folder setup and uvx plugin routing — test scripts are thin wrappers around `behavior_run()` with scenario-specific prompts and tool configs. Scripts live in `test/tool-selection/` within this repo.
+```
+test/tool-selection/
+  run.sh                          — Convenience runner (--variable, --model, --iterations, --gating, --quick, --dry-run)
+  run_v1_verb_class.sh            — V1: verb vs verb_noun across 5 tools
+  run_v2_description.sh           — V2: minimal vs constraint vs elaborated
+  run_v3_framing.sh               — V3: bare vs positive differentiation
+  run_v4_position.sh              — V4: composite-first vs composite-last vs composite-middle
+  run_v5_coexistence.sh           — V5: neutral vs instructional vs preference-hinting
+  configs/
+    v1_verb_class/
+      read-verb.yaml
+      read-verb_noun.yaml
+      write-verb.yaml
+      write-verb_noun.yaml
+      edit-verb.yaml
+      edit-verb_noun.yaml
+      find-verb.yaml
+      find-verb_noun.yaml
+      diff.yaml                   (no noun variant)
+    v2_description/
+      read-minimal.yaml
+      read-constraint.yaml
+      read-elaborated.yaml
+      ...per-tool...
+    v3_framing/
+      read-bare.yaml
+      read-positive_diff.yaml
+      ...per-tool...
+    v4_position/
+      composite-first.yaml
+      composite-last.yaml
+      composite-middle.yaml
+    v5_coexistence/
+      read-neutral.yaml
+      read-instructional.yaml
+      read-preference-hinting.yaml
+      ...per-tool...
+  README.md                       — How to run tests, interpret results
+```
+
+### Config File Schema
+
+```yaml
+# Common fields for all configs
+variable: v1                      # v1|v2|v3|v4|v5
+variant: verb                     # Variant label (e.g. "verb", "verb_noun", "minimal")
+tool: read                        # MCP tool name
+composite: true
+target_intent: "read a file"      # Agent intent this tool targets
+expected_alternative: "read"      # Built-in tool this competes with
+description: "..."                # Tool description text (the variable being tested)
+```
+
+### Scenario Naming Convention
+
+Each `behavior_run()` call uses a scenario name encoding: variable, tool, variant, model, iteration number.
+
+Format: `v<VAR>-<TOOL>-<VARIANT>-<MODEL_SLUG>-<ITERATION>`
+
+Examples:
+- `v1-read-verb-deepseek-01`
+- `v1-read-verb_noun-deepseek-01`
+- `v2-read-constraint-nemotron-05`
+- `v3-read-positive_diff-qwen-10`
+
+This produces artifact directories like:
+`tmp/behavioral-evidence-v1-read-verb-deepseek-01-GREEN-ollama-deepseek-v4-flash-cloud/`
+
+### Iteration Logic
+
+Each run script iterates over (configs × models × iterations) with a flat loop:
+```
+for config in configs/v1_verb_class/*.yaml:
+  for model in [deepseek, gpt-oss, nemotron, qwen]:
+    for iteration in 1..20:
+      scenario_name = encode(config.variable, config.tool, config.variant, model, iteration)
+      behavior_run(scenario_name, build_prompt(config), model)
+```
+
+The bash tool sets the sole timeout boundary. No internal timer. No `timeout` command wrapping. No assertions.
+
+### Trace Report (Post-Cycle Aggregation)
 
 Timeout discipline is a hard requirement per bug #1076. The bash tool's native timeout parameter is the **sole timeout boundary** — no `timeout` command wrapping inside the bash invocation, and `behavior_run()` MUST NOT use an internal timer. Nested timeouts (bash tool timeout + internal timer inside the script) cause the shell to be killed while `opencode-cli run` and its MCP subprocesses continue as orphaned children. Bash tool timeout must be either 0 (no timeout) or set to the maximum acceptable wall-clock duration for the full run including retries.
 
@@ -250,6 +331,22 @@ blocker_reason: null
 ```
 
 Full evaluation details (per-run breakdowns, confusion matrices, qualitative findings) go into `evaluation.yaml` in the artifact directory — never into the result contract.
+
+### Trace Report (Post-Cycle Aggregation)
+
+After each full test cycle (all V1–V5 runs for all models), a dedicated clean-room sub-agent reads ALL `evaluation.yaml` files from all artifact directories and produces a trace report. This is a separate step from per-run evaluation — it aggregates across variables, variants, models, and iterations.
+
+**Trace report contents:**
+
+- Per-variable summary tables: variant tested, selection rate per model, declared winner
+- Per-model bias profile: how each model responded across all variables
+- Confusion matrix for write/edit overlap (V1)
+- Lessons learned: qualitative findings from evaluator notes across all runs
+- Winning configuration lock: final naming, description level, framing, and coexistence strategy per tool
+
+**Storage:** `test/tool-selection/trace-report.yaml` (structured data) and `test/tool-selection/trace-report.md` (human-readable narrative). Both regenerated on each cycle — old trace report wiped, new one produced from current artifacts.
+
+**Frugal contract:** The trace sub-agent returns only `status: DONE` or `blocker_reason` if data is insufficient to declare winners. Full details go into the trace report files — never into the result contract.
 
 ## Branch and Tagging Strategy
 
