@@ -195,6 +195,82 @@ The Over-Specification Paradox (S* ~0.509 from opencode-config#161) shows that t
 
 The winning level is determined by selection rate across all 4 models. The constraint-statement level is the expected winner per Anthropic's findings, but must be confirmed empirically. If the elaborated level wins for any model, investigate whether the S* threshold varies by model architecture.
 
+## Evaluation Methodology
+
+### Artifact-Only Test Scripts
+
+Test scripts are pure artifact generators. Each script calls `behavior_run()` from `.opencode/tests/behaviors/helpers.sh` with the appropriate tool configuration and prompt, captures stdout and stderr, and exits 0 unconditionally. No assertions, no evaluation logic, no PASS/FAIL verdicts.
+
+The existing test harness handles test repo project folder setup and uvx plugin routing — test scripts are thin wrappers around `behavior_run()` with scenario-specific prompts and tool configs. Scripts live in `test/tool-selection/` within this repo.
+
+### Clean-Room Sub-Agent Evaluation
+
+Evaluation is performed by a clean-room sub-agent dispatched from the implementation pipeline. The sub-agent receives:
+
+- The artifact directory path (containing stdout.log, stderr.log, manifest.yaml)
+- A structured evaluation prompt specifying what to assess
+
+The sub-agent reads the artifacts and applies semantic judgment to determine:
+
+- **selected_tool:** Which tool the agent ultimately called (from stderr tool dispatch trace)
+- **deliberation_evidence:** Whether the agent's reasoning trace (stdout) shows it considered multiple tools before selecting one
+- **almost_correct:** The agent nearly selected the composite tool but switched away, or nearly selected the built-in but switched to the composite
+- **confusion_indicators:** Specific phrases or reasoning patterns suggesting the agent misunderstood the tool's purpose or scope
+- **reasoning_quality:** Qualitative assessment of whether the agent's tool selection reasoning was sound
+
+The sub-agent receives ONLY the artifact directory path and the evaluation prompt — no orchestrator reasoning, no expected outcomes, no cached results. This is a clean-room assessment per the DISPATCH_GATE protocol.
+
+### Result Artifact Storage
+
+Evaluation results are stored as a structured file (YAML or JSON) in the same artifact directory as the test run they evaluate:
+
+```
+tmp/behavioral-evidence-<scenario>-<phase>-<model>/
+  manifest.yaml        — Test run metadata
+  stdout.log           — Agent prose response
+  stderr.log           — Tool dispatch trace
+  evaluation.yaml      — Sub-agent evaluation results (added after evaluation pass)
+```
+
+This keeps the evaluation results co-located with the source artifacts they assess. The evaluation.yaml file contains the sub-agent's findings per the schema above, plus a reference to the sub-agent model used for evaluation.
+
+### Frugal Result Contracts
+
+Per the orchestrator context discipline (020-go-prohibitions.md §1.1), the evaluation sub-agent returns only a routing-significant result contract:
+
+```yaml
+status: DONE
+finding_summary: "V1 verb-class: read verb variant achieved 85% selection across 4 models. write/edit overlap at 22% — below 30% threshold."
+artifact_path: tmp/behavioral-evidence-v1-verb-class-deepseek/
+blocker_reason: null
+```
+
+Full evaluation details (per-run breakdowns, confusion matrices, qualitative findings) go into `evaluation.yaml` in the artifact directory — never into the result contract.
+
+## Branch and Tagging Strategy
+
+### Feature Branch
+
+A dedicated feature branch `feature/63-composite-tools` tracks all work for this spec: test scripts, implementation code, and description rewrites. The test harness sources the correct tool definitions via `opencode.jsonc` configuration — no PR merge boundaries needed between phases. The branch accumulates all changes atomically.
+
+### Rollback Tags
+
+Git tags mark each major checkpoint for rollback:
+
+| Tag | Point | Contents |
+|-----|-------|----------|
+| `63/checkpoint/testing-start` | Before any V1 testing begins | Clean dev branch state, spec finalized |
+| `63/checkpoint/v1-complete` | After V1 verb-class testing done | Winning verb variant determined, evaluation.yaml stored |
+| `63/checkpoint/v2-complete` | After V2 description specificity done | Winning description level determined |
+| `63/checkpoint/v3-complete` | After V3 comparison framing done | Winning framing determined |
+| `63/checkpoint/v4-complete` | After V4 position testing done | Position effect data collected |
+| `63/checkpoint/v5-complete` | After V5 coexistence testing done | Winning strategy determined |
+| `63/checkpoint/implementation-start` | Before writing any composite tool code | All testing results finalized, winning config locked |
+| `63/checkpoint/composite-tools` | After 5 composite tools implemented | All 5 tools registered, tests pass |
+| `63/checkpoint/descriptions` | After 7 existing tool descriptions rewritten | All descriptions in agent-facing style |
+
+Tag format: `63/checkpoint/<phase>` per the git-workflow convention. Tags are lightweight (not annotated) and local-only unless pushed explicitly.
+
 ## Implementation
 
 ### New Code
@@ -285,6 +361,9 @@ These 5 verbs cover >95% of file operations an agent performs. The remaining ope
 | SC-19 | All tool descriptions use positive framing only — no negative comparisons, no danger/avoidance language | `string` |
 | SC-20 | V1 verb-class testing runs against DeepSeek first as gating criterion; halt and re-evaluate if <80% selection | `behavioral` |
 | SC-21 | Description specificity determined by V2 testing across 3 levels (minimal, constraint-statement, elaborated) — constraint-statement is expected winner | `behavioral` |
+| SC-22 | Evaluation uses clean-room sub-agent semantic inspection — not grep on stderr — for all selection rate and confusion measurements | `behavioral` |
+| SC-23 | Evaluation results stored as `evaluation.yaml` co-located with source artifacts in the same artifact directory | `string` |
+| SC-24 | Evaluation sub-agent result contract is frugal — status + finding_summary + artifact_path only; full details in evaluation.yaml | `string` |
 
 ### SC-16e Model Set
 

@@ -168,24 +168,83 @@ body: "# [SPEC] Composite Action Tools for Agent Intent Matching\n\n## Problem\n
   \ threshold\n\nThe winning level is determined by selection rate across all 4 models.\
   \ The constraint-statement level is the expected winner per Anthropic's findings,\
   \ but must be confirmed empirically. If the elaborated level wins for any model,\
-  \ investigate whether the S* threshold varies by model architecture.\n\n## Implementation\n\
-  \n### New Code\n\nOnly `src/viewport_editor/server.py` changes — 5 new `@mcp.tool()`\
-  \ registrations, each delegating to a composite handler function. The handler functions\
-  \ call the existing `ViewportManager` API:\n\n```python\n@mcp.tool()\ndef read(ctx:\
-  \ Context, file_path: str, line_start: int = 1, line_end: int = 100) -> str:\n \
-  \   \"\"\"Read a file's contents via a scoped viewport window with conflict detection.\"\
-  \"\"\n    ...\n\n@mcp.tool()\ndef write(ctx: Context, file_path: str, content: str)\
-  \ -> str:\n    \"\"\"Create or overwrite a file with the given content. Stages through\
-  \ buffer with conflict detection.\"\"\"\n    ...\n\n@mcp.tool()\ndef edit(ctx: Context,\
-  \ file_path: str, old_text: str, new_text: str) -> str:\n    \"\"\"Perform a targeted\
-  \ text replacement in a file. Stages through buffer with conflict detection.\"\"\
-  \"\n    ...\n\n@mcp.tool()\ndef find(ctx: Context, pattern: str, file_path: str\
-  \ = \"\", regex: bool = False) -> str:\n    \"\"\"Search file contents for a pattern.\
-  \ Supports substring and regex matching.\"\"\"\n    ...\n\n@mcp.tool()\ndef diff(ctx:\
-  \ Context, file_path: str) -> str:\n    \"\"\"Show the unified diff of pending buffer\
-  \ changes for a file.\"\"\"\n    ...\n```\n\n### No Data Model Changes\n\nThe composite\
-  \ tools reuse existing ViewportManager methods. No new models, buffers, or state\
-  \ required.\n\n### Error Handling\n\n| Failure Mode | Detection | Response |\n|-------------|-----------|----------|\n\
+  \ investigate whether the S* threshold varies by model architecture.\n\n## Evaluation\
+  \ Methodology\n\n### Artifact-Only Test Scripts\n\nTest scripts are pure artifact\
+  \ generators. Each script calls `behavior_run()` from `.opencode/tests/behaviors/helpers.sh`\
+  \ with the appropriate tool configuration and prompt, captures stdout and stderr,\
+  \ and exits 0 unconditionally. No assertions, no evaluation logic, no PASS/FAIL\
+  \ verdicts.\n\nThe existing test harness handles test repo project folder setup\
+  \ and uvx plugin routing — test scripts are thin wrappers around `behavior_run()`\
+  \ with scenario-specific prompts and tool configs. Scripts live in `test/tool-selection/`\
+  \ within this repo.\n\n### Clean-Room Sub-Agent Evaluation\n\nEvaluation is performed\
+  \ by a clean-room sub-agent dispatched from the implementation pipeline. The sub-agent\
+  \ receives:\n\n- The artifact directory path (containing stdout.log, stderr.log,\
+  \ manifest.yaml)\n- A structured evaluation prompt specifying what to assess\n\n\
+  The sub-agent reads the artifacts and applies semantic judgment to determine:\n\n\
+  - **selected_tool:** Which tool the agent ultimately called (from stderr tool dispatch\
+  \ trace)\n- **deliberation_evidence:** Whether the agent's reasoning trace (stdout)\
+  \ shows it considered multiple tools before selecting one\n- **almost_correct:**\
+  \ The agent nearly selected the composite tool but switched away, or nearly selected\
+  \ the built-in but switched to the composite\n- **confusion_indicators:** Specific\
+  \ phrases or reasoning patterns suggesting the agent misunderstood the tool's purpose\
+  \ or scope\n- **reasoning_quality:** Qualitative assessment of whether the agent's\
+  \ tool selection reasoning was sound\n\nThe sub-agent receives ONLY the artifact\
+  \ directory path and the evaluation prompt — no orchestrator reasoning, no expected\
+  \ outcomes, no cached results. This is a clean-room assessment per the DISPATCH_GATE\
+  \ protocol.\n\n### Result Artifact Storage\n\nEvaluation results are stored as a\
+  \ structured file (YAML or JSON) in the same artifact directory as the test run\
+  \ they evaluate:\n\n```\ntmp/behavioral-evidence-<scenario>-<phase>-<model>/\n \
+  \ manifest.yaml        — Test run metadata\n  stdout.log           — Agent prose\
+  \ response\n  stderr.log           — Tool dispatch trace\n  evaluation.yaml    \
+  \  — Sub-agent evaluation results (added after evaluation pass)\n```\n\nThis keeps\
+  \ the evaluation results co-located with the source artifacts they assess. The evaluation.yaml\
+  \ file contains the sub-agent's findings per the schema above, plus a reference\
+  \ to the sub-agent model used for evaluation.\n\n### Frugal Result Contracts\n\n\
+  Per the orchestrator context discipline (020-go-prohibitions.md §1.1), the evaluation\
+  \ sub-agent returns only a routing-significant result contract:\n\n```yaml\nstatus:\
+  \ DONE\nfinding_summary: \"V1 verb-class: read verb variant achieved 85% selection\
+  \ across 4 models. write/edit overlap at 22% — below 30% threshold.\"\nartifact_path:\
+  \ tmp/behavioral-evidence-v1-verb-class-deepseek/\nblocker_reason: null\n```\n\n\
+  Full evaluation details (per-run breakdowns, confusion matrices, qualitative findings)\
+  \ go into `evaluation.yaml` in the artifact directory — never into the result contract.\n\
+  \n## Branch and Tagging Strategy\n\n### Feature Branch\n\nA dedicated feature branch\
+  \ `feature/63-composite-tools` tracks all work for this spec: test scripts, implementation\
+  \ code, and description rewrites. The test harness sources the correct tool definitions\
+  \ via `opencode.jsonc` configuration — no PR merge boundaries needed between phases.\
+  \ The branch accumulates all changes atomically.\n\n### Rollback Tags\n\nGit tags\
+  \ mark each major checkpoint for rollback:\n\n| Tag | Point | Contents |\n|-----|-------|----------|\n\
+  | `63/checkpoint/testing-start` | Before any V1 testing begins | Clean dev branch\
+  \ state, spec finalized |\n| `63/checkpoint/v1-complete` | After V1 verb-class testing\
+  \ done | Winning verb variant determined, evaluation.yaml stored |\n| `63/checkpoint/v2-complete`\
+  \ | After V2 description specificity done | Winning description level determined\
+  \ |\n| `63/checkpoint/v3-complete` | After V3 comparison framing done | Winning\
+  \ framing determined |\n| `63/checkpoint/v4-complete` | After V4 position testing\
+  \ done | Position effect data collected |\n| `63/checkpoint/v5-complete` | After\
+  \ V5 coexistence testing done | Winning strategy determined |\n| `63/checkpoint/implementation-start`\
+  \ | Before writing any composite tool code | All testing results finalized, winning\
+  \ config locked |\n| `63/checkpoint/composite-tools` | After 5 composite tools implemented\
+  \ | All 5 tools registered, tests pass |\n| `63/checkpoint/descriptions` | After\
+  \ 7 existing tool descriptions rewritten | All descriptions in agent-facing style\
+  \ |\n\nTag format: `63/checkpoint/<phase>` per the git-workflow convention. Tags\
+  \ are lightweight (not annotated) and local-only unless pushed explicitly.\n\n##\
+  \ Implementation\n\n### New Code\n\nOnly `src/viewport_editor/server.py` changes\
+  \ — 5 new `@mcp.tool()` registrations, each delegating to a composite handler function.\
+  \ The handler functions call the existing `ViewportManager` API:\n\n```python\n\
+  @mcp.tool()\ndef read(ctx: Context, file_path: str, line_start: int = 1, line_end:\
+  \ int = 100) -> str:\n    \"\"\"Read a file's contents via a scoped viewport window\
+  \ with conflict detection.\"\"\"\n    ...\n\n@mcp.tool()\ndef write(ctx: Context,\
+  \ file_path: str, content: str) -> str:\n    \"\"\"Create or overwrite a file with\
+  \ the given content. Stages through buffer with conflict detection.\"\"\"\n    ...\n\
+  \n@mcp.tool()\ndef edit(ctx: Context, file_path: str, old_text: str, new_text: str)\
+  \ -> str:\n    \"\"\"Perform a targeted text replacement in a file. Stages through\
+  \ buffer with conflict detection.\"\"\"\n    ...\n\n@mcp.tool()\ndef find(ctx: Context,\
+  \ pattern: str, file_path: str = \"\", regex: bool = False) -> str:\n    \"\"\"\
+  Search file contents for a pattern. Supports substring and regex matching.\"\"\"\
+  \n    ...\n\n@mcp.tool()\ndef diff(ctx: Context, file_path: str) -> str:\n    \"\
+  \"\"Show the unified diff of pending buffer changes for a file.\"\"\"\n    ...\n\
+  ```\n\n### No Data Model Changes\n\nThe composite tools reuse existing ViewportManager\
+  \ methods. No new models, buffers, or state required.\n\n### Error Handling\n\n\
+  | Failure Mode | Detection | Response |\n|-------------|-----------|----------|\n\
   | File not found (read/edit) | FileNotFoundError from viewport:open | isError, \"\
   file not found: {path}\" |\n| old_text not found (edit) | ReplaceTargetNotFoundError\
   \ | isError, \"old text not found in {file}\" |\n| Multiple matches (edit) | ReplaceAmbiguousMatchError\
@@ -240,29 +299,35 @@ body: "# [SPEC] Composite Action Tools for Agent Intent Matching\n\n## Problem\n
   \ | V1 verb-class testing runs against DeepSeek first as gating criterion; halt\
   \ and re-evaluate if <80% selection | `behavioral` |\n| SC-21 | Description specificity\
   \ determined by V2 testing across 3 levels (minimal, constraint-statement, elaborated)\
-  \ — constraint-statement is expected winner | `behavioral` |\n\n### SC-16e Model\
-  \ Set\n\nIterative testing runs against these 4 models to validate cross-model generalization:\n\
-  \n| Model | Name | Notes |\n|-------|------|-------|\n| `ollama/deepseek-v4-flash:cloud`\
-  \ | DeepSeek V4 Flash (cloud) | Primary target — primary development model |\n|\
-  \ `ollama/gpt-oss:20b-128k` | GPT-OSS 20B | Weaker model — tests edge of comprehension\
-  \ |\n| `ollama/nemotron3:33b-128k` | Nemotron 3 33B | Mid-range — tests naming effectiveness\
-  \ at scale |\n| `ollama/qwen3.6:35b-256k` | Qwen 3.6 35B | Long-context variant\
-  \ — tests with large tool listing |\n\nTest methodology per the Iterative Testing\
-  \ Protocol: 20 iterations per variant per model, selection rate measurement per\
-  \ variable.\n\n## Relevant Research (Card Catalogue)\n\nFull research catalogue\
-  \ at `spec-artifacts/research/card-catalogue.md` with 8 cards covering:\n\n- **BiasBusters\
-  \ (arXiv 2510.00307):** Confirms semantic alignment as the strongest driver of tool\
-  \ selection. Small description changes shift choices. Mitigation via subset-filtering.\n\
-  - **mcp-naming-bias experiments:** All models (Claude, GPT-4o, Gemini, DeepSeek,\
-  \ Mistral, Qwen, Llama) show 100% semantic matching when tool name matches prompt\
-  \ intent. Claude shows least position bias.\n- **Anthropic \"Writing Effective Tools\"\
-  :** Recommends composite actions over split tools. Namespacing by domain prefix.\
-  \ Tool descriptions as constraint statements. Prefix vs suffix has non-trivial effects\
-  \ on selection.\n- **AWS domain-noun-verb pattern:** `github_issue_create` — rationale\
-  \ is alphabetical clustering for human browsing, not agent psychology.\n- **SEP-986:**\
-  \ Allows `_`, `-`, `/`, `.` in tool names.\n- **Arcade.dev:** Verb-object naming\
-  \ preferred. `create_meeting` over `schedule`.\n- **LLM Control Language (opencode-config#161):**\
-  \ Verb class reliability (RQ4), Over-Specification Paradox (S* ~0.509), constructional\
-  \ determinacy — all apply directly to tool naming and description engineering.\n"
+  \ — constraint-statement is expected winner | `behavioral` |\n| SC-22 | Evaluation\
+  \ uses clean-room sub-agent semantic inspection — not grep on stderr — for all selection\
+  \ rate and confusion measurements | `behavioral` |\n| SC-23 | Evaluation results\
+  \ stored as `evaluation.yaml` co-located with source artifacts in the same artifact\
+  \ directory | `string` |\n| SC-24 | Evaluation sub-agent result contract is frugal\
+  \ — status + finding_summary + artifact_path only; full details in evaluation.yaml\
+  \ | `string` |\n\n### SC-16e Model Set\n\nIterative testing runs against these 4\
+  \ models to validate cross-model generalization:\n\n| Model | Name | Notes |\n|-------|------|-------|\n\
+  | `ollama/deepseek-v4-flash:cloud` | DeepSeek V4 Flash (cloud) | Primary target\
+  \ — primary development model |\n| `ollama/gpt-oss:20b-128k` | GPT-OSS 20B | Weaker\
+  \ model — tests edge of comprehension |\n| `ollama/nemotron3:33b-128k` | Nemotron\
+  \ 3 33B | Mid-range — tests naming effectiveness at scale |\n| `ollama/qwen3.6:35b-256k`\
+  \ | Qwen 3.6 35B | Long-context variant — tests with large tool listing |\n\nTest\
+  \ methodology per the Iterative Testing Protocol: 20 iterations per variant per\
+  \ model, selection rate measurement per variable.\n\n## Relevant Research (Card\
+  \ Catalogue)\n\nFull research catalogue at `spec-artifacts/research/card-catalogue.md`\
+  \ with 8 cards covering:\n\n- **BiasBusters (arXiv 2510.00307):** Confirms semantic\
+  \ alignment as the strongest driver of tool selection. Small description changes\
+  \ shift choices. Mitigation via subset-filtering.\n- **mcp-naming-bias experiments:**\
+  \ All models (Claude, GPT-4o, Gemini, DeepSeek, Mistral, Qwen, Llama) show 100%\
+  \ semantic matching when tool name matches prompt intent. Claude shows least position\
+  \ bias.\n- **Anthropic \"Writing Effective Tools\":** Recommends composite actions\
+  \ over split tools. Namespacing by domain prefix. Tool descriptions as constraint\
+  \ statements. Prefix vs suffix has non-trivial effects on selection.\n- **AWS domain-noun-verb\
+  \ pattern:** `github_issue_create` — rationale is alphabetical clustering for human\
+  \ browsing, not agent psychology.\n- **SEP-986:** Allows `_`, `-`, `/`, `.` in tool\
+  \ names.\n- **Arcade.dev:** Verb-object naming preferred. `create_meeting` over\
+  \ `schedule`.\n- **LLM Control Language (opencode-config#161):** Verb class reliability\
+  \ (RQ4), Over-Specification Paradox (S* ~0.509), constructional determinacy — all\
+  \ apply directly to tool naming and description engineering.\n"
 created_at: '2026-06-09T00:20:56+00:00'
-updated_at: '2026-06-09T00:36:26+00:00'
+updated_at: '2026-06-09T01:09:57+00:00'
