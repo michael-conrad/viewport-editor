@@ -30,7 +30,7 @@ async def test_sc1_read_file_tool_exists(client_session: object) -> None:
     result = await client_session.list_tools()  # type: ignore[attr-defined]
     names = {t.name for t in result.tools}
     assert "read_file" in names, f"read_file not found in tools: {names}"
-    expected = {"read_file", "write_file", "edit_text", "viewport", "edit", "file", "diff", "search", "regex", "clipboard"}
+    expected = {"read_file", "write_file", "edit_text", "find_text", "viewport", "edit", "file", "diff", "search", "regex", "clipboard"}
     assert names == expected, f"Tool mismatch: {names ^ expected}"
 
 
@@ -225,3 +225,55 @@ async def test_sc7_edit_text_multiple_replacements(client_session: object, test_
     assert "row A" in content
     assert "row B" in content
     assert "row C" in content
+
+
+# ─── Item 4: find_text ───────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_sc11_find_text_substring(client_session: object) -> None:
+    """find_text returns structured results with line numbers for substring match."""
+    result = await client_session.call_tool("find_text", arguments={  # type: ignore[attr-defined]
+        "pattern": "line 3",
+    })
+    assert not result.isError, f"Got error: {result.content[0].text}"
+    text = result.content[0].text
+    assert "line 3" in text
+    assert "match" in text.lower()
+
+
+@pytest.mark.asyncio
+async def test_sc11_find_text_file_scoped(client_session: object) -> None:
+    """find_text with file_path scoped to a single file."""
+    result = await client_session.call_tool("find_text", arguments={  # type: ignore[attr-defined]
+        "pattern": "line",
+        "file_path": "test_file.txt",
+    })
+    assert not result.isError, f"Got error: {result.content[0].text}"
+    text = result.content[0].text
+    assert "match" in text.lower()
+    assert "test_file.txt" in text
+
+
+@pytest.mark.asyncio
+async def test_sc12_find_text_regex(client_session: object) -> None:
+    """find_text with regex=true returns regex match results."""
+    result = await client_session.call_tool("find_text", arguments={  # type: ignore[attr-defined]
+        "pattern": r"line \d",
+        "regex": True,
+    })
+    assert not result.isError, f"Got error: {result.content[0].text}"
+    text = result.content[0].text
+    assert "match" in text.lower()
+    assert "line" in text
+
+
+@pytest.mark.asyncio
+async def test_sc11_find_text_no_matches(client_session: object) -> None:
+    """find_text returns 0 matches when pattern not found."""
+    result = await client_session.call_tool("find_text", arguments={  # type: ignore[attr-defined]
+        "pattern": "xyznonexistent",
+    })
+    assert not result.isError
+    text = result.content[0].text
+    assert "0" in text or "no match" in text.lower()

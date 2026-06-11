@@ -484,6 +484,35 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
             f"\n  count: {result['count']}"
         )
 
+    @mcp.tool()
+    def find_text(
+        ctx: Context,
+        pattern: str,
+        file_path: str = "",
+        regex: bool = False,
+    ) -> str:
+        """Fast content search tool that works with any project size. Searches file
+        contents using substring (default) or regex matching. Returns structured
+        results with line numbers, file paths, and matching text for navigation
+        via viewport:jump. Supports scoping to a single file or project-wide
+        search."""
+        if _manager is None:
+            return "error: server not initialized"
+
+        session_id = ctx.session_id
+        session = get_session(session_id)
+        if session is None:
+            create_session(session_id)
+
+        return _handle_search_action(
+            action="find",
+            session_id=session_id,
+            pattern=pattern,
+            regex=regex,
+            scope="file" if file_path else "",
+            file_path=file_path,
+        )
+
     return mcp
 
 

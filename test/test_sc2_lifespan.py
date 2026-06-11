@@ -37,7 +37,7 @@ async def test_sc2_lifespan_enter_and_exit() -> None:
     server = create_server(str(tmpdir))
     async with Client(transport=server) as client:
         tools = await client.list_tools()
-        assert len(tools) == 10, f"Expected 10 tools, got {len(tools)}"
+        assert len(tools) == 11, f"Expected 11 tools, got {len(tools)}"
         assert any(t.name == "viewport" for t in tools)
 
     # After lifespan exit, the client is disconnected.
