@@ -1,0 +1,20 @@
+{
+  "variable": "V3: Comparison Framing",
+  "description": "Test whether explicitly naming the built-in alternative in descriptions improves or confuses selection",
+  "variants": [
+    {
+      "id": "A_no_comparison",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read a file's contents via a scoped viewport window. Supports line_start/line_end for partial reads.",
+      "hypothesis": "No comparison -- neutral baseline"
+    },
+    {
+      "id": "B_positive_comparison",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read a file's contents via a staged buffer with conflict detection. Unlike the built-in read tool, this detects external file modifications before data loss.",
+      "hypothesis": "Positive framing of differentiation -- expected best"
+    }
+  ]
+}

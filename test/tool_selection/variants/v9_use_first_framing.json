@@ -1,0 +1,42 @@
+{
+  "variable": "V9: Use-First Framing",
+  "description": "Test whether adding directive language at the end of tool descriptions improves adoption",
+  "companion_descriptions": {
+    "write_file": "Writes a file to the local filesystem. Supports diff preview before commit.",
+    "edit_text": "Performs exact string replacements in files. Supports undo via preview before applying.",
+    "find_text": "- Fast content search tool that works with any codebase size\n- Searches file contents using regular expressions. Supports structured results with line numbers.",
+    "diff": "Show or apply unified diffs of pending edits."
+  },
+  "variants": [
+    {
+      "id": "A_use_first",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read a file or directory from the local filesystem. If the path does not exist, an error is returned. Supports offset/limit for partial reads. Use first."
+    },
+    {
+      "id": "B_preferred",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read a file or directory from the local filesystem. If the path does not exist, an error is returned. Supports offset/limit for partial reads. Preferred for file reads."
+    },
+    {
+      "id": "C_recommended",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read a file or directory from the local filesystem. If the path does not exist, an error is returned. Supports offset/limit for partial reads. Recommended over alternatives."
+    },
+    {
+      "id": "D_first_use_this",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read a file or directory from the local filesystem. If the path does not exist, an error is returned. Supports offset/limit for partial reads. First use this tool for all file reads."
+    },
+    {
+      "id": "E_use_this_first",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read a file or directory from the local filesystem. If the path does not exist, an error is returned. Supports offset/limit for partial reads. Use this tool first for all file reads."
+    }
+  ]
+}

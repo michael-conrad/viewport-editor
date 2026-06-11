@@ -1,0 +1,41 @@
+{
+  "variable": "V1: Verb Class",
+  "description": "Test which verb produces maximum agent adoption for a read operation. Keeps descriptions identical across variants to isolate verb as the sole variable.",
+  "variants": [
+    {
+      "id": "A_read",
+      "tool_name": "read",
+      "verb": "Read",
+      "description": "Read file contents from a staged buffer with conflict detection against external modifications. Supports offset/limit for partial reads. No bytes touch disk until explicitly saved.",
+      "hypothesis": "Bare verb -- highest-frequency form, matches CoT planning phrase"
+    },
+    {
+      "id": "B_open",
+      "tool_name": "open",
+      "verb": "Open",
+      "description": "Open file contents into a staged buffer with conflict detection against external modifications. Supports offset/limit for partial reads. No bytes touch disk until explicitly saved.",
+      "hypothesis": "Action verb -- aligns with 'open file' intent, may compete with viewport open action"
+    },
+    {
+      "id": "C_view",
+      "tool_name": "view",
+      "verb": "View",
+      "description": "View file contents from a staged buffer with conflict detection against external modifications. Supports offset/limit for partial reads. No bytes touch disk until explicitly saved.",
+      "hypothesis": "Perception verb -- weaker semantic match for data ops"
+    },
+    {
+      "id": "D_read_file",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read file contents from a staged buffer with conflict detection against external modifications. Supports offset/limit for partial reads. No bytes touch disk until explicitly saved.",
+      "hypothesis": "Verb_noun -- baseline from iteration 1"
+    },
+    {
+      "id": "E_read_text",
+      "tool_name": "read_text",
+      "verb": "Read",
+      "description": "Read text contents from a staged buffer with conflict detection against external modifications. Supports offset/limit for partial reads. No bytes touch disk until explicitly saved.",
+      "hypothesis": "Verb_noun (object = text) -- more specific than 'file'"
+    }
+  ]
+}

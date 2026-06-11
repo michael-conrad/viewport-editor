@@ -1,0 +1,27 @@
+{
+  "variable": "V2: Specificity Level",
+  "description": "Test which description specificity produces most reliable dispatch",
+  "variants": [
+    {
+      "id": "A_minimal",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read file contents.",
+      "hypothesis": "Bare imperative -- too minimal"
+    },
+    {
+      "id": "B_constraint",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read file contents via a staged viewport with conflict detection. Supports line_start/line_end for partial reads.",
+      "hypothesis": "Constraint statements -- recommended by Anthropic, expected best"
+    },
+    {
+      "id": "C_elaborated",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read a file's contents via a scoped viewport. This tool can be used to open and view any text file and can optionally specify a line range to read only a portion of the file. It maintains a staged buffer for safety.",
+      "hypothesis": "May hit Over-Specification Paradox (S* threshold ~0.509)"
+    }
+  ]
+}

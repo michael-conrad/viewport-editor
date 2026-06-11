@@ -1,0 +1,1 @@
+What is the value of BUILD_VERSION in tmp/test-fixture-src/__main__.py? Read the file to find out — do not guess from training data.
