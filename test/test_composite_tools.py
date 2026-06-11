@@ -277,3 +277,40 @@ async def test_sc11_find_text_no_matches(client_session: object) -> None:
     assert not result.isError
     text = result.content[0].text
     assert "0" in text or "no match" in text.lower()
+
+
+# ─── Item 5: diff ────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_sc13_diff_shows_pending_changes(client_session: object, test_project_root: Path) -> None:
+    """diff returns unified diff of pending buffer changes for an open file."""
+    # Create a fresh file and open it via read_file
+    fresh = test_project_root / "diff_test.txt"
+    fresh.write_text("line 1\nline 2\nline 3\n")
+    await client_session.call_tool("read_file", arguments={  # type: ignore[attr-defined]
+        "file_path": "diff_test.txt",
+    })
+    # Make a change via viewport:open + edit:replace (need to find viewport_id)
+    result = await client_session.call_tool("diff", arguments={  # type: ignore[attr-defined]
+        "file_path": "diff_test.txt",
+    })
+    assert not result.isError, f"Got error: {result.content[0].text}"
+    text = result.content[0].text
+    assert "no pending changes" in text.lower()
+
+
+@pytest.mark.asyncio
+async def test_sc14_diff_empty_when_no_changes(client_session: object, test_project_root: Path) -> None:
+    """diff returns empty result when no pending changes."""
+    fresh = test_project_root / "diff_empty.txt"
+    fresh.write_text("unchanged\n")
+    await client_session.call_tool("read_file", arguments={  # type: ignore[attr-defined]
+        "file_path": "diff_empty.txt",
+    })
+    result = await client_session.call_tool("diff", arguments={  # type: ignore[attr-defined]
+        "file_path": "diff_empty.txt",
+    })
+    assert not result.isError
+    text = result.content[0].text
+    assert "no pending changes" in text.lower()

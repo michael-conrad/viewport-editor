@@ -200,11 +200,11 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         file_path: str = "",
         patch: str = "",
     ) -> str:
-        """Show unified diff of pending buffer changes — confirm edits before they become permanent.
-
-        diff:show returns every edit staged in the viewport buffer as a unified diff. This is
-        the review step that a direct write tool cannot provide: seeing exactly what changed
-        before file:save commits it to disk. No diff gate means no pre-commit review.
+        """Show unified diff of staged edits in a viewport buffer before they are
+        committed to disk. Returns the diff as standard unified format with
+        context lines, additions, and deletions. If no changes are pending,
+        returns an empty result. Use this before file:save to verify edits are
+        correct.
 
         Actions: show, apply"""
         session_id = ctx.session_id
@@ -214,6 +214,16 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         session = get_session(session_id)
         if session is None:
             create_session(session_id)
+
+        # Composite-style shortcut: no action + file_path = auto-discover viewport
+        if not action and file_path:
+            entry = _manager.find_viewport_for_file(session_id, file_path)
+            if entry is None:
+                return f"no pending changes for {file_path}"
+            diff_str = _manager.get_buffer_diff(session_id, entry.viewport_id)
+            if not diff_str:
+                return f"no pending changes for {file_path}"
+            return f"diff for {file_path}:\n{diff_str}"
 
         return _handle_diff_action(
             action=action,
