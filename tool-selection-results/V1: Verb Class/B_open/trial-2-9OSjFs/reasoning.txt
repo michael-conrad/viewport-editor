@@ -1,7 +1,0 @@
-The user is asking me to read a file and find a BUILD_VERSION value. Let me check the current state first.
-
-Let me read the file they're asking about.
-
----
-
-The file only has 3 lines. The BUILD_VERSION value is `"v3.17810336576048"`.
