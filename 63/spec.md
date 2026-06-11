@@ -359,6 +359,10 @@ test/tool-selection/trace-archive/
 
 **Frugal contract:** The trace sub-agent returns only `status: DONE` or `blocker_reason` if data is insufficient to declare winners. Full details go into the trace archive files — never into the result contract.
 
+### Testing-to-Implementation Gate
+
+When the trace report declares a winning configuration for all variables, the testing phase is complete. The agent MUST NOT proceed to implementation automatically. A HALT occurs at this boundary with the trace report presented as the deliverable. The winning configuration must be reviewed and approved by the developer before any implementation code is written. This is the pause between prompt selection iteration and actual implementation.
+
 ## Branch and Tagging Strategy
 
 ### Feature Branch
@@ -479,16 +483,39 @@ These 5 verbs cover >95% of file operations an agent performs. The remaining ope
 
 ### SC-16e Model Set
 
-Iterative testing runs against these 4 models to validate cross-model generalization:
+Iterative testing runs against these 6 models to validate cross-model generalization:
 
 | Model | Name | Notes |
 |-------|------|-------|
-| `ollama/deepseek-v4-flash:cloud` | DeepSeek V4 Flash (cloud) | Primary target — primary development model |
-| `ollama/gpt-oss:20b-128k` | GPT-OSS 20B | Weaker model — tests edge of comprehension |
-| `ollama/nemotron3:33b-128k` | Nemotron 3 33B | Mid-range — tests naming effectiveness at scale |
-| `ollama/qwen3.6:35b-256k` | Qwen 3.6 35B | Long-context variant — tests with large tool listing |
+| `ollama/deepseek-v4-flash:cloud` | DeepSeek V4 Flash (cloud) | Primary development model |
+| `ollama/devstral-small-2:24b-384k` | Devstral Small 2 24B | 24B, 384K max context — loaded at full 393,216. 82GB model, CPU/GPU split. |
+| `ollama/gemma4:31b` | Gemma 4 31B | 31B, 262K max context (loaded at 32K) — tests naming at larger scale |
+| `ollama/gpt-oss:20b-128k` | GPT-OSS 20B | 21B, 131K max context — full context loaded, weaker model tests edge of comprehension |
+| `ollama/nemotron3:33b-128k` | Nemotron 3 33B | 33B, 131K max context — full context loaded, mid-range |
+| `ollama/qwen3.6:35b-256k` | Qwen 3.6 35B | 36B, 262K max context — full context loaded, tests with large tool listing |
 
 Test methodology per the Iterative Testing Protocol: 20 iterations per variant per model, selection rate measurement per variable.
+
+### Timeout Mandate (MANDATORY — Tier 1)
+
+**Always increase bash tool timeouts as needed, especially for local models.**
+
+The default 120s timeout is NEVER sufficient for model runs — it is a harness configuration error. Failing to extend timeouts for local model inference is a process-integrity failure. A timeout is NOT a model failure — it is a harness configuration error.
+
+Timeouts must be extended per-model. These are MINIMUMS — increase further if the model is cold-loading:
+
+| Model | Min Timeout | Reason |
+|-------|-------------|--------|
+| `ollama/deepseek-v4-flash:cloud` | 120s | Cloud inference, fast |
+| `ollama/devstral-small-2:24b-384k` | 300s | 24B, 384K max context |
+| `ollama/gemma4:31b` | **3600s** | 31B, 262K max context — loaded at 32,768 on this hardware. 28GB model, very slow load. |
+| `ollama/gpt-oss:20b-128k` | 1800s | 21B, loaded full 131K context. 17GB, 100% GPU — fastest local model. |
+| `ollama/nemotron3:33b-128k` | 1800s | 33B, loaded full 131K context. 33GB, CPU/GPU split. |
+| `ollama/qwen3.6:35b-256k` | 1800s | 36B, loaded full 262K context. 35GB, CPU/GPU split. |
+
+If a model timeout occurs, double the timeout and retry. Do not skip the model. A timeout is not a model failure — it is a harness configuration error.
+
+**Provider config also requires `chunkTimeout`** set to match the bash timeout. OpenCode's streaming timeout kills connections if no chunk arrives within `chunkTimeout` milliseconds. For slow local models, set `chunkTimeout` to at least 300000 (5 min) in the test project's provider options.
 
 ## Relevant Research (Card Catalogue)
 
