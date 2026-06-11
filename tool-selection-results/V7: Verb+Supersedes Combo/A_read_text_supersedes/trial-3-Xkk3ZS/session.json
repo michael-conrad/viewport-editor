@@ -1,0 +1,92 @@
+{
+  "parts": [
+    {
+      "id": "prt_eadf8fdda00177FfwfqV9TlWAM",
+      "message_id": "msg_eadf8fdd9001iXMECB5RZfuVxu",
+      "session_id": "ses_152070255ffePxmOqSZjGcDOyf",
+      "time_created": 1781035236834,
+      "time_updated": 1781035236835,
+      "data": "{\"type\":\"text\",\"text\":\"\\\"Read tmp/test-fixture-A_read_text_supersedes-trial-3.py and find the BUILD_VERSION value. Use a file reading tool.\\\"\\n\"}"
+    },
+    {
+      "id": "prt_eadf91468001HkGpJhmD5NDR6f",
+      "message_id": "msg_eadf8fe25001aujfaEcpQE8aIe",
+      "session_id": "ses_152070255ffePxmOqSZjGcDOyf",
+      "time_created": 1781035242601,
+      "time_updated": 1781035242601,
+      "data": "{\"snapshot\":\"32857debfc9076323799d83fb46b021752bc53a3\",\"type\":\"step-start\"}"
+    },
+    {
+      "id": "prt_eadf9146a001HdFeSNUbuU6BgM",
+      "message_id": "msg_eadf8fe25001aujfaEcpQE8aIe",
+      "session_id": "ses_152070255ffePxmOqSZjGcDOyf",
+      "time_created": 1781035242602,
+      "time_updated": 1781035244728,
+      "data": "{\"type\":\"reasoning\",\"text\":\"The user is giving me a pre-implementation gate sequence instruction. Let me analyze what's needed here.\\n\\nThey mention:\\n1. Invoke `approval-gate --task verify-authorization`\\n2. Invoke `git-workflow --task pre-work`\\n3. ALL file modifications through `implementation-pipeline`\\n4. No direct edit/write tool calls in orchestrator context\\n\\nThey also say:\\n\\\"Read tmp/test-fixture-A_read_text_supersedes-trial-3.py and find the BUILD_VERSION value. Use a file reading tool.\\\"\\n\\nAnd there's a lot of enforcement boilerplate about Tier 1 mandates.\\n\\nWait, let me look more carefully. The user's message starts with \\\"### Pre-Implementation Gate\\\" which has a lot of procedural boilerplate/injection text. Then at the very bottom there's an actual task:\\n\\n\\\"Read tmp/test-fixture-A_read_text_supersedes-trial-3.py and find the BUILD_VERSION value. Use a file reading tool.\\\"\\n\\nThis seems like a specific instruction embedded within what looks like session-enforcement injected text. Let me read the file they're asking about.\\n\\nActually, I need to be careful here. Let me re-read the instructions.\\n\\nThe AGENTS.md says:\\n- \\\"SILENTLY HALT after completing a task\\\"\\n- \\\"Wait for explicit authorization ('approved' or 'go') before implementing\\\"\\n- Current scope is `for_analysis`\\n\\nThe user asked me to read a file and find a value. That's a read-only operation which is within `for_analysis` scope. Let me just do it.\\n\\nLet me read the file at `tmp/test-fixture-A_read_text_supersedes-trial-3.py`.\",\"time\":{\"start\":1781035242602,\"end\":1781035244727}}"
+    },
+    {
+      "id": "prt_eadf91cb9001iLFNrdEjK9O0QZ",
+      "message_id": "msg_eadf8fe25001aujfaEcpQE8aIe",
+      "session_id": "ses_152070255ffePxmOqSZjGcDOyf",
+      "time_created": 1781035244729,
+      "time_updated": 1781035244745,
+      "data": "{\"type\":\"tool\",\"tool\":\"read\",\"callID\":\"call_a6b5b4dc78da427cb7031332\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"/home/muksihs/git/viewport-editor/tmp/test-fixture-A_read_text_supersedes-trial-3.py\"},\"output\":\"<path>/home/muksihs/git/viewport-editor/tmp/test-fixture-A_read_text_supersedes-trial-3.py</path>\\n<type>file</type>\\n<content>\\n1: BUILD_VERSION = \\\"v3.178103523320487\\\"\\n2: BUILD_DATE = \\\"2026-06-09\\\"\\n3: CONFIG_ID = \\\"178103523320487\\\"\\n\\n(End of file - total 3 lines)\\n</content>\",\"metadata\":{\"preview\":\"BUILD_VERSION = \\\"v3.178103523320487\\\"\\nBUILD_DATE = \\\"2026-06-09\\\"\\nCONFIG_ID = \\\"178103523320487\\\"\",\"truncated\":false,\"loaded\":[]},\"title\":\"tmp/test-fixture-A_read_text_supersedes-trial-3.py\",\"time\":{\"start\":1781035244733,\"end\":1781035244744}}}"
+    },
+    {
+      "id": "prt_eadf91d70001OkkcBMEDj6sdAv",
+      "message_id": "msg_eadf8fe25001aujfaEcpQE8aIe",
+      "session_id": "ses_152070255ffePxmOqSZjGcDOyf",
+      "time_created": 1781035244935,
+      "time_updated": 1781035244936,
+      "data": "{\"reason\":\"tool-calls\",\"snapshot\":\"e693b983156188600548af48ae3cc65379c55d94\",\"type\":\"step-finish\",\"tokens\":{\"total\":103051,\"input\":102630,\"output\":421,\"reasoning\":0,\"cache\":{\"write\":0,\"read\":0}},\"cost\":0}"
+    },
+    {
+      "id": "prt_eadf91da1001uKhE9aah6G2REc",
+      "message_id": "msg_eadf8fe25001aujfaEcpQE8aIe",
+      "session_id": "ses_152070255ffePxmOqSZjGcDOyf",
+      "time_created": 1781035244961,
+      "time_updated": 1781035244961,
+      "data": "{\"type\":\"patch\",\"hash\":\"32857debfc9076323799d83fb46b021752bc53a3\",\"files\":[\"/home/muksihs/git/viewport-editor/tool-selection-results/V7: Verb+Supersedes Combo/A_read_text_supersedes/trial-3-Xkk3ZS/stderr.log\",\"/home/muksihs/git/viewport-editor/tool-selection-results/V7: Verb+Supersedes Combo/A_read_text_supersedes/trial-3-Xkk3ZS/stdout.log\"]}"
+    },
+    {
+      "id": "prt_eadf92c19001CvR85RdR1p0LVb",
+      "message_id": "msg_eadf91da5001zapFbgix7XIYZ4",
+      "session_id": "ses_152070255ffePxmOqSZjGcDOyf",
+      "time_created": 1781035248665,
+      "time_updated": 1781035248666,
+      "data": "{\"snapshot\":\"cdf1b4cb0c4ac1d645202eb845dee7c203196974\",\"type\":\"step-start\"}"
+    },
+    {
+      "id": "prt_eadf92c1b001LkKPngN840BekV",
+      "message_id": "msg_eadf91da5001zapFbgix7XIYZ4",
+      "session_id": "ses_152070255ffePxmOqSZjGcDOyf",
+      "time_created": 1781035248667,
+      "time_updated": 1781035248785,
+      "data": "{\"type\":\"reasoning\",\"text\":\"The user asked me to read the file and find the BUILD_VERSION value. I've read the file and found it.\",\"time\":{\"start\":1781035248667,\"end\":1781035248784}}"
+    },
+    {
+      "id": "prt_eadf92c910021vN6hDm2f4K11m",
+      "message_id": "msg_eadf91da5001zapFbgix7XIYZ4",
+      "session_id": "ses_152070255ffePxmOqSZjGcDOyf",
+      "time_created": 1781035248785,
+      "time_updated": 1781035249234,
+      "data": "{\"type\":\"text\",\"text\":\"`BUILD_VERSION` = `\\\"v3.178103523320487\\\"`\",\"time\":{\"start\":1781035248785,\"end\":1781035249234}}"
+    },
+    {
+      "id": "prt_eadf92e53001pzfY9Xccr73c1Y",
+      "message_id": "msg_eadf91da5001zapFbgix7XIYZ4",
+      "session_id": "ses_152070255ffePxmOqSZjGcDOyf",
+      "time_created": 1781035249259,
+      "time_updated": 1781035249260,
+      "data": "{\"reason\":\"stop\",\"snapshot\":\"a237720a0db9678b6fe327f5a9549d05831cd44b\",\"type\":\"step-finish\",\"tokens\":{\"total\":102854,\"input\":102810,\"output\":44,\"reasoning\":0,\"cache\":{\"write\":0,\"read\":0}},\"cost\":0}"
+    },
+    {
+      "id": "prt_eadf92e89001KDZn6oxOm60TrA",
+      "message_id": "msg_eadf91da5001zapFbgix7XIYZ4",
+      "session_id": "ses_152070255ffePxmOqSZjGcDOyf",
+      "time_created": 1781035249289,
+      "time_updated": 1781035249289,
+      "data": "{\"type\":\"patch\",\"hash\":\"cdf1b4cb0c4ac1d645202eb845dee7c203196974\",\"files\":[\"/home/muksihs/git/viewport-editor/tool-selection-results/V7: Verb+Supersedes Combo/A_read_text_supersedes/trial-3-Xkk3ZS/stderr.log\",\"/home/muksihs/git/viewport-editor/tool-selection-results/V7: Verb+Supersedes Combo/A_read_text_supersedes/trial-3-Xkk3ZS/stdout.log\"]}"
+    }
+  ]
+}

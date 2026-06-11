@@ -1,0 +1,7 @@
+Thinking: The user is asking me to read a file and find a BUILD_VERSION value. Let me first check what files are available in the tmp/ directory, and then read the specific file they mentioned.
+
+Let me start by examining the file they referenced.
+Thinking: The file was read successfully. The BUILD_VERSION value is `"v3.17810341495993"`.
+**BUILD_VERSION** = `"v3.17810341495993"`
+
+Verified by reading `/home/muksihs/git/viewport-editor/tmp/test-fixture-E_read_text-trial-5.py` — the value is on line 1.

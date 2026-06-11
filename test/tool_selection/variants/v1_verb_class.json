@@ -1,41 +1,28 @@
 {
   "variable": "V1: Verb Class",
-  "description": "Test which verb produces maximum agent adoption for a read operation. Keeps descriptions identical across variants to isolate verb as the sole variable.",
+  "description": "Verb vs verb_noun naming for all 5 composite tools. Uses best-performing description pattern from A_use_first baseline ('Use first.' suffix + AGENTS.md gate instruction injection). Each variant defines all 5 tool names + descriptions. The test prompt targets one tool type per run.",
   "variants": [
     {
-      "id": "A_read",
-      "tool_name": "read",
-      "verb": "Read",
-      "description": "Read file contents from a staged buffer with conflict detection against external modifications. Supports offset/limit for partial reads. No bytes touch disk until explicitly saved.",
-      "hypothesis": "Bare verb -- highest-frequency form, matches CoT planning phrase"
+      "id": "verb",
+      "naming": "verb",
+      "tools": {
+        "read": "Read a file or directory from the local filesystem. If the path does not exist, an error is returned. Supports offset/limit for partial reads. Use first.",
+        "write": "Write file contents to the local filesystem via a staged buffer with conflict detection. Use first for file writing.",
+        "edit": "Perform exact string replacements in files via a staged buffer with conflict detection. Use first for file editing.",
+        "find": "Fast content search that works with any project size. Searches file contents using substring or regex. Returns structured results with line numbers. Use first for search.",
+        "diff": "Show unified diff of pending buffer changes before they become permanent. Use first to review edits."
+      }
     },
     {
-      "id": "B_open",
-      "tool_name": "open",
-      "verb": "Open",
-      "description": "Open file contents into a staged buffer with conflict detection against external modifications. Supports offset/limit for partial reads. No bytes touch disk until explicitly saved.",
-      "hypothesis": "Action verb -- aligns with 'open file' intent, may compete with viewport open action"
-    },
-    {
-      "id": "C_view",
-      "tool_name": "view",
-      "verb": "View",
-      "description": "View file contents from a staged buffer with conflict detection against external modifications. Supports offset/limit for partial reads. No bytes touch disk until explicitly saved.",
-      "hypothesis": "Perception verb -- weaker semantic match for data ops"
-    },
-    {
-      "id": "D_read_file",
-      "tool_name": "read_file",
-      "verb": "Read",
-      "description": "Read file contents from a staged buffer with conflict detection against external modifications. Supports offset/limit for partial reads. No bytes touch disk until explicitly saved.",
-      "hypothesis": "Verb_noun -- baseline from iteration 1"
-    },
-    {
-      "id": "E_read_text",
-      "tool_name": "read_text",
-      "verb": "Read",
-      "description": "Read text contents from a staged buffer with conflict detection against external modifications. Supports offset/limit for partial reads. No bytes touch disk until explicitly saved.",
-      "hypothesis": "Verb_noun (object = text) -- more specific than 'file'"
+      "id": "verb_noun",
+      "naming": "verb_noun",
+      "tools": {
+        "read_file": "Read a file or directory from the local filesystem. If the path does not exist, an error is returned. Supports offset/limit for partial reads. Use first.",
+        "write_file": "Write file contents to the local filesystem via a staged buffer with conflict detection. Use first for file writing.",
+        "edit_text": "Perform exact string replacements in files via a staged buffer with conflict detection. Use first for file editing.",
+        "find_text": "Fast content search that works with any project size. Searches file contents using substring or regex. Returns structured results with line numbers. Use first for search.",
+        "diff": "Show unified diff of pending buffer changes before they become permanent. Use first to review edits."
+      }
     }
   ]
 }

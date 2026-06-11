@@ -1,0 +1,13 @@
+The user is asking me to read a file and find the BUILD_VERSION value. Let me first check what they're asking about.
+
+They want me to read `tmp/test-fixture-A_no_comparison-trial-4.py` and find the BUILD_VERSION value.
+
+Let me read the file.
+
+But wait - I need to check my authorization scope. I'm in `for_analysis` scope by default. Reading files is in the allowlist for `for_analysis`, so this is fine.
+
+Let me read the file.
+
+---
+
+The user asked me to read the file and find the BUILD_VERSION value. Simple read task, no skill dispatch needed.

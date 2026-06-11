@@ -1,0 +1,19 @@
+{
+  "variable": "V1: Verb Class (write)",
+  "tool_type": "write",
+  "description": "Test verb vs verb_noun for write composite tool",
+  "variants": [
+    {
+      "id": "write-verb",
+      "tool_name": "write",
+      "description": "Write file contents to a staged buffer with conflict detection. No bytes touch disk until explicitly saved.",
+      "intent": "write to a file"
+    },
+    {
+      "id": "write-verb_noun",
+      "tool_name": "write_file",
+      "description": "Write file contents to a staged buffer with conflict detection. No bytes touch disk until explicitly saved.",
+      "intent": "write to a file"
+    }
+  ]
+}

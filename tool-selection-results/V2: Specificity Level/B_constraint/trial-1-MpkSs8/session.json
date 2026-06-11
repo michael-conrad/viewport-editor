@@ -1,0 +1,132 @@
+{
+  "parts": [
+    {
+      "id": "prt_eadeb1831001Byp4hkebT7pM2k",
+      "message_id": "msg_eadeb182f001wpV9n1oU6lYsfQ",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034326072,
+      "time_updated": 1781034326072,
+      "data": "{\"type\":\"text\",\"text\":\"\\\"Read tmp/test-fixture-B_constraint-trial-1.py and find the BUILD_VERSION value. Use a file reading tool.\\\"\\n\"}"
+    },
+    {
+      "id": "prt_eadeb2dc4001fmogoDCq967OeB",
+      "message_id": "msg_eadeb187a001SRUpGMXVJRuMpX",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034331588,
+      "time_updated": 1781034331588,
+      "data": "{\"snapshot\":\"5b342704174f443699ae1ddfc3a852e39084a465\",\"type\":\"step-start\"}"
+    },
+    {
+      "id": "prt_eadeb2dc5001TjJCwVaBzE56dG",
+      "message_id": "msg_eadeb187a001SRUpGMXVJRuMpX",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034331589,
+      "time_updated": 1781034331994,
+      "data": "{\"type\":\"reasoning\",\"text\":\"The user is asking me to read a file to find a BUILD_VERSION value. Let me first check if the file exists at the specified path.\",\"time\":{\"start\":1781034331589,\"end\":1781034331993}}"
+    },
+    {
+      "id": "prt_eadeb2f5a0013kHHJCZpawK5ZH",
+      "message_id": "msg_eadeb187a001SRUpGMXVJRuMpX",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034331994,
+      "time_updated": 1781034332007,
+      "data": "{\"type\":\"tool\",\"tool\":\"glob\",\"callID\":\"call_5a375dca91584673accc10f7\",\"state\":{\"status\":\"completed\",\"input\":{\"pattern\":\"**/tmp/test-fixture-B_constraint-trial-1.py\"},\"output\":\"No files found\",\"metadata\":{\"count\":0,\"truncated\":false},\"title\":\"\",\"time\":{\"start\":1781034331999,\"end\":1781034332007}}}"
+    },
+    {
+      "id": "prt_eadeb30190010IxZTgBDNQYIij",
+      "message_id": "msg_eadeb187a001SRUpGMXVJRuMpX",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034332211,
+      "time_updated": 1781034332212,
+      "data": "{\"reason\":\"tool-calls\",\"snapshot\":\"71f0e768c41f287c126ff686c86c6f124c8fbeb2\",\"type\":\"step-finish\",\"tokens\":{\"total\":102712,\"input\":102626,\"output\":86,\"reasoning\":0,\"cache\":{\"write\":0,\"read\":0}},\"cost\":0}"
+    },
+    {
+      "id": "prt_eadeb3050001K2UT7TS3uVF3xr",
+      "message_id": "msg_eadeb187a001SRUpGMXVJRuMpX",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034332241,
+      "time_updated": 1781034332241,
+      "data": "{\"type\":\"patch\",\"hash\":\"5b342704174f443699ae1ddfc3a852e39084a465\",\"files\":[\"/home/muksihs/git/viewport-editor/tool-selection-results/V2: Specificity Level/B_constraint/trial-1-MpkSs8/stderr.log\",\"/home/muksihs/git/viewport-editor/tool-selection-results/V2: Specificity Level/B_constraint/trial-1-MpkSs8/stdout.log\"]}"
+    },
+    {
+      "id": "prt_eadeb3fd30011zjMy1Rxhavh4q",
+      "message_id": "msg_eadeb305400184vCe3MjZesFSz",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034336211,
+      "time_updated": 1781034336212,
+      "data": "{\"snapshot\":\"cb91c675c910eed0e753afe786be27e83f745146\",\"type\":\"step-start\"}"
+    },
+    {
+      "id": "prt_eadeb3fd40014N1wGDk5lr4sCp",
+      "message_id": "msg_eadeb305400184vCe3MjZesFSz",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034336212,
+      "time_updated": 1781034336743,
+      "data": "{\"type\":\"reasoning\",\"text\":\"The user is asking me to read a file at `tmp/test-fixture-B_constraint-trial-1.py`. Let me check if this file exists in the project directory structure.\\n\\nThe glob returned no results. Let me try to read it directly.\",\"time\":{\"start\":1781034336212,\"end\":1781034336742}}"
+    },
+    {
+      "id": "prt_eadeb41e70012wKl7Cz8ZEf0nn",
+      "message_id": "msg_eadeb305400184vCe3MjZesFSz",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034336743,
+      "time_updated": 1781034336756,
+      "data": "{\"type\":\"tool\",\"tool\":\"read\",\"callID\":\"call_34e0a9f37da6470ba1a43a21\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"/home/muksihs/git/viewport-editor/tmp/test-fixture-B_constraint-trial-1.py\"},\"output\":\"<path>/home/muksihs/git/viewport-editor/tmp/test-fixture-B_constraint-trial-1.py</path>\\n<type>file</type>\\n<content>\\n1: BUILD_VERSION = \\\"v3.178103432212357\\\"\\n2: BUILD_DATE = \\\"2026-06-09\\\"\\n3: CONFIG_ID = \\\"178103432212357\\\"\\n\\n(End of file - total 3 lines)\\n</content>\",\"metadata\":{\"preview\":\"BUILD_VERSION = \\\"v3.178103432212357\\\"\\nBUILD_DATE = \\\"2026-06-09\\\"\\nCONFIG_ID = \\\"178103432212357\\\"\",\"truncated\":false,\"loaded\":[]},\"title\":\"tmp/test-fixture-B_constraint-trial-1.py\",\"time\":{\"start\":1781034336745,\"end\":1781034336756}}}"
+    },
+    {
+      "id": "prt_eadeb42c4001GyhOnMr5L9Mtrr",
+      "message_id": "msg_eadeb305400184vCe3MjZesFSz",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034336998,
+      "time_updated": 1781034336998,
+      "data": "{\"reason\":\"tool-calls\",\"snapshot\":\"51cc1a591c2142645384cf114c221b724980b54c\",\"type\":\"step-finish\",\"tokens\":{\"total\":102817,\"input\":102697,\"output\":120,\"reasoning\":0,\"cache\":{\"write\":0,\"read\":0}},\"cost\":0}"
+    },
+    {
+      "id": "prt_eadeb4304001112yBN6pXFwwdT",
+      "message_id": "msg_eadeb305400184vCe3MjZesFSz",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034337028,
+      "time_updated": 1781034337028,
+      "data": "{\"type\":\"patch\",\"hash\":\"cb91c675c910eed0e753afe786be27e83f745146\",\"files\":[\"/home/muksihs/git/viewport-editor/tool-selection-results/V2: Specificity Level/B_constraint/trial-1-MpkSs8/stderr.log\",\"/home/muksihs/git/viewport-editor/tool-selection-results/V2: Specificity Level/B_constraint/trial-1-MpkSs8/stdout.log\"]}"
+    },
+    {
+      "id": "prt_eadeb55e8001QpaM7ACCds7j7f",
+      "message_id": "msg_eadeb430a0011zx4b9fv7lYqIz",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034341864,
+      "time_updated": 1781034341865,
+      "data": "{\"snapshot\":\"ab41c35dd05fccb6441313c4a6cbfd0718a2768b\",\"type\":\"step-start\"}"
+    },
+    {
+      "id": "prt_eadeb55e9001mKBlUXQuFrR0nH",
+      "message_id": "msg_eadeb430a0011zx4b9fv7lYqIz",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034341865,
+      "time_updated": 1781034341956,
+      "data": "{\"type\":\"reasoning\",\"text\":\"The user asked me to find the BUILD_VERSION value in the file. I found it. Let me report the result.\",\"time\":{\"start\":1781034341865,\"end\":1781034341955}}"
+    },
+    {
+      "id": "prt_eadeb5644001P7OPXTAmYnVOh2",
+      "message_id": "msg_eadeb430a0011zx4b9fv7lYqIz",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034341956,
+      "time_updated": 1781034342540,
+      "data": "{\"type\":\"text\",\"text\":\"`BUILD_VERSION = \\\"v3.178103432212357\\\"` \u2014 confirmed via direct file read at `tmp/test-fixture-B_constraint-trial-1.py:1`.\",\"time\":{\"start\":1781034341956,\"end\":1781034342539}}"
+    },
+    {
+      "id": "prt_eadeb588d001giSPF3whGJSLtJ",
+      "message_id": "msg_eadeb430a0011zx4b9fv7lYqIz",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034342572,
+      "time_updated": 1781034342572,
+      "data": "{\"reason\":\"stop\",\"snapshot\":\"93a87f78061f2ac1798d1a6233c69418cdd25426\",\"type\":\"step-finish\",\"tokens\":{\"total\":102934,\"input\":102869,\"output\":65,\"reasoning\":0,\"cache\":{\"write\":0,\"read\":0}},\"cost\":0}"
+    },
+    {
+      "id": "prt_eadeb58cb001X8ZKNsTWzP8sP0",
+      "message_id": "msg_eadeb430a0011zx4b9fv7lYqIz",
+      "session_id": "ses_15214e800ffeSPk85q5wnqqDv3",
+      "time_created": 1781034342604,
+      "time_updated": 1781034342604,
+      "data": "{\"type\":\"patch\",\"hash\":\"ab41c35dd05fccb6441313c4a6cbfd0718a2768b\",\"files\":[\"/home/muksihs/git/viewport-editor/tool-selection-results/V2: Specificity Level/B_constraint/trial-1-MpkSs8/stderr.log\",\"/home/muksihs/git/viewport-editor/tool-selection-results/V2: Specificity Level/B_constraint/trial-1-MpkSs8/stdout.log\"]}"
+    }
+  ]
+}
