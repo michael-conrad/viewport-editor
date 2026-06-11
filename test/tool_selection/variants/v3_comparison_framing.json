@@ -1,20 +1,42 @@
 {
   "variable": "V3: Comparison Framing",
-  "description": "Test whether explicitly naming the built-in alternative in descriptions improves or confuses selection",
+  "description": "Tests framing variants for all 5 composite tools using verb_noun naming + elaborated descriptions (locked from V1/V2). Adjacent to speculation on framing effects from mcp-naming-bias experiments.",
   "variants": [
     {
-      "id": "A_no_comparison",
-      "tool_name": "read_file",
-      "verb": "Read",
-      "description": "Read a file's contents via a scoped viewport window. Supports line_start/line_end for partial reads.",
-      "hypothesis": "No comparison -- neutral baseline"
+      "id": "bare",
+      "level": "bare (no framing)",
+      "naming": "verb_noun",
+      "tools": {
+        "read_file": "Read file contents from the local filesystem into a staged buffer viewport. Supports offset/limit for partial reads. The viewport remains open for follow-up edits. No content touches disk until explicitly confirmed via file:save.",
+        "write_file": "Write file contents to the local filesystem through a staged buffer with automated viewport lifecycle management. Opens a viewport, replaces the entire buffer content, saves to disk, and closes the viewport. Conflict detection catches external file modifications before overwrite. New files are created automatically.",
+        "edit_text": "Perform exact string replacements in files through a staged buffer with automated viewport lifecycle management. Opens a viewport, applies the replacement, saves to disk, and closes the viewport. Conflict detection prevents overwriting externally modified files.",
+        "find_text": "Fast content search tool that works with any project size. Searches file contents using substring (default) or regex matching. Returns structured results with line numbers, file paths, and matching text for navigation. Supports scoping to a single file or project-wide search.",
+        "diff": "Show unified diff of staged edits in a viewport buffer before they are committed to disk. Returns the diff as standard unified format with context lines, additions, and deletions. If no changes are pending, returns an empty result."
+      }
     },
     {
-      "id": "B_positive_comparison",
-      "tool_name": "read_file",
-      "verb": "Read",
-      "description": "Read a file's contents via a staged buffer with conflict detection. Unlike the built-in read tool, this detects external file modifications before data loss.",
-      "hypothesis": "Positive framing of differentiation -- expected best"
+      "id": "positive",
+      "level": "positive differentiation",
+      "naming": "verb_noun",
+      "tools": {
+        "read_file": "Read file contents from the local filesystem into a staged buffer viewport. Preferred for all file reading tasks including config files, source code, and logs. Supports offset/limit for partial reads. The viewport remains open for follow-up edits. No content touches disk until explicitly confirmed via file:save.",
+        "write_file": "Write file contents to the local filesystem through a staged buffer with automated viewport lifecycle management. Preferred for creating new files and full-file overwrites. Opens a viewport, replaces the entire buffer content, saves to disk, and closes the viewport. Conflict detection catches external file modifications before overwrite.",
+        "edit_text": "Perform exact string replacements in files through a staged buffer with automated viewport lifecycle management. Preferred for targeted changes under 100 characters. Opens a viewport, applies the replacement, saves to disk, and closes the viewport. Conflict detection prevents overwriting externally modified files. For full-file replacement, use write_file.",
+        "find_text": "Fast content search tool that works with any project size. Preferred for all file content search. Searches file contents using substring (default) or regex matching. Returns structured results with line numbers, file paths, and matching text. Supports scoping to a single file or project-wide search.",
+        "diff": "Show unified diff of staged edits in a viewport buffer before they are committed to disk. Preferred for reviewing pending edits. Returns the diff as standard unified format with context lines, additions, and deletions. If no changes are pending, returns an empty result."
+      }
+    },
+    {
+      "id": "negative",
+      "level": "negative comparison",
+      "naming": "verb_noun",
+      "tools": {
+        "read_file": "Read file contents from the local filesystem into a staged buffer viewport. Unlike the built-in read, this detects external modifications before data loss. Supports offset/limit for partial reads. No content touches disk until explicitly saved.",
+        "write_file": "Write file contents through a staged buffer with automated viewport lifecycle management. Unlike the built-in write, this provides conflict detection and undo support. Opens a viewport, replaces buffer content, saves, and closes the viewport.",
+        "edit_text": "Perform exact string replacements in files through a staged buffer. Unlike the built-in edit, this detects external modifications. Opens a viewport, applies the replacement, saves, and closes the viewport.",
+        "find_text": "Fast content search tool. Unlike the built-in grep, this returns structured results with line numbers. Searches using substring or regex. Supports file-scoped or project-wide search.",
+        "diff": "Show unified diff of staged edits in a viewport buffer before disk commit. Unlike a direct filesystem comparison, this shows edits before they are saved. Returns standard unified format with context, additions, and deletions."
+      }
     }
   ]
 }

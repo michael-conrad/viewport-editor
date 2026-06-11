@@ -1,27 +1,42 @@
 {
-  "variable": "V2: Specificity Level",
-  "description": "Test which description specificity produces most reliable dispatch",
+  "variable": "V2: Description Specificity",
+  "description": "Tests three description specificity levels for all 5 composite tools using verb_noun naming (locked from V1). Each variant defines all 5 tool descriptions at the same specificity level.",
   "variants": [
     {
-      "id": "A_minimal",
-      "tool_name": "read_file",
-      "verb": "Read",
-      "description": "Read file contents.",
-      "hypothesis": "Bare imperative -- too minimal"
+      "id": "minimal",
+      "level": "minimal",
+      "naming": "verb_noun",
+      "tools": {
+        "read_file": "Read file contents.",
+        "write_file": "Write file contents.",
+        "edit_text": "Edit file text.",
+        "find_text": "Search file contents.",
+        "diff": "Show file diff."
+      }
     },
     {
-      "id": "B_constraint",
-      "tool_name": "read_file",
-      "verb": "Read",
-      "description": "Read file contents via a staged viewport with conflict detection. Supports line_start/line_end for partial reads.",
-      "hypothesis": "Constraint statements -- recommended by Anthropic, expected best"
+      "id": "constraint",
+      "level": "constraint-statement",
+      "naming": "verb_noun",
+      "tools": {
+        "read_file": "Read a file's contents via a scoped viewport window. Supports line_start/line_end for partial reads. No bytes touch disk until explicitly saved.",
+        "write_file": "Write file contents via a staged buffer with conflict detection. No bytes touch disk until explicitly saved.",
+        "edit_text": "Edit text inside a staged buffer. Supports replace, replace-all, insert-lines, delete-lines, swap-lines, move-lines. No bytes touch disk until explicitly saved.",
+        "find_text": "Search file contents with structured results. Supports substring and regex matching.",
+        "diff": "Show unified diff of pending buffer changes before they become permanent."
+      }
     },
     {
-      "id": "C_elaborated",
-      "tool_name": "read_file",
-      "verb": "Read",
-      "description": "Read a file's contents via a scoped viewport. This tool can be used to open and view any text file and can optionally specify a line range to read only a portion of the file. It maintains a staged buffer for safety.",
-      "hypothesis": "May hit Over-Specification Paradox (S* threshold ~0.509)"
+      "id": "elaborated",
+      "level": "elaborated",
+      "naming": "verb_noun",
+      "tools": {
+        "read_file": "Read file contents from the local filesystem into a staged buffer viewport. If the file path does not exist, an error is returned. Supports offset/limit for partial reads. The viewport remains open for follow-up edits. No content touches disk until explicitly confirmed via file:save. Use this for all file reading tasks including config files, source code, and logs.",
+        "write_file": "Write file contents to the local filesystem through a staged buffer with automated viewport lifecycle management. Opens a viewport, replaces the entire buffer content, saves to disk, and closes the viewport. Conflict detection catches external file modifications before overwrite. New files are created automatically. Use this for creating new files or full-file overwrites.",
+        "edit_text": "Perform exact string replacements in files through a staged buffer with automated viewport lifecycle management. Opens a viewport, applies the replacement, saves to disk, and closes the viewport. Conflict detection prevents overwriting externally modified files. For write/edit overlap, use edit_text for targeted changes under 100 characters — use write_file for full-file replacement.",
+        "find_text": "Fast content search tool that works with any project size. Searches file contents using substring (default) or regex matching. Returns structured results with line numbers, file paths, and matching text for navigation via viewport:jump. Supports scoping to a single file or project-wide search.",
+        "diff": "Show unified diff of staged edits in a viewport buffer before they are committed to disk. Returns the diff as standard unified format with context lines, additions, and deletions. If no changes are pending, returns an empty result. Use this before file:save to verify edits are correct."
+      }
     }
   ]
 }

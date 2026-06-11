@@ -1,15 +1,14 @@
 #!/bin/bash
-# V1 Verb-Class Runner
-# Runs opencode-cli from the isolated test project (/tmp/octest) so session-init
-# loads the test project's minimal .opencode/ context, NOT the main project's
-# heavy approval-gate + pre-implementation pipeline configuration.
+# V2 Description Specificity Runner
+# Tests minimal vs constraint-statement vs elaborated descriptions for each tool.
+# Uses verb_noun naming (locked from V1).
 #
 # Usage:
-#   bash run_v1.sh                          # Full 20-trial DeepSeek gating
-#   bash run_v1.sh --quick                  # 5-trial debug mode
-#   bash run_v1.sh --tool read              # Single tool
-#   bash run_v1.sh --variant verb           # Single variant
-#   bash run_v1.sh --model deepseek         # Single model
+#   bash run_v2.sh                          # Full run
+#   bash run_v2.sh --quick                  # 5-trial debug mode
+#   bash run_v2.sh --tool read_file         # Single tool
+#   bash run_v2.sh --variant minimal        # Single variant
+#   bash run_v2.sh --model deepseek         # Single model
 #
 # SPDX-FileCopyrightText: 2026 Michael Conrad
 # SPDX-License-Identifier: MIT
@@ -21,7 +20,6 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 TEST_HOME_WRAPPER="$PROJECT_DIR/.opencode/tests/with-test-home"
 TEST_PROJECT="/tmp/octest"
 
-# Timeout per model (seconds) — minimums, double on timeout
 declare -A MODEL_TIMEOUTS
 MODEL_TIMEOUTS["ollama/deepseek-v4-flash:cloud"]=120
 MODEL_TIMEOUTS["ollama/gpt-oss:20b-128k"]=1800
@@ -30,7 +28,6 @@ MODEL_TIMEOUTS["ollama/qwen3.6:35b-256k"]=1800
 MODEL_TIMEOUTS["ollama/devstral-small-2:24b-384k"]=3600
 MODEL_TIMEOUTS["ollama/gemma4:31b"]=3600
 
-# Config
 TRIALS=20
 QUICK=0
 FILTER_TOOL=""
@@ -48,37 +45,33 @@ while [[ $# -gt 0 ]]; do
 done
 
 declare -A TOOL_PROMPTS
-TOOL_PROMPTS["read"]="Read src/main.py and find the BUILD_VERSION value."
-TOOL_PROMPTS["write"]="Write BUILD_VERSION = 42 to tmp/output.txt using the recommended writing tool."
-TOOL_PROMPTS["edit"]="Change BUILD_VERSION from 1 to 2 in src/main.py using the recommended editing tool."
-TOOL_PROMPTS["find"]="Search for BUILD_VERSION across the project using the recommended search tool."
+TOOL_PROMPTS["read_file"]="Read src/main.py and find the BUILD_VERSION value."
+TOOL_PROMPTS["write_file"]="Write BUILD_VERSION = 42 to tmp/output.txt using the recommended writing tool."
+TOOL_PROMPTS["edit_text"]="Change BUILD_VERSION from 1 to 2 in src/main.py using the recommended editing tool."
+TOOL_PROMPTS["find_text"]="Search for BUILD_VERSION across the project using the recommended search tool."
 TOOL_PROMPTS["diff"]="Review pending changes by showing the diff for src/main.py."
 
-declare -A TOOL_TOOLNAMES
-TOOL_TOOLNAMES["read_verb"]="read"
-TOOL_TOOLNAMES["read_verb_noun"]="read_file"
-TOOL_TOOLNAMES["write_verb"]="write"
-TOOL_TOOLNAMES["write_verb_noun"]="write_file"
-TOOL_TOOLNAMES["edit_verb"]="edit"
-TOOL_TOOLNAMES["edit_verb_noun"]="edit_text"
-TOOL_TOOLNAMES["find_verb"]="find"
-TOOL_TOOLNAMES["find_verb_noun"]="find_text"
-TOOL_TOOLNAMES["diff_verb"]="diff"
-TOOL_TOOLNAMES["diff_verb_noun"]="diff"
+VARIANTS=("minimal" "constraint" "elaborated")
+# Read tool names from v2_specificity.json — they're all verb_noun after V1 lock
+# Mapping: tool_type -> expected_dispatch_name
+declare -A TOOL_NAMES
+TOOL_NAMES["read_file"]="read_file"
+TOOL_NAMES["write_file"]="write_file"
+TOOL_NAMES["edit_text"]="edit_text"
+TOOL_NAMES["find_text"]="find_text"
+TOOL_NAMES["diff"]="diff"
 
-VARIANTS=("verb" "verb_noun")
-TOOLS=("read" "write" "edit" "find" "diff")
-
-[ -n "$FILTER_TOOL" ] && TOOLS=("$FILTER_TOOL")
+# Filter tools
+ALL_TOOLS=("read_file" "write_file" "edit_text" "find_text" "diff")
+[ -n "$FILTER_TOOL" ] && ALL_TOOLS=("$FILTER_TOOL")
 [ -n "$FILTER_VARIANT" ] && VARIANTS=("$FILTER_VARIANT")
 
-OUTPUT_DIR="${TOOL_SELECTION_OUTPUT:-$PROJECT_DIR/tmp/v1-results-$(date +%Y%m%d-%H%M%S)}"
+OUTPUT_DIR="${TOOL_SELECTION_OUTPUT:-$PROJECT_DIR/tmp/v2-results-$(date +%Y%m%d-%H%M%S)}"
 mkdir -p "$OUTPUT_DIR"
 
-# Per-trial timeout in ms = model timeout + 30s buffer
 TIMEOUT_MS=$(( (${MODEL_TIMEOUTS[$MODEL]:-120} + 30) * 1000 ))
 
-echo "=== V1 Verb-Class Testing ==="
+echo "=== V2 Description Specificity Testing ==="
 echo "Model: $MODEL"
 echo "Trials per variant: $TRIALS"
 echo "Per-trial timeout: $((TIMEOUT_MS / 1000))s"
@@ -95,19 +88,16 @@ run_trial() {
 
     local run_id
     run_id=$(date +%s)$RANDOM
-    local fixture_value="v3.${run_id}"
 
-    # Ensure fixtures exist in test project
     cat > "$TEST_PROJECT/src/main.py" << FIXEOF
 BUILD_VERSION = 1
 CONFIG_ID = "${run_id}"
 FIXEOF
     chmod -R +r "$TEST_PROJECT/src" "$TEST_PROJECT/tmp"
 
-    local tool_name="${TOOL_TOOLNAMES[${tool_type}_${variant_id}]}"
+    local tool_name="${TOOL_NAMES[$tool_type]}"
     local prompt="${TOOL_PROMPTS[$tool_type]}"
 
-    # Build inline config content
     config_content=$(cat << 'JSONEOF'
 {
   "$schema": "https://opencode.ai/config.json",
@@ -134,7 +124,6 @@ JSONEOF
     config_content="${config_content/\$VARIANT_PLACEHOLDER/$variant_id}"
     config_content="${config_content/\$TEST_PROJECT_PLACEHOLDER/$TEST_PROJECT}"
 
-    # Setup isolated test home
     local test_home
     test_home=$("$TEST_HOME_WRAPPER" --setup "$PROJECT_DIR" 2>/dev/null | grep '^TEST_HOME=' | cut -d= -f2-)
     if [ -z "$test_home" ]; then
@@ -142,9 +131,6 @@ JSONEOF
         return
     fi
 
-    # Run opencode-cli FROM the test project directory so project detection
-    # finds /tmp/octest/.opencode/ (minimal context, no pipeline gates, AGENTS.md
-    # with tool selection mandates) instead of the main project's heavy config.
     cd "$TEST_PROJECT"
     HOME="$test_home" \
     XDG_CONFIG_HOME="$test_home/.config" \
@@ -158,8 +144,6 @@ JSONEOF
             2>"$workdir/stderr.log" >"$workdir/stdout.log" || true
     cd "$PROJECT_DIR"
 
-    # Detect which tool was dispatched from stderr.
-    # Check ALL dispatches — the agent may read first, then perform the intended action.
     local stderr_file="$workdir/stderr.log"
     if [ ! -f "$stderr_file" ]; then
         echo "UNKNOWN"
@@ -174,8 +158,6 @@ JSONEOF
         return
     fi
 
-    # Check if the CORRECT tool was dispatched in any call.
-    # Use word boundary (\b) to avoid "read" matching "read_file".
     if echo "$all_tool_calls" | grep -q "viewport-editor_${tool_name}\b"; then
         echo "CUSTOM_CORRECT"
     elif echo "$all_tool_calls" | grep -qE 'viewport-editor_(read|write|edit|find|diff|read_file|write_file|edit_text|find_text)'; then
@@ -192,8 +174,8 @@ JSONEOF
 echo "variant_id,tool_type,trial_num,result,expected_tool" > "$OUTPUT_DIR/results.csv"
 
 for variant_id in "${VARIANTS[@]}"; do
-    for tool_type in "${TOOLS[@]}"; do
-        local_tool_name="${TOOL_TOOLNAMES[${tool_type}_${variant_id}]}"
+    for tool_type in "${ALL_TOOLS[@]}"; do
+        local_tool_name="${TOOL_NAMES[$tool_type]}"
         echo "=== Variant: $variant_id | Tool: $tool_type (name: $local_tool_name) ==="
 
         variant_dir="$OUTPUT_DIR/${variant_id}/${tool_type}"
@@ -217,10 +199,10 @@ from collections import defaultdict
 
 filepath = '$OUTPUT_DIR/results.csv'
 if not os.path.exists(filepath):
-    print('No results found')
+    print('No results')
     sys.exit(0)
 
-data = defaultdict(dict)
+data = {}
 ordered = []
 with open(filepath) as f:
     reader = csv.DictReader(f)
@@ -236,14 +218,10 @@ for vid, tt in ordered:
     total = sum(counts.values())
     cc = counts.get('CUSTOM_CORRECT', 0)
     cw = sum(v for k, v in counts.items() if k.startswith('CUSTOM_WRONG'))
-    co = sum(v for k, v in counts.items() if k.startswith('CUSTOM_OTHER'))
-    bi = counts.get('BUILTIN', 0)
     unk = counts.get('UNKNOWN', 0)
-    sc = counts.get('SRCLIGHT', 0)
     pct = round(100 * cc / total, 1) if total > 0 else 0
     marker = 'PASS' if pct >= 80 else 'FAIL'
-    print(f'{vid:15s} {tt:10s} correct={cc}/{total} ({pct}%) wrong={cw} other={co} builtin={bi} unk={unk} srclight={sc} [{marker}]')
+    print(f'{vid:15s} {tt:10s} correct={cc}/{total} ({pct}%) wrong={cw} unk={unk} [{marker}]')
 " 2>/dev/null || echo "Summary error"
-
 echo ""
 echo "Results: $OUTPUT_DIR/results.csv"
