@@ -1,0 +1,220 @@
+{
+  "parts": [
+    {
+      "id": "prt_eadf05dc7001h5qOTMZ8wPuBkh",
+      "message_id": "msg_eadf05dc6001uG9O8zYIW0ylx0",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034671567,
+      "time_updated": 1781034671568,
+      "data": "{\"type\":\"text\",\"text\":\"\\\"Read tmp/test-fixture-A_no_comparison-trial-5.py and find the BUILD_VERSION value. Use a file reading tool.\\\"\\n\"}"
+    },
+    {
+      "id": "prt_eadf074ab001EshDigIsDkXdCO",
+      "message_id": "msg_eadf05e2200133NT5xnIIXd2Tb",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034677420,
+      "time_updated": 1781034677420,
+      "data": "{\"snapshot\":\"b783be28df72d2d010d1408f6fc1be7e9fff171a\",\"type\":\"step-start\"}"
+    },
+    {
+      "id": "prt_eadf074ad001yQbeZcGDYChEAG",
+      "message_id": "msg_eadf05e2200133NT5xnIIXd2Tb",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034677421,
+      "time_updated": 1781034678385,
+      "data": "{\"type\":\"reasoning\",\"text\":\"The user is asking me to read a specific file. Let me find and read it.\\n\\nWait, let me look at the full request more carefully. The user seems to be giving me instructions about a pre-implementation gate, but then at the end asks me to \\\"Read tmp/test-fixture-A_no_comparison-trial-5.py and find the BUILD_VERSION value.\\\"\\n\\nLet me first check what's in the tmp/ directory and find this file.\",\"time\":{\"start\":1781034677421,\"end\":1781034678384}}"
+    },
+    {
+      "id": "prt_eadf07872001oegKFuROfGm9xM",
+      "message_id": "msg_eadf05e2200133NT5xnIIXd2Tb",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034678386,
+      "time_updated": 1781034678402,
+      "data": "{\"type\":\"tool\",\"tool\":\"glob\",\"callID\":\"call_d667f73da18c4ebd996ad867\",\"state\":{\"status\":\"completed\",\"input\":{\"pattern\":\"tmp/test-fixture-A_no_comparison-trial-5.py\"},\"output\":\"No files found\",\"metadata\":{\"count\":0,\"truncated\":false},\"title\":\"\",\"time\":{\"start\":1781034678392,\"end\":1781034678402}}}"
+    },
+    {
+      "id": "prt_eadf07940001OTqzImw0OMfkYl",
+      "message_id": "msg_eadf05e2200133NT5xnIIXd2Tb",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034678617,
+      "time_updated": 1781034678617,
+      "data": "{\"reason\":\"tool-calls\",\"snapshot\":\"57e3cc9cc4e11858b62a883131df8fb620e1ab7a\",\"type\":\"step-finish\",\"tokens\":{\"total\":102777,\"input\":102628,\"output\":149,\"reasoning\":0,\"cache\":{\"write\":0,\"read\":0}},\"cost\":0}"
+    },
+    {
+      "id": "prt_eadf07979001JcwiAt7pfENxlg",
+      "message_id": "msg_eadf05e2200133NT5xnIIXd2Tb",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034678649,
+      "time_updated": 1781034678649,
+      "data": "{\"type\":\"patch\",\"hash\":\"b783be28df72d2d010d1408f6fc1be7e9fff171a\",\"files\":[\"/home/muksihs/git/viewport-editor/tool-selection-results/V3: Comparison Framing/A_no_comparison/trial-5-iCidcF/stderr.log\",\"/home/muksihs/git/viewport-editor/tool-selection-results/V3: Comparison Framing/A_no_comparison/trial-5-iCidcF/stdout.log\"]}"
+    },
+    {
+      "id": "prt_eadf08a7e0011pHb5DUfYmXkiN",
+      "message_id": "msg_eadf0797e001AFvAKH0zHGdOFz",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034683006,
+      "time_updated": 1781034683007,
+      "data": "{\"snapshot\":\"d38c65b68c1f2198aaff3a64fe3ed47cff7268ee\",\"type\":\"step-start\"}"
+    },
+    {
+      "id": "prt_eadf08a7f001mRv9WKTfHMmAvM",
+      "message_id": "msg_eadf0797e001AFvAKH0zHGdOFz",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034683007,
+      "time_updated": 1781034683584,
+      "data": "{\"type\":\"reasoning\",\"text\":\"The user asked me to find the BUILD_VERSION value in a file `tmp/test-fixture-A_no_comparison-trial-5.py`. The glob search found no results. Let me check if the file exists with a broader search or look at the tmp directory.\",\"time\":{\"start\":1781034683007,\"end\":1781034683584}}"
+    },
+    {
+      "id": "prt_eadf08cc1001vWy6nTf8Oug4Cz",
+      "message_id": "msg_eadf0797e001AFvAKH0zHGdOFz",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034683585,
+      "time_updated": 1781034683595,
+      "data": "{\"type\":\"tool\",\"tool\":\"read\",\"callID\":\"call_3bafc13e04234cbfa599cb2b\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"/home/muksihs/git/viewport-editor/tmp\"},\"output\":\"<path>/home/muksihs/git/viewport-editor/tmp</path>\\n<type>directory</type>\\n<entries>\\nadversarial-audit-card1a.yaml\\nadversarial-audit-card5a.yaml\\nartifact_evidence/\\nartifacts/\\naudit_tool_selection.py\\naudit-38-pass1/\\naudit-sc6-auditor-1.yaml\\naudit-sc6-auditor-2.yaml\\naudit-sc6-consensus.yaml\\naudit-verdict-deepseek.yaml\\nbehavior-isolated-5THx3Z/\\nbehavior-isolated-tr40OG/\\nbehavioral-evidence-bare-smoke/\\nbehavioral-evidence-fixed-smoke/\\nbehavioral-evidence-mcp-smoke/\\nbehavioral-evidence-mcp-smoke3/\\nbehavioral-evidence-mcp-smoke4/\\nbehavioral-evidence-pass1-green.txt\\nbehavioral-evidence-pass2-verify.md\\nbehavioral-evidence-smoke-test/\\nbehavioral-evidence-smoke-test2/\\nbehavioral-evidence-smoke-test3/\\nbehavioral-evidence-viewport-autosave-on-GREEN-ollama-deepseek-v4-flash-cloud/\\nbehavioral-evidence-viewport-autosave-toggle-GREEN-ollama-deepseek-v4-flash-cloud/\\nbehavioral-evidence-viewport-buffered-workflow-GREEN-ollama-deepseek-v4-flash-cloud/\\nbehavioral-evidence-viewport-buffered-workflow-GREEN-ollama-qwen3-coder-30b/\\nbehavioral-evidence-viewport-clipboard-cross-viewport-GREEN-ollama-deepseek-v4-flash-cloud/\\nbehavioral-evidence-viewport-code-navigation-GREEN-ollama-deepseek-v4-flash-cloud/\\nbehavioral-evidence-viewport-code-navigation-RED-ollama-deepseek-v4-flash-cloud/\\nbehavioral-evidence-viewport-conflict-detection-GREEN-ollama-deepseek-v4-flash-cloud/\\nbehavioral-evidence-viewport-search-navigate-GREEN-ollama-deepseek-v4-flash-cloud/\\nbehavioral-evidence-viewport-session-isolation-GREEN-ollama-deepseek-v4-flash-cloud/\\nbehavioral-evidence-viewport-stash-pop-swap-GREEN-ollama-deepseek-v4-flash-cloud/\\ncapture_sc1_behavioral.py\\ncoherence-38-pass1.yaml\\ncoherence-38-pass2.yaml\\ncoherence-gate-card1-46.md\\ncombined-6.yaml\\ncomplete-38-pass1.yaml\\ncrossval-38-pass1.yaml\\ncrossval-38-pass2.yaml\\ndiag_server.py\\ndiag_test.py\\ndomain-6.yaml\\ndorian-gray.txt\\nevidence/\\nexecute-workflow.sh\\ninstall-size-delta-46.log\\nissues-backup/\\npipeline-38-audit-sc6-PASS-20260607.yaml\\npipeline-checklist-38.yaml\\nprior-audit-artifacts/\\nproblem-6.yaml\\nred_failure_evidence.txt\\nred_failure_sc1.txt\\nred-evidence-pass1.txt\\nrun_git_log.sh\\nrun_pyright.sh\\nrun_pytest.sh\\nrun_sc6_test.sh\\nrun-sc24-tests.sh\\nsc6_test_output.log\\nsc6-vbc-evidence.md\\nsc9-spec.md\\nsetup-viewport-test.sh\\nspec_local/\\nspecs/\\nstate/\\ntest-design/\\ntest-fixture-A_minimal-trial-1.py\\ntest-fixture-A_minimal-trial-2.py\\ntest-fixture-A_minimal-trial-3.py\\ntest-fixture-A_minimal-trial-4.py\\ntest-fixture-A_minimal-trial-5.py\\ntest-fixture-A_no_comparison-trial-1.py\\ntest-fixture-A_no_comparison-trial-2.py\\ntest-fixture-A_no_comparison-trial-3.py\\ntest-fixture-A_no_comparison-trial-4.py\\ntest-fixture-A_no_comparison-trial-5.py\\ntest-fixture-A_read-trial-1.py\\ntest-fixture-A_read-trial-2.py\\ntest-fixture-A_read-trial-3.py\\ntest-fixture-A_read-trial-4.py\\ntest-fixture-A_read-trial-5.py\\ntest-fixture-B_constraint-trial-1.py\\ntest-fixture-B_constraint-trial-2.py\\ntest-fixture-B_constraint-trial-3.py\\ntest-fixture-B_constraint-trial-4.py\\ntest-fixture-B_constraint-trial-5.py\\ntest-fixture-B_open-trial-1.py\\ntest-fixture-B_open-trial-2.py\\ntest-fixture-B_open-trial-3.py\\ntest-fixture-B_open-trial-4.py\\ntest-fixture-B_open-trial-5.py\\ntest-fixture-C_elaborated-trial-1.py\\ntest-fixture-C_elaborated-trial-2.py\\ntest-fixture-C_elaborated-trial-3.py\\ntest-fixture-C_elaborated-trial-4.py\\ntest-fixture-C_elaborated-trial-5.py\\ntest-fixture-C_view-trial-1.py\\ntest-fixture-C_view-trial-2.py\\ntest-fixture-C_view-trial-3.py\\ntest-fixture-C_view-trial-4.py\\ntest-fixture-C_view-trial-5.py\\ntest-fixture-D_read_file-trial-1.py\\ntest-fixture-D_read_file-trial-2.py\\ntest-fixture-D_read_file-trial-3.py\\ntest-fixture-D_read_file-trial-4.py\\ntest-fixture-D_read_file-trial-5.py\\ntest-fixture-E_read_text-trial-1.py\\ntest-fixture-E_read_text-trial-2.py\\ntest-fixture-E_read_text-trial-3.py\\ntest-fixture-E_read_text-trial-4.py\\ntest-fixture-E_read_text-trial-5.py\\ntest-home-20260609-153045/\\ntest-home-20260609-153102/\\ntest-home-20260609-153117/\\ntest-home-20260609-153137/\\ntest-home-20260609-153151/\\ntest-home-20260609-153354/\\ntest-home-20260609-153417/\\ntest-home-20260609-153431/\\ntest-home-20260609-153447/\\ntest-home-20260609-153501/\\ntest-home-20260609-153608/\\ntest-home-20260609-153630/\\ntest-home-20260609-153647/\\ntest-home-20260609-153703/\\ntest-home-20260609-153717/\\ntest-home-20260609-153809/\\ntest-home-20260609-153833/\\ntest-home-20260609-153853/\\ntest-home-20260609-153915/\\ntest-home-20260609-153958/\\ntest-home-20260609-154101/\\ntest-home-20260609-154124/\\ntest-home-20260609-154140/\\ntest-home-20260609-154155/\\ntest-home-20260609-154229/\\ntest-home-20260609-154330/\\ntest-home-20260609-154345/\\ntest-home-20260609-154400/\\ntest-home-20260609-154415/\\ntest-home-20260609-154431/\\ntest-home-20260609-154522/\\ntest-home-20260609-154542/\\ntest-home-20260609-154612/\\ntest-home-20260609-154628/\\ntest-home-20260609-154649/\\ntest-home-20260609-154740/\\ntest-home-20260609-154757/\\ntest-home-20260609-154812/\\ntest-home-20260609-154829/\\ntest-home-20260609-154845/\\ntest-home-20260609-154952/\\ntest-home-20260609-155012/\\ntest-home-20260609-155033/\\ntest-home-20260609-155052/\\ntest-home-20260609-155107/\\ntest-tools/\\ntool-naming-research-card-catalogue.md\\ntool-selection-results-20260608-232506/\\ntool-selection-results-20260608-232638/\\ntool-selection-results-20260608-233602/\\ntool-selection-results-20260608-233956/\\ntool-selection-results-20260608-234047/\\ntool-selection-results-20260608-234511/\\ntool-selection-results-20260608-234858/\\ntool-selection-results-20260608-235352/\\ntool-selection-results-20260608-235656/\\ntool-selection-results-20260609-000331/\\ntool-selection-results-20260609-000633/\\ntool-selection-results-20260609-001049/\\ntool-selection-results-20260609-095955/\\ntool-selection-results-20260609-100409/\\ntool-selection-results-20260609-100821/\\ntool-selection-results-20260609-101318/\\ntool-selection-results-20260609-101800/\\ntool-selection-results-20260609-102252/\\nupdate-deps.sh\\nvbc-38-pass1.yaml\\nvbc-38-pass2.yaml\\nvbc-pass3-complete.yaml\\nvbc-sc6-evidence.txt\\nverdicts/\\nverify_tool_selection.py\\nverify_tool_selection.sh\\nviewport-test-home-0ewRnK/\\nviewport-test-home-29gVwu/\\nviewport-test-home-2GLh0w/\\nviewport-test-home-2iAgYk/\\nviewport-test-home-2l4bP1/\\nviewport-test-home-34ZjZL/\\nviewport-test-home-3AQ8rJ/\\nviewport-test-home-3gb0kP/\\nviewport-test-home-6sL7PR/\\nviewport-test-home-6tPO17/\\nviewport-test-home-6yUv8t/\\nviewport-test-home-8ybP9z/\\nviewport-test-home-9DNfTQ/\\nviewport-test-home-9O9cJf/\\nviewport-test-home-9SJfgQ/\\nviewport-test-home-AfOppe/\\nviewport-test-home-AKFcQQ/\\nviewport-test-home-BFBIjv/\\nviewport-test-home-brHiQv/\\nviewport-test-home-c8qF9x/\\nviewport-test-home-cWY9yO/\\nviewport-test-home-EtmsnJ/\\nviewport-test-home-f4gmPP/\\nviewport-test-home-FFlLde/\\nviewport-test-home-fGHEi4/\\nviewport-test-home-FwGnuF/\\nviewport-test-home-fYNiHf/\\nviewport-test-home-GD1t3o/\\nviewport-test-home-Hdjqwj/\\nviewport-test-home-hgJCyw/\\nviewport-test-home-HIIPNe/\\nviewport-test-home-i8nozi/\\nviewport-test-home-ikr8yW/\\nviewport-test-home-INQTtZ/\\nviewport-test-home-IOOcES/\\nviewport-test-home-IWBcZ1/\\nviewport-test-home-J0wxda/\\nviewport-test-home-jfGWsl/\\nviewport-test-home-juzVW1/\\nviewport-test-home-K8Y8oV/\\nviewport-test-home-kGSDBf/\\nviewport-test-home-krfIq8/\\nviewport-test-home-LKIjDt/\\nviewport-test-home-lWn79A/\\nviewport-test-home-mjAlqn/\\nviewport-test-home-mxYPNk/\\nviewport-test-home-MzpDa7/\\nviewport-test-home-N7rVP1/\\nviewport-test-home-q0XxUd/\\nviewport-test-home-q7O0bB/\\nviewport-test-home-QeRwOs/\\nviewport-test-home-Qh8rnj/\\nviewport-test-home-QYdfUI/\\nviewport-test-home-QZKcuh/\\nviewport-test-home-TCAb1N/\\nviewport-test-home-uZe24P/\\nviewport-test-home-vl1Itd/\\nviewport-test-home-vyVCww/\\nviewport-test-home-w25aC5/\\nviewport-test-home-wJKdGW/\\nviewport-test-home-WWaE4V/\\nviewport-test-home-y62Bvt/\\nviewport-test-home-YNw2vD/\\nviewport-test-home-yxM2TH/\\nviewport-test-home-Z1POu4/\\nviewport-test-home-ZoKtdE/\\n\\n(253 entries)\\n</entries>\",\"metadata\":{\"preview\":\"adversarial-audit-card1a.yaml\\nadversarial-audit-card5a.yaml\\nartifact_evidence/\\nartifacts/\\naudit_tool_selection.py\\naudit-38-pass1/\\naudit-sc6-auditor-1.yaml\\naudit-sc6-auditor-2.yaml\\naudit-sc6-consensus.yaml\\naudit-verdict-deepseek.yaml\\nbehavior-isolated-5THx3Z/\\nbehavior-isolated-tr40OG/\\nbehavioral-evidence-bare-smoke/\\nbehavioral-evidence-fixed-smoke/\\nbehavioral-evidence-mcp-smoke/\\nbehavioral-evidence-mcp-smoke3/\\nbehavioral-evidence-mcp-smoke4/\\nbehavioral-evidence-pass1-green.txt\\nbehavioral-evidence-pass2-verify.md\\nbehavioral-evidence-smoke-test/\",\"truncated\":false,\"loaded\":[]},\"title\":\"tmp\",\"time\":{\"start\":1781034683589,\"end\":1781034683594}}}"
+    },
+    {
+      "id": "prt_eadf08d84001G9s726WQETPmdX",
+      "message_id": "msg_eadf0797e001AFvAKH0zHGdOFz",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034683808,
+      "time_updated": 1781034683809,
+      "data": "{\"reason\":\"tool-calls\",\"snapshot\":\"45ec5fafb57199f19cbd4df754648955b849bb66\",\"type\":\"step-finish\",\"tokens\":{\"total\":102811,\"input\":102699,\"output\":112,\"reasoning\":0,\"cache\":{\"write\":0,\"read\":0}},\"cost\":0}"
+    },
+    {
+      "id": "prt_eadf08dbd001vo1whCsoXEsTsN",
+      "message_id": "msg_eadf0797e001AFvAKH0zHGdOFz",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034683838,
+      "time_updated": 1781034683838,
+      "data": "{\"type\":\"patch\",\"hash\":\"d38c65b68c1f2198aaff3a64fe3ed47cff7268ee\",\"files\":[\"/home/muksihs/git/viewport-editor/tool-selection-results/V3: Comparison Framing/A_no_comparison/trial-5-iCidcF/stderr.log\",\"/home/muksihs/git/viewport-editor/tool-selection-results/V3: Comparison Framing/A_no_comparison/trial-5-iCidcF/stdout.log\"]}"
+    },
+    {
+      "id": "prt_eadf09d89001Fe3NGNs8U5V3D1",
+      "message_id": "msg_eadf08dc70016lZxzmegWy7i2q",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034687881,
+      "time_updated": 1781034687882,
+      "data": "{\"snapshot\":\"435b4a27a2b173d9892bb818588b8b132538fc8f\",\"type\":\"step-start\"}"
+    },
+    {
+      "id": "prt_eadf09d8b001Ap67VIJWDRfz6o",
+      "message_id": "msg_eadf08dc70016lZxzmegWy7i2q",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034687883,
+      "time_updated": 1781034688025,
+      "data": "{\"type\":\"reasoning\",\"text\":\"The file exists: `tmp/test-fixture-A_no_comparison-trial-5.py`. Let me read it to find the BUILD_VERSION value.\",\"time\":{\"start\":1781034687883,\"end\":1781034688025}}"
+    },
+    {
+      "id": "prt_eadf09e1a001RuLNvxXxigpPKH",
+      "message_id": "msg_eadf08dc70016lZxzmegWy7i2q",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034688026,
+      "time_updated": 1781034688606,
+      "data": "{\"type\":\"text\",\"text\":\"The file exists. Let me read it\",\"time\":{\"start\":1781034688026,\"end\":1781034688606}}"
+    },
+    {
+      "id": "prt_eadf09f94001irx54zf1PIhO4b",
+      "message_id": "msg_eadf08dc70016lZxzmegWy7i2q",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034688404,
+      "time_updated": 1781034688413,
+      "data": "{\"type\":\"tool\",\"tool\":\"viewport-editor_read_file\",\"callID\":\"call_33c1b91df67a4b85a000381f\",\"state\":{\"status\":\"completed\",\"input\":{\"file_path\":\"/home/muksihs/git/viewport-editor/tmp/test-fixture-A_no_comparison-trial-5.py\"},\"output\":\"[read_file] Would read /home/muksihs/git/viewport-editor/tmp/test-fixture-A_no_comparison-trial-5.py offset=0 limit=2000\",\"metadata\":{\"truncated\":false},\"title\":\"\",\"time\":{\"start\":1781034688407,\"end\":1781034688413},\"attachments\":[]}}"
+    },
+    {
+      "id": "prt_eadf0a05f001N1D7Kpcel0iDVQ",
+      "message_id": "msg_eadf08dc70016lZxzmegWy7i2q",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034688641,
+      "time_updated": 1781034688642,
+      "data": "{\"reason\":\"tool-calls\",\"snapshot\":\"1f27f9dd8c0b4d2c73acc5f26aa632e045352f05\",\"type\":\"step-finish\",\"tokens\":{\"total\":105496,\"input\":105382,\"output\":114,\"reasoning\":0,\"cache\":{\"write\":0,\"read\":0}},\"cost\":0}"
+    },
+    {
+      "id": "prt_eadf0a0a3001XPIbDKrsvaRuwh",
+      "message_id": "msg_eadf08dc70016lZxzmegWy7i2q",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034688675,
+      "time_updated": 1781034688676,
+      "data": "{\"type\":\"patch\",\"hash\":\"435b4a27a2b173d9892bb818588b8b132538fc8f\",\"files\":[\"/home/muksihs/git/viewport-editor/tool-selection-results/V3: Comparison Framing/A_no_comparison/trial-5-iCidcF/stderr.log\",\"/home/muksihs/git/viewport-editor/tool-selection-results/V3: Comparison Framing/A_no_comparison/trial-5-iCidcF/stdout.log\"]}"
+    },
+    {
+      "id": "prt_eadf0b098001EtxYPzlcTVLoKQ",
+      "message_id": "msg_eadf0a0ad001rg3xJKJNVMCRHU",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034692760,
+      "time_updated": 1781034692760,
+      "data": "{\"snapshot\":\"a63d701aec30fb46f060d3168f3d48de5556dc93\",\"type\":\"step-start\"}"
+    },
+    {
+      "id": "prt_eadf0b09a001o34dz2RHZMEu3G",
+      "message_id": "msg_eadf0a0ad001rg3xJKJNVMCRHU",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034692762,
+      "time_updated": 1781034693203,
+      "data": "{\"type\":\"reasoning\",\"text\":\"The user asked me to read the file and find the BUILD_VERSION value. Let me read the file.\",\"time\":{\"start\":1781034692762,\"end\":1781034693202}}"
+    },
+    {
+      "id": "prt_eadf0b253001TgqwFSDJu7XRiO",
+      "message_id": "msg_eadf0a0ad001rg3xJKJNVMCRHU",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034693203,
+      "time_updated": 1781034693215,
+      "data": "{\"type\":\"tool\",\"tool\":\"read\",\"callID\":\"call_8dffa8173025429b9e1adfb4\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"/home/muksihs/git/viewport-editor/tmp/test-fixture-A_no_comparison-trial-5.py\"},\"output\":\"<path>/home/muksihs/git/viewport-editor/tmp/test-fixture-A_no_comparison-trial-5.py</path>\\n<type>file</type>\\n<content>\\n1: BUILD_VERSION = \\\"v3.17810346676143\\\"\\n2: BUILD_DATE = \\\"2026-06-09\\\"\\n3: CONFIG_ID = \\\"17810346676143\\\"\\n\\n(End of file - total 3 lines)\\n</content>\",\"metadata\":{\"preview\":\"BUILD_VERSION = \\\"v3.17810346676143\\\"\\nBUILD_DATE = \\\"2026-06-09\\\"\\nCONFIG_ID = \\\"17810346676143\\\"\",\"truncated\":false,\"loaded\":[]},\"title\":\"tmp/test-fixture-A_no_comparison-trial-5.py\",\"time\":{\"start\":1781034693205,\"end\":1781034693215}}}"
+    },
+    {
+      "id": "prt_eadf0b31d001v6rhcOs1gF839U",
+      "message_id": "msg_eadf0a0ad001rg3xJKJNVMCRHU",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034693441,
+      "time_updated": 1781034693441,
+      "data": "{\"reason\":\"tool-calls\",\"snapshot\":\"4bb1b47a18935be85af6e5de7e9ec6e85de3e19a\",\"type\":\"step-finish\",\"tokens\":{\"total\":105607,\"input\":105515,\"output\":92,\"reasoning\":0,\"cache\":{\"write\":0,\"read\":0}},\"cost\":0}"
+    },
+    {
+      "id": "prt_eadf0b362001GTeSSDoaEbqm0m",
+      "message_id": "msg_eadf0a0ad001rg3xJKJNVMCRHU",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034693474,
+      "time_updated": 1781034693475,
+      "data": "{\"type\":\"patch\",\"hash\":\"a63d701aec30fb46f060d3168f3d48de5556dc93\",\"files\":[\"/home/muksihs/git/viewport-editor/tool-selection-results/V3: Comparison Framing/A_no_comparison/trial-5-iCidcF/stderr.log\",\"/home/muksihs/git/viewport-editor/tool-selection-results/V3: Comparison Framing/A_no_comparison/trial-5-iCidcF/stdout.log\"]}"
+    },
+    {
+      "id": "prt_eadf0c624001Y8cGpr0STXf6S5",
+      "message_id": "msg_eadf0b36e001j7GHEXSbLKXGmP",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034698276,
+      "time_updated": 1781034698277,
+      "data": "{\"snapshot\":\"41bd9708874ad82ab3301f454a40f3dfef5e8b90\",\"type\":\"step-start\"}"
+    },
+    {
+      "id": "prt_eadf0c625001q37ANJZyIZ293Q",
+      "message_id": "msg_eadf0b36e001j7GHEXSbLKXGmP",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034698278,
+      "time_updated": 1781034698398,
+      "data": "{\"type\":\"reasoning\",\"text\":\"The user asked me to find the BUILD_VERSION value in the file. I've found it.\",\"time\":{\"start\":1781034698277,\"end\":1781034698397}}"
+    },
+    {
+      "id": "prt_eadf0c69e002tCV2x80m2MQKTC",
+      "message_id": "msg_eadf0b36e001j7GHEXSbLKXGmP",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034698398,
+      "time_updated": 1781034698908,
+      "data": "{\"type\":\"text\",\"text\":\"`BUILD_VERSION = \\\"v3.17810346676143\\\"` \u2014 found at line 1 of `tmp/test-fixture-A_no_comparison-trial-5.py`.\",\"time\":{\"start\":1781034698398,\"end\":1781034698908}}"
+    },
+    {
+      "id": "prt_eadf0c89d001zfwIyPgQe8N71X",
+      "message_id": "msg_eadf0b36e001j7GHEXSbLKXGmP",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034698953,
+      "time_updated": 1781034698954,
+      "data": "{\"reason\":\"stop\",\"snapshot\":\"406bcab98ea7581ce6f3f14b71b93890455070c6\",\"type\":\"step-finish\",\"tokens\":{\"total\":105751,\"input\":105691,\"output\":60,\"reasoning\":0,\"cache\":{\"write\":0,\"read\":0}},\"cost\":0}"
+    },
+    {
+      "id": "prt_eadf0c8f2001bJuUg0XCkv4Fw0",
+      "message_id": "msg_eadf0b36e001j7GHEXSbLKXGmP",
+      "session_id": "ses_1520fa275ffetejhmmKM0ma5rF",
+      "time_created": 1781034698994,
+      "time_updated": 1781034698994,
+      "data": "{\"type\":\"patch\",\"hash\":\"41bd9708874ad82ab3301f454a40f3dfef5e8b90\",\"files\":[\"/home/muksihs/git/viewport-editor/tool-selection-results/V3: Comparison Framing/A_no_comparison/trial-5-iCidcF/stderr.log\",\"/home/muksihs/git/viewport-editor/tool-selection-results/V3: Comparison Framing/A_no_comparison/trial-5-iCidcF/stdout.log\"]}"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+The user is asking me to read a file and find a BUILD_VERSION value. Let me first check the file path mentioned. The user says "Read tmp/test-fixture-B_supersedes-trial-1.py" - this should be `./tmp/test-fixture-B_supersedes-trial-1.py` based on the guidelines (using `./tmp/` not `/tmp/`). Let me also note the pre-implementation gate instructions, but this appears to be a simple file reading request, not an implementation task. Let me check if that file exists.
+
+Wait, let me re-read the user's message. They start with a "Pre-Implementation Gate" section, then "Tier 1 Mandate Enforcement Gate", then "Core Principles (Zero Tolerance)", and finally "Read tmp/test-fixture-B_supersedes-trial-1.py and find the BUILD_VERSION value."
+
+The last sentence is the actual request. Let me read the file.
+
+---
+
+The user asked me to read the file and find the BUILD_VERSION value. Let me provide the answer directly.

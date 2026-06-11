@@ -374,6 +374,62 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
             lines.append(f"  size: {entry_data['size']}")
         return "\n".join(lines)
 
+    @mcp.tool()
+    def write_file(
+        ctx: Context,
+        file_path: str,
+        content: str,
+    ) -> str:
+        """Write file contents to the local filesystem through a staged buffer with
+        automated viewport lifecycle management. Opens a viewport, replaces the
+        entire buffer content, saves to disk, and closes the viewport. Conflict
+        detection catches external file modifications before overwrite. New files
+        are created automatically. Use this for creating new files or full-file
+        overwrites."""
+        session_id = ctx.session_id
+        if _manager is None:
+            return "error: server not initialized"
+
+        session = get_session(session_id)
+        if session is None:
+            create_session(session_id)
+
+        # Open existing file or create new one
+        try:
+            entry = _manager.open(
+                session_id=session_id,
+                file_path=file_path,
+            )
+        except FileNotFoundError_:
+            try:
+                entry = _manager.open_new(session_id, file_path)
+            except (ViewportError, FileExistsError) as exc:
+                return f"error: {exc}"
+        except (ViewportError, PermissionError) as exc:
+            return f"error: {exc}"
+
+        # Replace entire buffer content
+        _manager._buffer_mgr.set_content(session_id, entry.file, content)
+        entry.dirty = True
+
+        # Check for external conflict before save
+        conflict_warning = _manager.check_conflict(
+            entry.file, entry.mtime, entry.size
+        )
+        if conflict_warning and not entry.autosave:
+            warning_str = _manager.format_conflict_warning(conflict_warning)
+            return f"error: conflict detected\n{warning_str}"
+
+        # Flush to disk and close viewport
+        _manager.flush_entry(session_id, entry)
+        _manager.close(session_id, entry.viewport_id)
+
+        return (
+            f"written {len(content)} bytes to {file_path}:"
+            f"\n  mtime: {entry.mtime}"
+            f"\n  size: {entry.size}"
+        )
+
     return mcp
 
 

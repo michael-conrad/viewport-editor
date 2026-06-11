@@ -1,0 +1,92 @@
+{
+  "parts": [
+    {
+      "id": "prt_eadf69e79001oYhcQI5G6Ri23f",
+      "message_id": "msg_eadf69e78001T3xg4cSytlISgV",
+      "session_id": "ses_1520961bdfferPlmUo0HH2gTzL",
+      "time_created": 1781035081344,
+      "time_updated": 1781035081345,
+      "data": "{\"type\":\"text\",\"text\":\"\\\"Read tmp/test-fixture-B_supersedes-trial-2.py and find the BUILD_VERSION value. Use a file reading tool.\\\"\\n\"}"
+    },
+    {
+      "id": "prt_eadf6b39e001379rHcVHww2q46",
+      "message_id": "msg_eadf69ec4001Reo0fO4zi0bwNi",
+      "session_id": "ses_1520961bdfferPlmUo0HH2gTzL",
+      "time_created": 1781035086750,
+      "time_updated": 1781035086751,
+      "data": "{\"snapshot\":\"f5afadf3efb0be0ecc245552a4ce9a20137cb355\",\"type\":\"step-start\"}"
+    },
+    {
+      "id": "prt_eadf6b39f001YlxvICrfpNww2N",
+      "message_id": "msg_eadf69ec4001Reo0fO4zi0bwNi",
+      "session_id": "ses_1520961bdfferPlmUo0HH2gTzL",
+      "time_created": 1781035086751,
+      "time_updated": 1781035089540,
+      "data": "{\"type\":\"reasoning\",\"text\":\"The user is asking me to read a specific file. Let me first evaluate the available skills against this request.\\n\\nThis is a simple file read request - no skills match this directly (no implementation, no authorization needed, just a file read). Let me read the file they're asking about.\\n\\nThe file path is `tmp/test-fixture-B_supersedes-trial-2.py`.\\n\\nLet me read it.\",\"time\":{\"start\":1781035086751,\"end\":1781035089539}}"
+    },
+    {
+      "id": "prt_eadf6be84001nOvniJySWBm0za",
+      "message_id": "msg_eadf69ec4001Reo0fO4zi0bwNi",
+      "session_id": "ses_1520961bdfferPlmUo0HH2gTzL",
+      "time_created": 1781035089540,
+      "time_updated": 1781035089557,
+      "data": "{\"type\":\"tool\",\"tool\":\"read\",\"callID\":\"call_4034c05854d64112be954dd4\",\"state\":{\"status\":\"completed\",\"input\":{\"filePath\":\"/home/muksihs/git/viewport-editor/tmp/test-fixture-B_supersedes-trial-2.py\"},\"output\":\"<path>/home/muksihs/git/viewport-editor/tmp/test-fixture-B_supersedes-trial-2.py</path>\\n<type>file</type>\\n<content>\\n1: BUILD_VERSION = \\\"v3.17810350772184\\\"\\n2: BUILD_DATE = \\\"2026-06-09\\\"\\n3: CONFIG_ID = \\\"17810350772184\\\"\\n\\n(End of file - total 3 lines)\\n</content>\",\"metadata\":{\"preview\":\"BUILD_VERSION = \\\"v3.17810350772184\\\"\\nBUILD_DATE = \\\"2026-06-09\\\"\\nCONFIG_ID = \\\"17810350772184\\\"\",\"truncated\":false,\"loaded\":[]},\"title\":\"tmp/test-fixture-B_supersedes-trial-2.py\",\"time\":{\"start\":1781035089545,\"end\":1781035089557}}}"
+    },
+    {
+      "id": "prt_eadf6bf60001G1946H4SsJ6K9K",
+      "message_id": "msg_eadf69ec4001Reo0fO4zi0bwNi",
+      "session_id": "ses_1520961bdfferPlmUo0HH2gTzL",
+      "time_created": 1781035089782,
+      "time_updated": 1781035089782,
+      "data": "{\"reason\":\"tool-calls\",\"snapshot\":\"ba64a69448af2049c6c6b9f32c3b0d9181a5c2d9\",\"type\":\"step-finish\",\"tokens\":{\"total\":102782,\"input\":102628,\"output\":154,\"reasoning\":0,\"cache\":{\"write\":0,\"read\":0}},\"cost\":0}"
+    },
+    {
+      "id": "prt_eadf6bf8c001YK92l0zhRUeCdS",
+      "message_id": "msg_eadf69ec4001Reo0fO4zi0bwNi",
+      "session_id": "ses_1520961bdfferPlmUo0HH2gTzL",
+      "time_created": 1781035089804,
+      "time_updated": 1781035089805,
+      "data": "{\"type\":\"patch\",\"hash\":\"f5afadf3efb0be0ecc245552a4ce9a20137cb355\",\"files\":[\"/home/muksihs/git/viewport-editor/tool-selection-results/V6: Supersedes Framing/B_supersedes/trial-2-XZi7f0/stderr.log\",\"/home/muksihs/git/viewport-editor/tool-selection-results/V6: Supersedes Framing/B_supersedes/trial-2-XZi7f0/stdout.log\"]}"
+    },
+    {
+      "id": "prt_eadf6cd98001kYHA1pPKaMhtdP",
+      "message_id": "msg_eadf6bf90001GTjswGffqdeymB",
+      "session_id": "ses_1520961bdfferPlmUo0HH2gTzL",
+      "time_created": 1781035093401,
+      "time_updated": 1781035093401,
+      "data": "{\"snapshot\":\"d759ad4bcf0b2f59006d89bc5242906f41deeb09\",\"type\":\"step-start\"}"
+    },
+    {
+      "id": "prt_eadf6cd99002K1S3I7iiUnRDds",
+      "message_id": "msg_eadf6bf90001GTjswGffqdeymB",
+      "session_id": "ses_1520961bdfferPlmUo0HH2gTzL",
+      "time_created": 1781035093401,
+      "time_updated": 1781035093527,
+      "data": "{\"type\":\"reasoning\",\"text\":\"The file has been read. The BUILD_VERSION value is \\\"v3.17810350772184\\\".\",\"time\":{\"start\":1781035093401,\"end\":1781035093526}}"
+    },
+    {
+      "id": "prt_eadf6ce18001xwkEv5Zz0lLC9k",
+      "message_id": "msg_eadf6bf90001GTjswGffqdeymB",
+      "session_id": "ses_1520961bdfferPlmUo0HH2gTzL",
+      "time_created": 1781035093528,
+      "time_updated": 1781035094044,
+      "data": "{\"type\":\"text\",\"text\":\"`BUILD_VERSION = \\\"v3.17810350772184\\\"` at line 1 of `tmp/test-fixture-B_supersedes-trial-2.py`.\",\"time\":{\"start\":1781035093528,\"end\":1781035094043}}"
+    },
+    {
+      "id": "prt_eadf6d01d001NBcUgA7ff651Ed",
+      "message_id": "msg_eadf6bf90001GTjswGffqdeymB",
+      "session_id": "ses_1520961bdfferPlmUo0HH2gTzL",
+      "time_created": 1781035094069,
+      "time_updated": 1781035094069,
+      "data": "{\"reason\":\"stop\",\"snapshot\":\"6474c8ebd5db82d5c2fd07a1ef1b514f7234431b\",\"type\":\"step-finish\",\"tokens\":{\"total\":102864,\"input\":102804,\"output\":60,\"reasoning\":0,\"cache\":{\"write\":0,\"read\":0}},\"cost\":0}"
+    },
+    {
+      "id": "prt_eadf6d050001cqerOhI9fSBfLn",
+      "message_id": "msg_eadf6bf90001GTjswGffqdeymB",
+      "session_id": "ses_1520961bdfferPlmUo0HH2gTzL",
+      "time_created": 1781035094097,
+      "time_updated": 1781035094097,
+      "data": "{\"type\":\"patch\",\"hash\":\"d759ad4bcf0b2f59006d89bc5242906f41deeb09\",\"files\":[\"/home/muksihs/git/viewport-editor/tool-selection-results/V6: Supersedes Framing/B_supersedes/trial-2-XZi7f0/stderr.log\",\"/home/muksihs/git/viewport-editor/tool-selection-results/V6: Supersedes Framing/B_supersedes/trial-2-XZi7f0/stdout.log\"]}"
+    }
+  ]
+}
