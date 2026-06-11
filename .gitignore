@@ -6,3 +6,6 @@ __pycache__/
 .worktrees/
 tmp/
 .srclight/
+.idea/
+tool-selection-results/
+session-ses_*.md
