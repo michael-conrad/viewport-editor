@@ -16,7 +16,7 @@ from typing import Any, AsyncIterator, Optional
 from fastmcp import Context, FastMCP
 
 from .clipboard import ClipboardEntry, apply_copy, apply_cut, apply_paste
-from .exceptions import DiffApplyError, ViewportError
+from .exceptions import DiffApplyError, FileNotFoundError_, ViewportError
 from .file_ops import _resolve_path
 from .session import create_session, get_session, get_session_ids, remove_session
 from .viewport import ViewportManager
@@ -320,6 +320,59 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
             pattern=pattern or "",
             text=text or "",
         )
+
+    @mcp.tool()
+    def read_file(
+        ctx: Context,
+        file_path: str,
+        line_start: int = 1,
+        line_end: int = 100,
+    ) -> str:
+        """Read file contents from the local filesystem into a staged buffer viewport.
+        If the file path does not exist, an error is returned. Supports offset/limit
+        for partial reads. The viewport remains open for follow-up edits. No content
+        touches disk until explicitly confirmed via file:save. Use this for all file
+        reading tasks including config files, source code, and logs."""
+        session_id = ctx.session_id
+        if _manager is None:
+            return "error: server not initialized"
+
+        session = get_session(session_id)
+        if session is None:
+            create_session(session_id)
+
+        try:
+            entry = _manager.open(
+                session_id=session_id,
+                file_path=file_path,
+                line_start=line_start,
+                line_end=line_end,
+            )
+        except (ViewportError, FileNotFoundError, PermissionError) as exc:
+            return f"error: {exc}"
+
+        visible = _manager.get_visible_lines(session_id, entry)
+        entry_data = entry.to_dict()
+
+        content_block = _format_content_block(
+            visible, entry.line_start, entry.display_mode
+        )
+        lines = [
+            f"opened viewport for {entry_data['file']}:",
+            f"  viewport_id: {entry_data['viewport_id']}",
+            f"  file: {entry_data['file']}",
+            f"  line_start: {entry_data['line_start']}",
+            f"  line_end: {entry_data['line_end']}",
+            f"  line_ending: {entry_data['line_ending']!r}",
+            f"  display_mode: {entry_data['display_mode']}",
+            f"  autosave: {entry_data['autosave']}",
+            content_block,
+        ]
+        if entry_data["mtime"] is not None:
+            lines.append(f"  mtime: {entry_data['mtime']}")
+        if entry_data["size"] is not None:
+            lines.append(f"  size: {entry_data['size']}")
+        return "\n".join(lines)
 
     return mcp
 
