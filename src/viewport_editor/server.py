@@ -16,7 +16,7 @@ from typing import Any, AsyncIterator, Optional
 from fastmcp import Context, FastMCP
 
 from .clipboard import ClipboardEntry, apply_copy, apply_cut, apply_paste
-from .exceptions import DiffApplyError, FileNotFoundError_, ViewportError
+from .exceptions import DiffApplyError, EditTargetNotFoundError, FileNotFoundError_, ViewportError
 from .file_ops import _resolve_path
 from .session import create_session, get_session, get_session_ids, remove_session
 from .viewport import ViewportManager
@@ -428,6 +428,60 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
             f"written {len(content)} bytes to {file_path}:"
             f"\n  mtime: {entry.mtime}"
             f"\n  size: {entry.size}"
+        )
+
+    @mcp.tool()
+    def edit_text(
+        ctx: Context,
+        file_path: str,
+        old_text: str,
+        new_text: str,
+    ) -> str:
+        """Perform exact string replacements in files through a staged buffer with
+        automated viewport lifecycle management. Opens a viewport, applies the
+        replacement, saves to disk, and closes the viewport. Conflict detection
+        prevents overwriting externally modified files. For write/edit overlap,
+        use edit_text for targeted changes under 100 characters — use write_file
+        for full-file replacement."""
+        session_id = ctx.session_id
+        if _manager is None:
+            return "error: server not initialized"
+
+        session = get_session(session_id)
+        if session is None:
+            create_session(session_id)
+
+        try:
+            entry = _manager.open(
+                session_id=session_id,
+                file_path=file_path,
+            )
+        except (ViewportError, FileNotFoundError, PermissionError) as exc:
+            return f"error: {exc}"
+
+        try:
+            result = _manager.apply_replace_all(
+                session_id, entry.viewport_id, old_text, new_text
+            )
+        except (ViewportError, EditTargetNotFoundError) as exc:
+            return f"error: {exc}"
+
+        # Check for external conflict before save
+        conflict_warning = _manager.check_conflict(
+            entry.file, entry.mtime, entry.size
+        )
+        if conflict_warning and not entry.autosave:
+            _manager.discard_buffer_changes(session_id, entry.viewport_id)
+            warning_str = _manager.format_conflict_warning(conflict_warning)
+            return f"error: conflict detected\n{warning_str}"
+
+        # Flush to disk and close viewport
+        _manager.flush_entry(session_id, entry)
+        _manager.close(session_id, entry.viewport_id)
+
+        return (
+            f"edit applied to {file_path}:"
+            f"\n  count: {result['count']}"
         )
 
     return mcp

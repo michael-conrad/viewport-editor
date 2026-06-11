@@ -30,7 +30,7 @@ async def test_sc1_read_file_tool_exists(client_session: object) -> None:
     result = await client_session.list_tools()  # type: ignore[attr-defined]
     names = {t.name for t in result.tools}
     assert "read_file" in names, f"read_file not found in tools: {names}"
-    expected = {"read_file", "write_file", "viewport", "edit", "file", "diff", "search", "regex", "clipboard"}
+    expected = {"read_file", "write_file", "edit_text", "viewport", "edit", "file", "diff", "search", "regex", "clipboard"}
     assert names == expected, f"Tool mismatch: {names ^ expected}"
 
 
@@ -152,3 +152,76 @@ async def test_sc10_write_file_closes_viewport(client_session: object) -> None:
     text = result.content[0].text
     # Should have 1 viewport (from read_file), not 2
     assert "viewports (1)" in text or "no open viewports" in text
+
+
+# ─── Item 3: edit_text ───────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_sc7_edit_text_replaces_text(client_session: object) -> None:
+    """edit_text replaces old_text with new_text in the specified file."""
+    result = await client_session.call_tool("edit_text", arguments={  # type: ignore[attr-defined]
+        "file_path": "test_file.txt",
+        "old_text": "line 2",
+        "new_text": "replaced line",
+    })
+    assert not result.isError, f"Got error: {result.content[0].text}"
+    text = result.content[0].text
+    assert "replacement" in text.lower() or "1" in text
+    # Read file to verify content changed
+    read_result = await client_session.call_tool("read_file", arguments={  # type: ignore[attr-defined]
+        "file_path": "test_file.txt",
+    })
+    assert "replaced line" in read_result.content[0].text
+
+
+@pytest.mark.asyncio
+async def test_sc8_edit_text_not_found(client_session: object) -> None:
+    """edit_text returns error when old_text is not found."""
+    result = await client_session.call_tool("edit_text", arguments={  # type: ignore[attr-defined]
+        "file_path": "test_file.txt",
+        "old_text": "nonexistent string xyzzy",
+        "new_text": "should not appear",
+    })
+    assert result.isError or "not found" in result.content[0].text.lower()
+
+
+@pytest.mark.asyncio
+async def test_sc10_edit_text_closes_viewport(client_session: object) -> None:
+    """After edit_text, the viewport is closed (no dangling sessions)."""
+    # Open a file
+    await client_session.call_tool("read_file", arguments={  # type: ignore[attr-defined]
+        "file_path": "test_file.txt",
+    })
+    # Open a second viewport via read_file to have more than one
+    await client_session.call_tool("edit_text", arguments={  # type: ignore[attr-defined]
+        "file_path": "test_file.txt",
+        "old_text": "line 1",
+        "new_text": "modified line 1",
+    })
+    # List viewports — should still have read_file's viewport, not edit_text's
+    result = await client_session.call_tool("viewport", arguments={  # type: ignore[attr-defined]
+        "action": "list",
+    })
+    assert not result.isError
+    text = result.content[0].text
+    # Should have 1 viewport (from read_file), the edit_text one is closed
+    assert "viewports (1)" in text or "no open viewports" in text
+
+
+@pytest.mark.asyncio
+async def test_sc7_edit_text_multiple_replacements(client_session: object, test_project_root: Path) -> None:
+    """edit_text replaces all occurrences of old_text on a fresh file."""
+    fresh_file = test_project_root / "multi_replace.txt"
+    fresh_file.write_text("line A\nline B\nline C\n")
+    result = await client_session.call_tool("edit_text", arguments={  # type: ignore[attr-defined]
+        "file_path": "multi_replace.txt",
+        "old_text": "line",
+        "new_text": "row",
+    })
+    assert not result.isError, f"Got error: {result.content[0].text}"
+    # Verify on disk
+    content = fresh_file.read_text()
+    assert "row A" in content
+    assert "row B" in content
+    assert "row C" in content

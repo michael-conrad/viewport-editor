@@ -36,8 +36,8 @@ def test_project_root() -> Path:
 async def test_sc1_exactly_8_tools(client_session: Any) -> None:
     result = await client_session.list_tools()
     names = [t.name for t in result.tools]
-    assert len(names) == 9, f"Expected 9 tools, got {len(names)}: {names}"
-    expected = {"viewport", "edit", "file", "diff", "search", "regex", "clipboard", "read_file", "write_file"}
+    assert len(names) == 10, f"Expected 10 tools, got {len(names)}: {names}"
+    expected = {"viewport", "edit", "file", "diff", "search", "regex", "clipboard", "read_file", "write_file", "edit_text"}
     assert set(names) == expected, f"Tool mismatch: {set(names) ^ expected}"
 
 
