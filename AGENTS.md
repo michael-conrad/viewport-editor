@@ -60,17 +60,18 @@ When creating a tagged release (dev → main PR), the agent MUST perform ALL of 
 
 | Step | Action | Verification |
 |------|--------|-------------|
-| 1 | Determine next version tag (e.g., v0.3.2) from existing tags | `git tag --sort=-version:refname` |
-| 2 | Bump `version` in `pyproject.toml` to match the release tag | `grep 'version =' pyproject.toml` |
-| 3 | Bump `__version__` in `src/viewport_editor/__init__.py` to match | `grep __version__ src/viewport_editor/__init__.py` |
-| 4 | Verify both version sources are consistent | Extract both values, compare for equality |
-| 5 | Commit the version bumps on `dev` before creating the release branch | `git diff --stat` confirms only version files changed |
-| 6 | Create release branch and PR targeting `main` | PR body documents changes since last release |
-| 7 | After PR merge, create a GitHub Release with release notes | `gh release create <tag> --notes "..."` |
-| 8 | Clean up merged release branch | `git branch -D`, `git push origin --delete` |
+| 1 | Determine next version tag from existing tags | `git tag --sort=-version:refname` |
+| 2 | Scan the entire project for occurrences of the current version string. Review each match. Update any that are project version declarations (as opposed to dependency pins, changelog history entries, or unrelated semvers). | Manual review of each occurrence; confirm all project version references are updated |
+| 3 | Bump `version` in `pyproject.toml` to match the release tag | `grep 'version =' pyproject.toml` |
+| 4 | Bump `__version__` in `src/viewport_editor/__init__.py` to match | `grep __version__ src/viewport_editor/__init__.py` |
+| 5 | Verify both version sources are consistent | Extract both values, compare for equality |
+| 6 | Commit the version bumps on `dev` before creating the release branch | `git diff --stat` confirms only version files changed |
+| 7 | Create release branch and PR targeting `main` | PR body documents changes since last release |
+| 8 | After PR merge, create a GitHub Release with release notes | `gh release create <tag> --notes "..."` |
+| 9 | Clean up merged release branch | `git branch -D`, `git push origin --delete` |
 
-**Version sources:**
+**Known version sources (double-check anchors):**
 - `pyproject.toml` — `version = "<semver>"`
 - `src/viewport_editor/__init__.py` — `__version__ = "<semver>"`
 
-Both MUST be bumped identically and verified before creating the release branch.
+These are NOT exhaustive — the discovery step (Step 2) finds all occurrences. These serve as post-bump double-check anchors.
