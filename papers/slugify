@@ -1,0 +1,58 @@
+#!/usr/bin/env -S uv run --script
+# fmt: off
+"exec" "uv" "run" "--script" "$0" "$@" # MUST GO BEFORE PEP 723 HEADER
+
+# PEP 723 HEADER MUST BE AFTER BASH GUARD
+# /// script
+# requires-python = "~=3.12"
+# dependencies = []
+# ///
+
+# fmt: on
+# SPDX-FileCopyrightText: 2026 Michael Conrad
+# SPDX-License-Identifier: MIT
+# Provenance: AI-generated
+"""
+Generate a title-derived slug for LaTeX paper directory naming.
+
+Usage: ./papers/slugify "Paper Title Here"
+
+Slug rules:
+  - Lowercase
+  - Spaces -> hyphens
+  - Strip all non-alphanumeric characters except hyphens
+  - Collapse consecutive hyphens to one
+  - Strip leading/trailing hyphens
+  - No transliteration (non-ASCII preserved as-is)
+
+Co-authored with AI: OpenCode (ollama-cloud/deepseek-v4-flash)
+"""
+import re
+import sys
+
+
+def slugify(title: str) -> str:
+    slug = title.lower()
+    slug = slug.replace(" ", "-")
+    slug = re.sub(r"[^\w\-]", "", slug)
+    slug = slug.replace("_", "")
+    slug = re.sub(r"-+", "-", slug)
+    slug = slug.strip("-")
+    return slug
+
+
+def main() -> None:
+    if len(sys.argv) == 2 and sys.argv[1] == "--description":
+        print("Generate a title-derived slug for LaTeX paper directory naming.")
+        return
+
+    if len(sys.argv) < 2:
+        print("Usage: ./papers/slugify \"Paper Title Here\"", file=sys.stderr)
+        sys.exit(1)
+
+    title = " ".join(sys.argv[1:])
+    print(slugify(title))
+
+
+if __name__ == "__main__":
+    main()
