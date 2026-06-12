@@ -20,6 +20,7 @@ class Session:
         self.viewports: Dict[str, ViewportEntry] = {}
         self.clipboard: Optional[ClipboardEntry] = None
         self.stash_slots: Dict[str, ClipboardEntry] = {}
+        self.injected_agents_files: set[str] = set()
 
 
 _sessions: Dict[str, Session] = {}
