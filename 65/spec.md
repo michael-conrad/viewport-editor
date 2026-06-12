@@ -195,56 +195,40 @@ item).
 
 ## Success Criteria
 
-| ID | Criterion | Evidence Type | Verification Method |
-|----|-----------|---------------|---------------------|
-| SC-1 | `viewport:open` on a file under a directory with AGENTS.md appends `<system-reminder>` with AGENTS.md content to the response | `behavioral` | Test: open a file in a directory with AGENTS.md → response contains `<system-reminder>` with AGENTS.md content |
-| SC-2 | Same AGENTS.md is NOT injected twice in the same session | `behavioral` | Test: open two files under same AGENTS.md → only first response has injection |
-| SC-3 | AGENTS.md at project root injects when no closer AGENTS.md exists | `behavioral` | Test: open a file in a dir without AGENTS.md but with one at project root → root AGENTS.md injected |
-| SC-4 | Nearest-ancestor rule: deepest AGENTS.md wins over shallower one | `behavioral` | Test: file under `a/b/AGENTS.md` where `a/AGENTS.md` also exists → `a/b/AGENTS.md` is injected |
-| SC-5 | `injected_agents_files` field exists on Session dataclass | `structural` | Check `session.py` for `injected_agents_files: set[str]` |
-| SC-6 | Files outside project root (absolute paths) skip AGENTS.md check | `behavioral` | Test: open `/etc/passwd` → no `<system-reminder>` in response |
-| SC-7 | Unreadable AGENTS.md silently skipped (no crash, no partial content) | `behavioral` | Test: AGENTS.md with 000 permissions → injection silently skipped |
-| SC-8 | File that IS the AGENTS.md itself does not trigger self-injection | `behavioral` | Test: open `AGENTS.md` → response does not contain `<system-reminder>` |
-| SC-9 | Composite `read_file` triggers same AGENTS.md injection as `viewport:open` | `behavioral` | Test: read_file on a file under AGENTS.md → response contains AGENTS.md content in `<system-reminder>` |
-| SC-10 | Composite `read_file` + `viewport:open` in same session share dedup | `behavioral` | Test: read_file then viewport:open on files under same AGENTS.md → single injection total |
-| SC-11 | Injection format matches `<system-reminder>\nInstructions from: ...\n` built-in pattern | `string` | grep response for `<system-reminder>\nInstructions from:` |
-| SC-12 | `os.path.realpath()` is used for symlink-safe path comparison | `structural` | Check `_find_sibling_agents_md` for `os.path.realpath` calls on both file_path and project_root |
+| ID | Criterion | Evidence Type | Verification Method | Test File | Phase Mapping |
+|----|-----------|---------------|---------------------|-----------|---------------|
+| SC-1 | `viewport:open` on a file under a directory with AGENTS.md appends `<system-reminder>` with AGENTS.md content to the response | `behavioral` | Test: open a file in a directory with AGENTS.md → response contains `<system-reminder>` with AGENTS.md content | `.opencode/tests/viewport-editor/65/test_viewport_open_injection.py` | Phase 2 |
+| SC-2 | Same AGENTS.md is NOT injected twice in the same session | `behavioral` | Test: open two files under same AGENTS.md → only first response has injection | `.opencode/tests/viewport-editor/65/test_dedup_same_session.py` | Phase 2 |
+| SC-3 | AGENTS.md at project root injects when no closer AGENTS.md exists | `behavioral` | Test: open a file in a dir without AGENTS.md but with one at project root → root AGENTS.md injected | `.opencode/tests/viewport-editor/65/test_root_agents_fallback.py` | Phase 2 |
+| SC-4 | Nearest-ancestor rule: deepest AGENTS.md wins over shallower one | `behavioral` | Test: file under `a/b/AGENTS.md` where `a/AGENTS.md` also exists → `a/b/AGENTS.md` is injected | `.opencode/tests/viewport-editor/65/test_nearest_ancestor_wins.py` | Phase 2 |
+| SC-5 | `injected_agents_files` field exists on Session dataclass | `structural` | Check `session.py` for `injected_agents_files: set[str]` | `.opencode/tests/viewport-editor/65/test_session_injected_agents_field.py` | Phase 1 |
+| SC-6 | Files outside project root (absolute paths) skip AGENTS.md check | `behavioral` | Test: open `/etc/passwd` → no `<system-reminder>` in response | `.opencode/tests/viewport-editor/65/test_absolute_path_skip.py` | Phase 2 |
+| SC-7 | Unreadable AGENTS.md silently skipped (no crash, no partial content) | `behavioral` | Test: AGENTS.md with 000 permissions → injection silently skipped | `.opencode/tests/viewport-editor/65/test_unreadable_agents_skip.py` | Phase 2 |
+| SC-8 | File that IS the AGENTS.md itself does not trigger self-injection | `behavioral` | Test: open `AGENTS.md` → response does not contain `<system-reminder>` | `.opencode/tests/viewport-editor/65/test_self_injection_guard.py` | Phase 2 |
+| SC-9 | Composite `read_file` triggers same AGENTS.md injection as `viewport:open` | `behavioral` | Test: read_file on a file under AGENTS.md → response contains AGENTS.md content in `<system-reminder>` | `.opencode/tests/viewport-editor/65/test_read_file_injection.py` | Phase 3 |
+| SC-10 | Composite `read_file` + `viewport:open` in same session share dedup | `behavioral` | Test: read_file then viewport:open on files under same AGENTS.md → single injection total | `.opencode/tests/viewport-editor/65/test_cross_tool_dedup.py` | Phase 3 |
+| SC-11 | Injection format matches `<system-reminder>\nInstructions from: ...\n` built-in pattern | `string` | grep response for `<system-reminder>\nInstructions from:` | `.opencode/tests/viewport-editor/65/test_injection_format.py` | Phase 2 |
+| SC-12 | `os.path.realpath()` is used for symlink-safe path comparison | `structural` | Check `_find_sibling_agents_md` for `os.path.realpath` calls on both file_path and project_root | `.opencode/tests/viewport-editor/65/test_find_sibling_agents_realpath.py` | Phase 1 |
 
 ## Implementation Plan
 
-### Phase 1: Core Detection + Session Tracking
+The authoritative implementation plan is at `.issues/65/spec-artifacts/plan.md` — a 3-phase plan using the mandatory 14-gate enumerated checklist format with routing annotations per issue #1129.
 
-1. Implement `_find_sibling_agents_md()` in `src/viewport_editor/file_ops.py`
-   - Uses `os.path.realpath()` on file_path and project_root
-   - Nearest-ancestor walk-up (returns first found)
-   - Self-injection guard (skip if file_path IS the AGENTS.md)
-   - Returns `str | None`
+Each phase produces test files at `.opencode/tests/viewport-editor/65/` and output artifacts at `./tmp/65/artifacts/`. Every gate in the 14-item checklist specifies a routing annotation (orchestrator routes to sub-agent type / orchestrator inline).
 
-2. Add `injected_agents_files: set[str]` to `Session` in `src/viewport_editor/session.py`
+### Phase Summary
 
-3. Implement `_inject_agents_notice()` helper in `src/viewport_editor/server.py`
-   - Calls `_find_sibling_agents_md`, checks dedup against `session.injected_agents_files`
-   - Builds `<system-reminder>` block in built-in format
-   - Appends to response text
-   - Records in session
+| Phase | Concern | SCs Covered | Key Deliverables |
+|-------|---------|-------------|------------------|
+| Phase 1 | Core detection + session tracking | SC-5, SC-12 | `_find_sibling_agents_md()`, `injected_agents_files`, `_inject_agents_notice()` |
+| Phase 2 | Tool integration | SC-1, SC-2, SC-3, SC-4, SC-6, SC-7, SC-8, SC-11 | Injection wiring in `_action_open()` and `read_file` handler |
+| Phase 3 | Behavioral tests | SC-9, SC-10 | Cross-tool dedup and composite read_file injection tests |
 
-### Phase 2: Tool Integration
+### Routing Annotations (from plan.md)
 
-4. Wire injection into `_action_open()` handler — the primary read-equivalent tool
-5. Wire injection into composite `read_file` handler (spec #63) — delegates to same helper
-
-### Phase 3: Behavioral Tests
-
-6. Create test fixture directory structure with AGENTS.md files
-7. Set up test AGENTS.md with known content per fixture
-8. Behavioral test: open file under AGENTS.md → injection seen (SC-1)
-9. Behavioral test: second open → no duplicate injection (SC-2)
-10. Behavioral test: nearest-ancestor precedence (SC-4)
-11. Behavioral test: absolute-path files → no injection (SC-6)
-12. Behavioral test: unreadable AGENTS.md → silent skip (SC-7)
-13. Behavioral test: self-injection guard (SC-8)
-14. Behavioral test: composite read_file injection (SC-9)
-15. Behavioral test: cross-tool dedup read_file + viewport:open (SC-10)
+Each checklist item in `.issues/65/spec-artifacts/plan.md` specifies one of:
+- **orchestrator routes to [sub-agent-type]** — orchestrator tasks a clean-room sub-agent (pre-analysis, exploration, RED, GREEN, VbC, resolve-models, regression, review-prep, finishing, git-workflow)
+- **orchestrator inline** — orchestrator performs the action directly (git commits, artifact verification, cross-validate, exec summary)
 
 ## Evaluation Methodology
 
@@ -288,17 +272,17 @@ Tracking on `feature/65-agents-injection`.
 
 ## SC Coverage
 
-| ID | Status | Notes |
-|----|--------|-------|
-| SC-1 | PENDING | viewport:open injection |
-| SC-2 | PENDING | dedup in session |
-| SC-3 | PENDING | root fallback |
-| SC-4 | PENDING | nearest ancestor wins |
-| SC-5 | PENDING | structural check |
-| SC-6 | PENDING | absolute path skip |
-| SC-7 | PENDING | unreadable skip |
-| SC-8 | PENDING | self-injection guard |
-| SC-9 | PENDING | composite read_file |
-| SC-10 | PENDING | cross-tool dedup |
-| SC-11 | PENDING | format match |
-| SC-12 | PENDING | realpath symlink safety |
+| ID | Status | Test File | Phase | Notes |
+|----|--------|-----------|-------|-------|
+| SC-1 | PENDING | `.opencode/tests/viewport-editor/65/test_viewport_open_injection.py` | Phase 2 | viewport:open injection |
+| SC-2 | PENDING | `.opencode/tests/viewport-editor/65/test_dedup_same_session.py` | Phase 2 | dedup in session |
+| SC-3 | PENDING | `.opencode/tests/viewport-editor/65/test_root_agents_fallback.py` | Phase 2 | root fallback |
+| SC-4 | PENDING | `.opencode/tests/viewport-editor/65/test_nearest_ancestor_wins.py` | Phase 2 | nearest ancestor wins |
+| SC-5 | PENDING | `.opencode/tests/viewport-editor/65/test_session_injected_agents_field.py` | Phase 1 | structural check |
+| SC-6 | PENDING | `.opencode/tests/viewport-editor/65/test_absolute_path_skip.py` | Phase 2 | absolute path skip |
+| SC-7 | PENDING | `.opencode/tests/viewport-editor/65/test_unreadable_agents_skip.py` | Phase 2 | unreadable skip |
+| SC-8 | PENDING | `.opencode/tests/viewport-editor/65/test_self_injection_guard.py` | Phase 2 | self-injection guard |
+| SC-9 | PENDING | `.opencode/tests/viewport-editor/65/test_read_file_injection.py` | Phase 3 | composite read_file |
+| SC-10 | PENDING | `.opencode/tests/viewport-editor/65/test_cross_tool_dedup.py` | Phase 3 | cross-tool dedup |
+| SC-11 | PENDING | `.opencode/tests/viewport-editor/65/test_injection_format.py` | Phase 2 | format match |
+| SC-12 | PENDING | `.opencode/tests/viewport-editor/65/test_find_sibling_agents_realpath.py` | Phase 1 | realpath symlink safety |
