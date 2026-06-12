@@ -53,3 +53,24 @@ Papers live in `papers/<slug>/`. Each paper has:
 **Slugify:** `./papers/slugify "Paper Title"`
 
 **Slug convention:** lowercase, spaces→hyphens, strip non-alphanumeric except hyphens, collapse consecutive hyphens, strip leading/trailing, no transliteration. Duplicate slugs append `-1`, `-2`.
+
+## Release Checklist (MANDATORY)
+
+When creating a tagged release (dev → main PR), the agent MUST perform ALL of the following. Skipping any step is a process-integrity failure.
+
+| Step | Action | Verification |
+|------|--------|-------------|
+| 1 | Determine next version tag (e.g., v0.3.2) from existing tags | `git tag --sort=-version:refname` |
+| 2 | Bump `version` in `pyproject.toml` to match the release tag | `grep 'version =' pyproject.toml` |
+| 3 | Bump `__version__` in `src/viewport_editor/__init__.py` to match | `grep __version__ src/viewport_editor/__init__.py` |
+| 4 | Verify both version sources are consistent | Extract both values, compare for equality |
+| 5 | Commit the version bumps on `dev` before creating the release branch | `git diff --stat` confirms only version files changed |
+| 6 | Create release branch and PR targeting `main` | PR body documents changes since last release |
+| 7 | After PR merge, create a GitHub Release with release notes | `gh release create <tag> --notes "..."` |
+| 8 | Clean up merged release branch | `git branch -D`, `git push origin --delete` |
+
+**Version sources:**
+- `pyproject.toml` — `version = "<semver>"`
+- `src/viewport_editor/__init__.py` — `__version__ = "<semver>"`
+
+Both MUST be bumped identically and verified before creating the release branch.
