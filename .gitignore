@@ -10,5 +10,4 @@ tmp/
 tool-selection-results/
 session-ses_*.md
 
-# LaTeX build artifacts
-papers/*/build/*
+
