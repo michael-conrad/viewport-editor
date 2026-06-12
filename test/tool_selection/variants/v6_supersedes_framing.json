@@ -1,0 +1,20 @@
+{
+  "variable": "V6: Supersedes Framing",
+  "description": "Test whether including 'Supersedes other <verb> tooling' in the description improves or harms adoption",
+  "variants": [
+    {
+      "id": "A_no_supersedes",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read file contents via a staged viewport with conflict detection. Supports line_start/line_end for partial reads. No bytes touch disk until explicitly saved.",
+      "hypothesis": "No supersedes claim -- neutral baseline"
+    },
+    {
+      "id": "B_supersedes",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read file contents via a staged viewport with conflict detection. Supports line_start/line_end for partial reads. No bytes touch disk until explicitly saved. Supersedes other read tooling.",
+      "hypothesis": "Supersedes claim -- may increase adoption via authoritative framing, or decrease via avoidance"
+    }
+  ]
+}

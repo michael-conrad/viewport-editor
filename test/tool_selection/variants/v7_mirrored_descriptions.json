@@ -1,0 +1,19 @@
+{
+  "variable": "V7: Mirrored Descriptions (all tools)",
+  "description": "All 5 composite tools use mirrored lead-in descriptions. Read_file mirrors the built-in read tool's exact opening text.",
+  "variants": [
+    {
+      "id": "A_mirrored_descriptions",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read a file or directory from the local filesystem. If the path does not exist, an error is returned. Supports offset/limit for partial reads.",
+      "hypothesis": "Mirrored lead-in from built-in read tool + additive offset/limit differentiator.",
+      "companion_descriptions": {
+        "write_file": "Writes a file to the local filesystem. Supports diff preview before commit.",
+        "edit_text": "Performs exact string replacements in files. Supports undo via preview before applying.",
+        "find_text": "- Fast content search tool that works with any codebase size\n- Searches file contents using regular expressions. Supports structured results with line numbers.",
+        "diff": "Show or apply unified diffs of pending edits."
+      }
+    }
+  ]
+}

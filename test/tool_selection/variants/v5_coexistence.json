@@ -1,0 +1,42 @@
+{
+  "variable": "V5: Coexistence Strategy",
+  "description": "Tests hinting strategies for composite tool vs built-in coexistence. Since V3 showed framing has no effect, this confirms whether explicit coexistence instructions matter at all.",
+  "variants": [
+    {
+      "id": "neutral",
+      "level": "neutral (no coexistence instructions)",
+      "naming": "verb_noun",
+      "tools": {
+        "read_file": "Read file contents from the local filesystem into a staged buffer viewport. Supports offset/limit for partial reads. The viewport remains open for follow-up edits. No content touches disk until explicitly confirmed via file:save.",
+        "write_file": "Write file contents to the local filesystem through a staged buffer with automated viewport lifecycle management. Opens a viewport, replaces the entire buffer content, saves to disk, and closes the viewport.",
+        "edit_text": "Perform exact string replacements in files through a staged buffer with automated viewport lifecycle management. Opens a viewport, applies the replacement, saves to disk, and closes the viewport.",
+        "find_text": "Fast content search tool that works with any project size. Searches file contents using substring (default) or regex matching. Returns structured results with line numbers, file paths, and matching text.",
+        "diff": "Show unified diff of staged edits in a viewport buffer before they are committed to disk. Returns standard unified format with context lines, additions, and deletions."
+      }
+    },
+    {
+      "id": "instructional",
+      "level": "instructional (usage direction)",
+      "naming": "verb_noun",
+      "tools": {
+        "read_file": "Read file contents from the local filesystem into a staged buffer viewport. Supports offset/limit for partial reads. The viewport remains open for follow-up edits. No content touches disk until explicitly confirmed via file:save. Use first for file reading.",
+        "write_file": "Write file contents to the local filesystem through a staged buffer with automated viewport lifecycle management. Opens a viewport, replaces the entire buffer content, saves to disk, and closes the viewport. Use first for file writing.",
+        "edit_text": "Perform exact string replacements in files through a staged buffer with automated viewport lifecycle management. Opens a viewport, applies the replacement, saves to disk, and closes the viewport. Use first for file editing.",
+        "find_text": "Fast content search tool that works with any project size. Searches file contents using substring (default) or regex matching. Returns structured results with line numbers, file paths, and matching text. Use first for search.",
+        "diff": "Show unified diff of staged edits in a viewport buffer before they are committed to disk. Returns standard unified format with context lines, additions, and deletions. Use first to review edits."
+      }
+    },
+    {
+      "id": "preference",
+      "level": "preference-hinting (recommended over alternatives)",
+      "naming": "verb_noun",
+      "tools": {
+        "read_file": "Read file contents from the local filesystem into a staged buffer viewport. Supports offset/limit for partial reads. The viewport remains open for follow-up edits. No content touches disk until explicitly confirmed via file:save. Recommended over the built-in read for all file operations.",
+        "write_file": "Write file contents to the local filesystem through a staged buffer with automated viewport lifecycle management. Opens a viewport, replaces the entire buffer content, saves to disk, and closes the viewport. Recommended over the built-in write for all file operations.",
+        "edit_text": "Perform exact string replacements in files through a staged buffer with automated viewport lifecycle management. Opens a viewport, applies the replacement, saves to disk, and closes the viewport. Recommended over the built-in edit for all file operations.",
+        "find_text": "Fast content search tool that works with any project size. Searches file contents using substring (default) or regex matching. Returns structured results with line numbers, file paths, and matching text. Recommended over the built-in grep for all content search.",
+        "diff": "Show unified diff of staged edits in a viewport buffer before they are committed to disk. Returns standard unified format with context lines, additions, and deletions. Recommended for reviewing pending edits."
+      }
+    }
+  ]
+}

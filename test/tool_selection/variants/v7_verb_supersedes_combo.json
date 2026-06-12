@@ -1,0 +1,13 @@
+{
+  "variable": "V7: Verb+Supersedes Combo",
+  "description": "Test read_text with supersedes framing — the best verb class combined with supersedes language",
+  "variants": [
+    {
+      "id": "A_read_text_supersedes",
+      "tool_name": "read_text",
+      "verb": "Read",
+      "description": "Read text contents from a staged buffer with conflict detection against external modifications. Supports offset/limit for partial reads. No bytes touch disk until explicitly saved. Supersedes other read tooling.",
+      "hypothesis": "Best V1 verb (read_text) + V6 supersedes framing — expected 60-80%"
+    }
+  ]
+}

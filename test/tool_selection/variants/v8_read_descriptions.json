@@ -1,0 +1,40 @@
+{
+  "variable": "V8: Read File Description Variants",
+  "description": "Natural language vs prior-40% baseline vs improved anchor for read_file",
+  "companion_descriptions": {
+    "write_file": "Writes a file to the local filesystem. Supports diff preview before commit.",
+    "edit_text": "Performs exact string replacements in files. Supports undo via preview before applying.",
+    "find_text": "- Fast content search tool that works with any codebase size\n- Searches file contents using regular expressions. Supports structured results with line numbers.",
+    "diff": "Show or apply unified diffs of pending edits."
+  },
+  "variants": [
+    {
+      "id": "A_baseline_staged",
+      "tool_name": "read_text",
+      "verb": "Read",
+      "description": "Read text contents from a staged buffer with conflict detection against external modifications. Supports offset/limit for partial reads. No bytes touch disk until explicitly saved.",
+      "hypothesis": "Prior 40% performer -- staged/buffer language"
+    },
+    {
+      "id": "B_natural",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read a file's contents. Changes are tracked and can be previewed before saving to disk. Supports offset/limit for partial reads.",
+      "hypothesis": "Natural language -- no staged/buffer jargon"
+    },
+    {
+      "id": "C_improved_anchor",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read any file from the filesystem and return its contents. Supports offset/limit for partial reads.",
+      "hypothesis": "Improved anchor -- cleaner opener"
+    },
+    {
+      "id": "D_concise_value",
+      "tool_name": "read_file",
+      "verb": "Read",
+      "description": "Read a file's contents. Supports offset/limit for partial reads. Changes are tracked and can be previewed before saving.",
+      "hypothesis": "Value last -- readability first, tracking second"
+    }
+  ]
+}

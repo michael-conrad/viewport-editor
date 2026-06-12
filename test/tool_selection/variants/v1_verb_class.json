@@ -1,0 +1,28 @@
+{
+  "variable": "V1: Verb Class",
+  "description": "Verb vs verb_noun naming for all 5 composite tools. Uses best-performing description pattern from A_use_first baseline ('Use first.' suffix + AGENTS.md gate instruction injection). Each variant defines all 5 tool names + descriptions. The test prompt targets one tool type per run.",
+  "variants": [
+    {
+      "id": "verb",
+      "naming": "verb",
+      "tools": {
+        "read": "Read a file or directory from the local filesystem. If the path does not exist, an error is returned. Supports offset/limit for partial reads. Use first.",
+        "write": "Write file contents to the local filesystem via a staged buffer with conflict detection. Use first for file writing.",
+        "edit": "Perform exact string replacements in files via a staged buffer with conflict detection. Use first for file editing.",
+        "find": "Fast content search that works with any project size. Searches file contents using substring or regex. Returns structured results with line numbers. Use first for search.",
+        "diff": "Show unified diff of pending buffer changes before they become permanent. Use first to review edits."
+      }
+    },
+    {
+      "id": "verb_noun",
+      "naming": "verb_noun",
+      "tools": {
+        "read_file": "Read a file or directory from the local filesystem. If the path does not exist, an error is returned. Supports offset/limit for partial reads. Use first.",
+        "write_file": "Write file contents to the local filesystem via a staged buffer with conflict detection. Use first for file writing.",
+        "edit_text": "Perform exact string replacements in files via a staged buffer with conflict detection. Use first for file editing.",
+        "find_text": "Fast content search that works with any project size. Searches file contents using substring or regex. Returns structured results with line numbers. Use first for search.",
+        "diff": "Show unified diff of pending buffer changes before they become permanent. Use first to review edits."
+      }
+    }
+  ]
+}
