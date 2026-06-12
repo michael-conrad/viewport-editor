@@ -15,8 +15,6 @@ from .viewport import ViewportEntry
 
 
 class Session:
-    injected_agents_files = None  # Sentinel class-level attr for structural test
-
     def __init__(self, session_id: str) -> None:
         self.session_id = session_id
         self.viewports: Dict[str, ViewportEntry] = {}
