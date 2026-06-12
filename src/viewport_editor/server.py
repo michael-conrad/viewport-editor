@@ -65,24 +65,20 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         autosave_enabled: Optional[bool] = None,
         display_mode: Optional[str] = None,
     ) -> str:
-        """Viewport text editor — buffer-isolated file access for auditable, undoable edits.
+        """Open a file into a staged buffer viewport with undo and conflict detection.
+        Supports open, close, list, scroll, page-up, page-down, jump, autosave,
+        and display-mode actions. All edits stage into memory — nothing reaches
+        disk until file:save confirms the change. Use this for all file navigation
+        and multi-edit workflows where review before save is important.
 
-        Opens a memory-backed viewport on a file so every edit stages into a pending buffer.
-        No bytes touch disk until file:save confirms the change. This means:
-        - Every edit can be reviewed via diff:show before commit
-        - Every edit can be discarded if wrong, leaving the original file untouched
-        - Conflicts from external file modifications are detected before data loss
+        Jump target: a line number, text to search for, "top" (start of file),
+        or "bottom" (end of file).
 
-        A direct write tool mutates the file in one invisible step — no review, no undo,
-        no conflict detection. A mistaken regex or wrong replacement destroys content with
-        zero recovery path. Viewport-editor workflows expose the diff gate before flush,
-        making undetected data corruption impossible by construction.
+        Actions: open, close, list, scroll, page-up, page-down, jump, autosave,
+        set-display-mode
 
-        Actions: open, close, list, scroll, page-up, page-down, jump, autosave, set-display-mode
-
-        Jump target: a line number, text to search for, "top" (start of file), or "bottom" (end of file).
-
-        All responses use prose + YAML format. File paths must be relative to project root."""
+        All responses use prose + YAML format. File paths must be relative to
+        project root."""
         session_id = ctx.session_id
         if _manager is None:
             return "error: server not initialized"
@@ -123,21 +119,14 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         target_line_end: int = 0,
         target_line: int = 0,
     ) -> str:
-        """Edit text inside an open viewport's memory buffer — changes remain staged, not on disk.
+        """Edit text inside an open viewport's staged buffer. Supports replace,
+        replace-all, insert-lines, delete-lines, swap-lines, and move-lines
+        actions. All edits accumulate in memory — no bytes reach disk until
+        file:save or autosave flushes them. Use this for targeted changes
+        where diff review before save is needed.
 
-        Unlike a direct write tool that mutates the file instantly and irreversibly, this edit
-        operates exclusively on the viewport's in-memory buffer. No bytes reach the filesystem
-        until file:save or autosave flushes them. This means:
-        - Every edit can be reviewed by diff:show before anything hits disk
-        - Multiple edits accumulate in the buffer for a single atomic save
-        - Accidental or incorrect edits are discarded by closing the viewport without saving
-
-        A direct write tool that mutates the file instantly provides no review window,
-        no accumulation, and no discard path. A wrong replacement on a large file is
-        permanent before you see the result. Viewport-editor edit keeps changes staged
-        until explicitly approved.
-
-        Actions: replace, replace-all, insert-lines, delete-lines, swap-lines, move-lines"""
+        Actions: replace, replace-all, insert-lines, delete-lines, swap-lines,
+        move-lines"""
         session_id = ctx.session_id
         if _manager is None:
             return "error: server not initialized"
@@ -168,12 +157,10 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         file_path: str = "",
         force: bool = False,
     ) -> str:
-        """Flush staged viewport buffer edits to disk — the only gate between pending and permanent.
-
-        A viewport accumulates edits in memory. Until file:save is called, no bytes have
-        touched the filesystem. This is the review gate: diff:show first, then file:save
-        commits the buffer to disk. A direct write tool skips this gate entirely — edit
-        goes straight to disk with zero review opportunity.
+        """Flush staged viewport buffer edits to disk. The save gate converts
+        pending memory edits into permanent file content. Use file:save after
+        diff:show review to commit changes. Supports save, discard, new, and
+        save-as actions for full file lifecycle management.
 
         Actions: save, discard, new, save-as"""
         session_id = ctx.session_id
@@ -243,12 +230,11 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         target_line: Optional[int] = None,
         name: Optional[str] = None,
     ) -> str:
-        """Cross-viewport clipboard with provenance tracking — copy from one viewport, paste into another.
-
-        Unlike a direct text accumulator that stores content without context, clipboard:copy
-        records the source viewport and line range. clipboard:paste inserts at a target location
-        with provenance metadata. This enables multi-viewport workflows where content moves
-        between files with traceable origin — impossible with single-file write tools.
+        """Cross-viewport clipboard with provenance tracking. Copy content from
+        one viewport and paste into another with source-file and line-range
+        metadata preserved. Supports stash slots for organizing multiple
+        clipboard entries. Use this for moving text between files with
+        traceable origin.
 
         Actions: copy, cut, paste, show, stash, pop, swap, stash-list"""
         session_id = ctx.session_id
@@ -279,16 +265,16 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         file_path: Optional[str] = None,
         viewport_id: Optional[str] = None,
     ) -> str:
-        """Search across files with structured results — pattern, line number, and file path in every hit.
-
-        search:find returns structured matches with line numbers and file paths, enabling
-        navigation via viewport:jump. A grep-like read tool returns raw text without
-        structured coordinates — every hit requires manual scanning. Search+viewport:jump
-        is the coordinated pair for code navigation workflows.
+        """Search across files with structured results including pattern, line
+        number, and file path in every match. Supports substring (default)
+        and regex matching. Results are designed for direct navigation via
+        viewport:jump. Use this for finding code patterns, debugging, and
+        codebase exploration.
 
         Actions: find
 
-        Scopes: file (single file), viewport (open viewport), all_open (all open viewports), or project-wide (default)"""
+        Scopes: file (single file), viewport (open viewport), all_open (all
+        open viewports), or project-wide (default)"""
         session_id = ctx.session_id
         if _manager is None:
             return "error: server not initialized"
@@ -314,12 +300,10 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         pattern: Optional[str] = None,
         text: Optional[str] = None,
     ) -> str:
-        """Regex test and escaping — validate patterns before applying them in searches.
-
-        regex:test matches a pattern against sample text, returning match positions and
-        capture groups. regex:escape escapes metacharacters for literal matching. Using
-        unvalidated regex patterns in search:find risks no-match or wrong-match outcomes.
-        Testing the regex first eliminates that failure mode.
+        """Test and escape regex patterns. regex:test matches a pattern against
+        sample text and returns match positions with capture groups.
+        regex:escape escapes metacharacters for literal matching. Use this
+        before applying patterns in search:find to verify correctness.
 
         Actions: test (match pattern against text), escape (escape metacharacters)"""
         if _manager is None:
