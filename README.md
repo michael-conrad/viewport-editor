@@ -46,18 +46,23 @@ In **immediate mode**, each edit writes to disk atomically.
 
 Buffer state is scoped to the MCP connection. Multiple agent sessions can edit the same file without collision. Staleness is detected via mtime + size — soft warning on operations, hard block on save (with a `force` override).
 
-## 6-Tool Surface
+## 11-Tool Surface
 
-All operations are exposed through 6 tools with an `action` parameter. This keeps initial context load low while giving the agent rich expressiveness.
+All operations are exposed through 11 tools with an `action` parameter. This keeps initial context load low while giving the agent rich expressiveness.
 
 | tool | actions |
 |------|---------|
-| **viewport** | open, close, list, scroll, page-up, page-down, jump, switch-mode |
+| **viewport** | open, close, list, scroll, page-up, page-down, jump, autosave, set-display-mode |
 | **edit** | replace, replace-all, insert-lines, delete-lines, swap-lines, move-lines |
-| **file** | new, save, save-as, delete, discard |
+| **file** | save, discard, new, save-as, delete |
 | **diff** | show, apply |
+| **clipboard** | copy, cut, paste, show, stash, pop, swap, stash-list |
 | **search** | find |
 | **regex** | test, escape |
+| **read_file** | composite: open + scroll — single-call file read with viewport lifecycle |
+| **write_file** | composite: open + replace-all + save + close — single-call file write with conflict detection |
+| **edit_text** | composite: open + replace + save + close — single-call targeted edit with conflict detection |
+| **find_text** | composite: search wrapper — single-call text search |
 
 ## Quick Start
 
@@ -72,7 +77,7 @@ Run directly from the tagged release — no PyPI install, no repo clone needed:
 "mcp": {
     "viewport-editor": {
       "type": "local",
-      "command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.2.0", "viewport-editor"],
+      "command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.3.0", "viewport-editor"],
       "enabled": true
     }
 }
@@ -84,7 +89,7 @@ Run directly from the tagged release — no PyPI install, no repo clone needed:
   "mcpServers": {
     "viewport-editor": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/michael-conrad/viewport-editor@v0.2.0", "viewport-editor"]
+      "args": ["--from", "git+https://github.com/michael-conrad/viewport-editor@v0.3.0", "viewport-editor"]
     }
   }
 }
@@ -98,13 +103,63 @@ cd viewport-editor
 uv run viewport-editor
 ```
 
+## Consuming Repo Instructions
+
+When adding viewport-editor as an MCP plugin, configure it in your `opencode.jsonc`:
+
+```jsonc
+{
+  "mcp": {
+    "viewport-editor": {
+      "type": "local",
+      "command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.3.0", "viewport-editor"],
+      "enabled": true
+    }
+  }
+}
+```
+
+Then add the following stanza to your repository's `AGENTS.md`:
+
+```markdown
+### viewport-editor MCP Plugin
+
+This repo uses [viewport-editor](https://github.com/michael-conrad/viewport-editor) as its editing MCP server.
+
+**11-tool surface** (see README for full action lists):
+
+| Tool | Purpose |
+|------|---------|
+| **viewport** | Open, navigate, and manage focused editing windows |
+| **edit** | Stage text changes into viewport buffers (replace, insert, delete, swap, move) |
+| **file** | Commit or discard staged changes to disk |
+| **diff** | Show unified diffs of pending edits before saving |
+| **clipboard** | Copy/cut/paste content across viewports with provenance tracking |
+| **search** | Find text with substring or regex matching |
+| **regex** | Test and escape regex patterns |
+| **read_file** | Composite: open + scroll — preferred over built-in `read` for single-call reading |
+| **write_file** | Composite: open + replace-all + save — preferred over built-in `write` for conflict-safe writing |
+| **edit_text** | Composite: open + replace + save — preferred over built-in `edit` for targeted changes with conflict detection |
+| **find_text** | Composite: search — preferred over built-in `grep` for structured results |
+
+**recommended agent behavior:**
+
+- Use `read_file`, `write_file`, `edit_text`, `find_text` for single-call operations (empirically validated — see viewport-editor#63 V1 results)
+- Use `viewport` + `edit` + `file` for multi-step editing with diff review
+- Always call `diff:show` before `file:save` to verify staged changes
+- File paths are relative to project root (MCP resolver defaults to `os.getcwd()`)
+- The `VIEWPORT_PROJECT_ROOT` environment variable overrides the project root if needed
+- Session management is automatic (MCP framework handles session IDs)
+- Conflict detection: server tracks file mtime+size externally; stale-file soft warning on reads, hard block on `file:save` (use `force: true` override if change is intentional)
+```
+
 ## Design Principles
 
 - **Prose + YAML only** — tool descriptions, input schemas, and responses use natural language and YAML. No JSON.
 - **list_tools for discovery** — no dedicated help tool. The MCP protocol's standard discovery mechanism is sufficient.
 - **True delta diffs** — `diff:show` always compares against the original file on disk, not the last save.
 - **apply-diff always stages** — diffs are never applied directly to disk. Review first with `diff:show`, then `file:save`.
-- **Per-viewport mode** — each viewport selects its own mode (buffered or immediate). Switch modes with `viewport:switch-mode` (refuses if buffer is dirty).
+- **Per-viewport mode** — each viewport selects its own mode (buffered or immediate). Switch modes with `viewport:set-display-mode` (refuses if buffer is dirty).
 
 ## Relationship to Other Tools
 
