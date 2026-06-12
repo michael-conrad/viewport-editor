@@ -16,8 +16,13 @@ from typing import Any, AsyncIterator, Optional
 from fastmcp import Context, FastMCP
 
 from .clipboard import ClipboardEntry, apply_copy, apply_cut, apply_paste
-from .exceptions import DiffApplyError, EditTargetNotFoundError, FileNotFoundError_, ViewportError
-from .file_ops import _resolve_path
+from .exceptions import (
+    DiffApplyError,
+    EditTargetNotFoundError,
+    FileNotFoundError_,
+    ViewportError,
+)
+from .file_ops import _find_sibling_agents_md, _resolve_path
 from .session import create_session, get_session, get_session_ids, remove_session
 from .viewport import ViewportManager
 
@@ -407,9 +412,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         entry.dirty = True
 
         # Check for external conflict before save
-        conflict_warning = _manager.check_conflict(
-            entry.file, entry.mtime, entry.size
-        )
+        conflict_warning = _manager.check_conflict(entry.file, entry.mtime, entry.size)
         if conflict_warning and not entry.autosave:
             warning_str = _manager.format_conflict_warning(conflict_warning)
             return f"error: conflict detected\n{warning_str}"
@@ -461,9 +464,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
             return f"error: {exc}"
 
         # Check for external conflict before save
-        conflict_warning = _manager.check_conflict(
-            entry.file, entry.mtime, entry.size
-        )
+        conflict_warning = _manager.check_conflict(entry.file, entry.mtime, entry.size)
         if conflict_warning and not entry.autosave:
             _manager.discard_buffer_changes(session_id, entry.viewport_id)
             warning_str = _manager.format_conflict_warning(conflict_warning)
@@ -473,10 +474,7 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         _manager.flush_entry(session_id, entry)
         _manager.close(session_id, entry.viewport_id)
 
-        return (
-            f"edit applied to {file_path}:"
-            f"\n  count: {result['count']}"
-        )
+        return f"edit applied to {file_path}:\n  count: {result['count']}"
 
     @mcp.tool()
     def find_text(
@@ -630,6 +628,27 @@ def _handle_viewport_action(
         result = stale_notice + "\n" + result
 
     return result
+
+
+def _inject_agents_notice(file_path: str, session_id: str, response_text: str) -> str:
+    if _manager is None:
+        return response_text
+    project_root = _manager.project_root
+    content = _find_sibling_agents_md(file_path, project_root)
+    if content is None:
+        return response_text
+    session = get_session(session_id)
+    if session is None:
+        return response_text
+    resolved = os.path.realpath(os.path.join(project_root, file_path))
+    agents_path = os.path.dirname(resolved) + "/AGENTS.md"
+    if agents_path in session.injected_agents_files:
+        return response_text
+    session.injected_agents_files.add(agents_path)
+    return (
+        response_text
+        + f"\n\n<system-reminder>\nInstructions from: {agents_path}\n{content}\n</system-reminder>"
+    )
 
 
 def _check_file_conflict(file_path: str, entry: Any) -> Optional[str]:

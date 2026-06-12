@@ -160,6 +160,26 @@ def delete_file(file_path: str, project_root: str) -> str:
     return resolved_path
 
 
+def _find_sibling_agents_md(file_path: str, project_root: str) -> str | None:
+    resolved_file = os.path.realpath(file_path)
+    resolved_root = os.path.realpath(project_root)
+    current = os.path.dirname(resolved_file)
+    while current.startswith(resolved_root + os.sep) or current == resolved_root:
+        candidate = os.path.join(current, "AGENTS.md")
+        if os.path.isfile(candidate):
+            if os.path.realpath(candidate) == resolved_file:
+                return None
+            try:
+                with open(candidate) as f:
+                    return f.read()
+            except (OSError, UnicodeDecodeError):
+                return None
+        if current == resolved_root:
+            break
+        current = os.path.dirname(current)
+    return None
+
+
 def format_conflict_warning(warning: dict) -> str:
     """Format a conflict dict into a YAML warning string."""
     if warning.get("missing"):
