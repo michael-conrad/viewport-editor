@@ -371,7 +371,8 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
             lines.append(f"  mtime: {entry_data['mtime']}")
         if entry_data["size"] is not None:
             lines.append(f"  size: {entry_data['size']}")
-        return "\n".join(lines)
+        response = "\n".join(lines)
+        return _inject_agents_notice(file_path, session_id, response)
 
     @mcp.tool()
     def write_file(
@@ -634,7 +635,10 @@ def _inject_agents_notice(file_path: str, session_id: str, response_text: str) -
     if _manager is None:
         return response_text
     project_root = _manager.project_root
-    content = _find_sibling_agents_md(file_path, project_root)
+    # Resolve file_path against project_root before detection, so that
+    # relative paths work correctly in test environments with temp dirs
+    resolved_abs = os.path.realpath(os.path.join(project_root, file_path))
+    content = _find_sibling_agents_md(resolved_abs, project_root)
     if content is None:
         return response_text
     session = get_session(session_id)
@@ -777,7 +781,8 @@ def _action_open(
     conflict_msg = _check_file_conflict(result.file, result)
     if conflict_msg:
         lines.append(f"  warning:\n{conflict_msg}")
-    return "\n".join(lines)
+    response = "\n".join(lines)
+    return _inject_agents_notice(file_path, session_id, response)
 
 
 def _action_close(
