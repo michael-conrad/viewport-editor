@@ -55,8 +55,9 @@ The test output shows the following observational data (zero assertions — prin
       no open viewports
 ```
 
-<<<<<<< HEAD
 The two session IDs differ (`c7fbf074-eaf7-4522-a347-03976b62aa4a` vs `70a7ead7-0657-4f7b-aa9d-362284c9c0ed`). C2 calls `viewport:list` while C1's viewport is still open and receives `"no open viewports"`. This demonstrates that **separate connections** (separate CLI invocations) get independent session state.
+
+The test classifies `Forwarding needed: YES`, meaning the sub-agent's empty session is the correct isolation behavior for a clean-room dispatch: the sub-agent starts fresh without inheriting the orchestrator's viewport state.
 
 **Important distinction:** This is NOT equivalent to sub-agent dispatch within a single `opencode-cli run`. A `task()` sub-agent shares the same MCP connection and `ctx.session_id` as the orchestrator. Within one invocation, two viewports on the same file share a buffer — `BufferManager` keys by `(session_id, file_path)`, and all tool calls within one MCP connection share the same `session_id`. Clean-room sub-agent isolation occurs at the invocation boundary, not the viewport boundary.
 
@@ -73,8 +74,3 @@ Behavioral card SC-4 (observational only, no assertion) documents buffer sharing
 | Cross-invocation isolation (separate `opencode-cli run`) | Yes — independent session, independent buffer |
 | Sub-agent within same invocation | Shares buffer with orchestrator |
 | Card SC-4 type | Observational only — no assertion, no expected outcome |
-=======
-The two session IDs differ (`c7fbf074-eaf7-4522-a347-03976b62aa4a` vs `70a7ead7-0657-4f7b-aa9d-362284c9c0ed`). C2 calls `viewport:list` while C1's viewport is still open and receives `"no open viewports"`. This demonstrates that the sub-agent (C2), connecting through its own MCP transport, operates in a separate session with no visibility into the orchestrator's viewports.
-
-The test classifies `Forwarding needed: YES`, meaning the sub-agent's empty session is the correct isolation behavior for a clean-room dispatch: the sub-agent starts fresh without inheriting the orchestrator's viewport state.
-

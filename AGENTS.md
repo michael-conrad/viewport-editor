@@ -53,3 +53,27 @@ Papers live in `papers/<slug>/`. Each paper has:
 **Slugify:** `./papers/slugify "Paper Title"`
 
 **Slug convention:** lowercase, spaces→hyphens, strip non-alphanumeric except hyphens, collapse consecutive hyphens, strip leading/trailing, no transliteration. Duplicate slugs append `-1`, `-2`.
+
+## Release Checklist (MANDATORY)
+
+When creating a tagged release (dev → main PR), the agent MUST perform ALL of the following. Skipping any step is a process-integrity failure.
+
+| Step | Action | Verification |
+|------|--------|-------------|
+| 1 | Determine next version tag from existing tags | `git tag --sort=-version:refname` |
+| 2a | Scan the entire project for the **current version** (the version in `pyproject.toml` before bumping). Update any that are project version declarations or version references — not dependency pins in `uv.lock`, changelog history entries, or unrelated semvers. | Review each match |
+| 2b | Scan the entire project for **prior version tag references** (`@v<semver>`). Update stale references to the new tag. | Review each match |
+| 3 | Bump `version` in `pyproject.toml` to match the release tag | `grep 'version =' pyproject.toml` |
+| 4 | Bump `__version__` in `src/viewport_editor/__init__.py` to match | `grep __version__ src/viewport_editor/__init__.py` |
+| 5 | Verify all version sources are consistent | Confirm `pyproject.toml`, `__init__.py` versions and all `@v` references match the new tag |
+| 6 | Commit the version bumps on `dev` before creating the release branch | `git diff --stat` confirms only version files changed |
+| 7 | Create release branch and PR targeting `main` | PR body documents changes since last release |
+| 8 | After PR merge, create a GitHub Release with release notes | `gh release create <tag> --notes "..."` |
+| 9 | Clean up merged release branch | `git branch -D`, `git push origin --delete` |
+
+**Known version sources (must update on every release):**
+- `pyproject.toml` — `version = "<semver>"`
+- `src/viewport_editor/__init__.py` — `__version__ = "<semver>"`
+- `README.md` — `@v<semver>` references in installation instruction code blocks
+
+These are NOT exhaustive — the discovery steps (2a, 2b) find all occurrences. These serve as post-bump double-check anchors.
