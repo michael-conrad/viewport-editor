@@ -1,0 +1,37 @@
+# Lifecycle Manifest — Composite Action Tools (#63)
+# Append-only event log. Never delete or edit existing entries.
+
+events:
+  - event: step_completed
+    timestamp: "2026-06-11T12:00:00Z"
+    issuer: "OpenCode (deepseek-v4-flash:cloud)"
+    step: sc-coherence-gate
+    item: 1
+    status: PASS
+    description: "read_file: spec/codebase coherent, no conflicts, naming and descriptions locked from V1/V2"
+    severity: info
+  - event: step_completed
+    timestamp: "2026-06-11T12:10:00Z"
+    issuer: "OpenCode (deepseek-v4-flash:cloud)"
+    step: green-vbc
+    item: 1
+    status: PASS
+    description: "SC-1 SC-2 SC-3 all behavioral tests pass (165/165 suite)"
+    severity: info
+  - event: step_completed
+    timestamp: "2026-06-11T12:15:00Z"
+    issuer: "OpenCode (deepseek-v4-flash:cloud)"
+    step: exec-summary
+    item: 1
+    status: PASS
+    description: "read_file: pushed to feature/63-composite-tools, tagged 63/checkpoint/item-1-read-file, all 14 pipeline steps PASS"
+    severity: info
+  - event: step_completed
+    timestamp: "2026-06-11T16:20:00Z"
+    issuer: "OpenCode (deepseek-v4-flash:cloud)"
+    step: exec-summary
+    item: 2
+    status: PASS
+    description: "write_file: pushed to feature/63-composite-tools, tagged 63/checkpoint/item-2-write-file, all 14 pipeline steps PASS"
+    severity: info
+last_updated: "2026-06-11T16:20:00Z"

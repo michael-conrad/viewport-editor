@@ -1,0 +1,166 @@
+# Implementation Checklist — Composite Action Tools (#63)
+# Status values: PENDING, IN_PROGRESS, PASS, FAIL, BLOCKED, SKIPPED
+
+pipeline:
+  name: "Composite Action Tools Implementation"
+  issue: 63
+  branch: feature/63-composite-tools
+  pr_strategy: stacked
+  halt_at: verification_complete
+
+items:
+  - id: 1
+    label: read_file
+    scs: [SC-1, SC-2, SC-3]
+    status: PENDING
+    handler_name: read_file
+    viewport_lifecycle: open_keep
+    steps:
+      sc-coherence-gate: PENDING
+      pre-red-baseline: PENDING
+      red-phase: PENDING
+      red-doublecheck: PENDING
+      green-phase: PENDING
+      checkpoint-commit: PENDING
+      structural-checks: PENDING
+      green-doublecheck: PENDING
+      green-vbc: PENDING
+      adversarial-audit: PENDING
+      cross-validate: PENDING
+      regression-check: PENDING
+      review-prep: PENDING
+      exec-summary: PENDING
+
+  - id: 2
+    label: write_file
+    scs: [SC-4, SC-5, SC-6, SC-10]
+    status: PENDING
+    handler_name: write_file
+    viewport_lifecycle: open_close
+    steps:
+      sc-coherence-gate: PENDING
+      pre-red-baseline: PENDING
+      red-phase: PENDING
+      red-doublecheck: PENDING
+      green-phase: PENDING
+      checkpoint-commit: PENDING
+      structural-checks: PENDING
+      green-doublecheck: PENDING
+      green-vbc: PENDING
+      adversarial-audit: PENDING
+      cross-validate: PENDING
+      regression-check: PENDING
+      review-prep: PENDING
+      exec-summary: PENDING
+
+  - id: 3
+    label: edit_text
+    scs: [SC-7, SC-8, SC-9, SC-10]
+    status: PENDING
+    handler_name: edit_text
+    viewport_lifecycle: open_close
+    steps:
+      sc-coherence-gate: PENDING
+      pre-red-baseline: PENDING
+      red-phase: PENDING
+      red-doublecheck: PENDING
+      green-phase: PENDING
+      checkpoint-commit: PENDING
+      structural-checks: PENDING
+      green-doublecheck: PENDING
+      green-vbc: PENDING
+      adversarial-audit: PENDING
+      cross-validate: PENDING
+      regression-check: PENDING
+      review-prep: PENDING
+      exec-summary: PENDING
+
+  - id: 4
+    label: find_text
+    scs: [SC-11, SC-12]
+    status: PENDING
+    handler_name: find_text
+    viewport_lifecycle: none
+    steps:
+      sc-coherence-gate: PENDING
+      pre-red-baseline: PENDING
+      red-phase: PENDING
+      red-doublecheck: PENDING
+      green-phase: PENDING
+      checkpoint-commit: PENDING
+      structural-checks: PENDING
+      green-doublecheck: PENDING
+      green-vbc: PENDING
+      adversarial-audit: PENDING
+      cross-validate: PENDING
+      regression-check: PENDING
+      review-prep: PENDING
+      exec-summary: PENDING
+
+  - id: 5
+    label: diff
+    scs: [SC-13, SC-14]
+    status: PENDING
+    handler_name: diff
+    viewport_lifecycle: open_keep
+    steps:
+      sc-coherence-gate: PENDING
+      pre-red-baseline: PENDING
+      red-phase: PENDING
+      red-doublecheck: PENDING
+      green-phase: PENDING
+      checkpoint-commit: PENDING
+      structural-checks: PENDING
+      green-doublecheck: PENDING
+      green-vbc: PENDING
+      adversarial-audit: PENDING
+      cross-validate: PENDING
+      regression-check: PENDING
+      review-prep: PENDING
+      exec-summary: PENDING
+
+  - id: 6
+    label: descriptions
+    scs: [SC-18, SC-19]
+    status: PENDING
+    handler_name: "(docstrings only)"
+    viewport_lifecycle: none
+    steps:
+      sc-coherence-gate: PENDING
+      pre-red-baseline: PENDING
+      red-phase: PENDING
+      red-doublecheck: PENDING
+      green-phase: PENDING
+      checkpoint-commit: PENDING
+      structural-checks: PENDING
+      green-doublecheck: PENDING
+      green-vbc: PENDING
+      adversarial-audit: PENDING
+      cross-validate: PENDING
+      regression-check: PENDING
+      review-prep: PENDING
+      exec-summary: PENDING
+
+sc_coverage:
+  SC-1: {item: 1, status: PENDING}
+  SC-2: {item: 1, status: PENDING}
+  SC-3: {item: 1, status: PENDING}
+  SC-4: {item: 2, status: PENDING}
+  SC-5: {item: 2, status: PENDING}
+  SC-6: {item: 2, status: PENDING}
+  SC-7: {item: 3, status: PENDING}
+  SC-8: {item: 3, status: PENDING}
+  SC-9: {item: 3, status: PENDING}
+  SC-10: {item: 2,3, status: PENDING}
+  SC-11: {item: 4, status: PENDING}
+  SC-12: {item: 4, status: PENDING}
+  SC-13: {item: 5, status: PENDING}
+  SC-14: {item: 5, status: PENDING}
+  SC-15: {item: 1,2,3,4,5, status: PENDING}
+  SC-18: {item: 6, status: PENDING}
+  SC-19: {item: 6, status: PENDING}
+  SC-22: {item: post, status: PENDING}
+
+current_item: null
+current_step: null
+started_at: null
