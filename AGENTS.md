@@ -37,3 +37,19 @@ If a model timeout occurs, double the timeout and retry. Do not skip the model.
 | 4 | `ollama/gpt-oss:20b-128k` | Local | Weaker — edge of comprehension |
 | 5 | `ollama/nemotron3:33b-128k` | Local | Mid-range, extended context |
 | 6 | `ollama/qwen3.6:35b-256k` | Local | Long-context variant |
+
+## LaTeX Papers
+
+Papers live in `papers/<slug>/`. Each paper has:
+
+- `src/paper.tex` — main document (may include additional `.tex` files)
+- `src/references.bib` — bibliography
+- `figures/` — figures
+- `build/` — build artifacts (fully gitignored)
+- `paper.pdf` — final PDF at paper root (tracked)
+- `build.py` — PEP 723 build script
+
+**Build:** `./papers/<slug>/build.py` (requires `xelatex`, `biber`/`bibtex`, `makeindex`)
+**Slugify:** `./papers/slugify "Paper Title"`
+
+**Slug convention:** lowercase, spaces→hyphens, strip non-alphanumeric except hyphens, collapse consecutive hyphens, strip leading/trailing, no transliteration. Duplicate slugs append `-1`, `-2`.

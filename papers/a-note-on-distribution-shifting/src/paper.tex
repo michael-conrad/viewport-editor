@@ -1,0 +1,40 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\title{A Note on Distribution Shifting}
+\author{Michael Conrad}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This is a reference paper for the LaTeX paper storage infrastructure.
+\end{abstract}
+
+\section{Introduction}
+
+This paper demonstrates the build pipeline for LaTeX papers stored in this repository.
+
+\section{Mathematics}
+
+Consider a distribution shift function $f: \mathcal{X} \to \mathcal{Y}$ defined as:
+
+\begin{equation}
+f(x) = \int_{\Theta} p(\theta \mid x) \, d\theta
+\label{eq:shift}
+\end{equation}
+
+Equation~\ref{eq:shift} shows the fundamental relationship, as established in previous work~\cite{example2024}.
+
+\section{Conclusion}
+
+This reference paper verifies that the build pipeline produces correct output.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
