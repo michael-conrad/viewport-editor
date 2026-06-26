@@ -242,6 +242,8 @@ async def test_sc25_soft_conflict_warning_on_viewport_operations(
     assert "warning:" in scroll_text, (
         f"Expected soft conflict warning in scroll response: {scroll_text}"
     )
+    # Restore original content — this test mutates a module-scoped fixture
+    test_file.write_text("line 1\nline 2\nline 3\nline 4\nline 5\n")
 
 
 @pytest.mark.phase1
@@ -544,7 +546,11 @@ async def test_sc34_absolute_and_relative_paths(client_session: Any) -> None:
     assert not result_rel.isError, (
         f"Expected isError=false for relative path, got isError={result_rel.isError}"
     )
-    assert "error" not in _get_text(result_rel).lower()
+    rel_text = _get_text(result_rel)
+    assert "error" not in rel_text.lower()
+    assert "1: line 1" in rel_text, (
+        f"Expected file content 'line 1' in response, got: {rel_text[:300]}"
+    )
 
 
 @pytest.mark.phase1
@@ -853,8 +859,12 @@ async def test_sc2_relative_path_resolves(client_session: Any) -> None:
         "viewport",
         arguments={"action": "open", "file_path": "test_file.txt"},
     )
+    text = _get_text(result)
     assert not result.isError, (
         f"Expected isError=false for relative path, got isError={result.isError}"
+    )
+    assert "1: line 1" in text, (
+        f"Expected file content 'line 1' in response, got: {text[:300]}"
     )
 
 
