@@ -1,0 +1,160 @@
+[
+  {
+    "sequence_id": "clipboard-008",
+    "category": "clipboard",
+    "seed_content": "alpha\nbeta\ngamma\ndelta\nepsilon\nzeta\neta\ntheta\n",
+    "steps_summary": "viewport:open \u2192 clipboard:copy \u2192 clipboard:pop \u2192 viewport:close",
+    "final_content": "alpha\nbeta\ngamma\ndelta\nepsilon\nzeta\neta\ntheta\n",
+    "mechanical_flags": [
+      "expected_error_step_2"
+    ],
+    "semantic_question": "The seed content was modified by the sequence of operations above. Does the final file content correctly reflect all operations applied in order? Mechanical checks flagged: expected_error_step_2. Focus on: line ordering correctness, offset accuracy after deletions/insertions, proper application of all edit operations, and absence of corruption or drift. Respond with PASS or FAIL and specific evidence."
+  },
+  {
+    "sequence_id": "edit-pair-0002",
+    "category": "edit_pairs",
+    "seed_content": "line 1\nline 2\nline 3\nline 4\nline 5\n",
+    "steps_summary": "viewport:open \u2192 edit:replace \u2192 edit:replace \u2192 file:save \u2192 viewport:close",
+    "final_content": "line 1\nREPLACED_2\nline 3\nline 4\nline 5\n",
+    "mechanical_flags": [
+      "edit_target_not_found_step_2"
+    ],
+    "semantic_question": "The seed content was modified by the sequence of operations above. Does the final file content correctly reflect all operations applied in order? Mechanical checks flagged: edit_target_not_found_step_2. Focus on: line ordering correctness, offset accuracy after deletions/insertions, proper application of all edit operations, and absence of corruption or drift. Respond with PASS or FAIL and specific evidence."
+  },
+  {
+    "sequence_id": "edit-pair-0013",
+    "category": "edit_pairs",
+    "seed_content": "line 1\nline 2\nline 3\nline 4\nline 5\n",
+    "steps_summary": "viewport:open \u2192 edit:replace-all \u2192 edit:replace \u2192 file:save \u2192 viewport:close",
+    "final_content": "ROW 1\nROW 2\nROW 3\nROW 4\nROW 5\n",
+    "mechanical_flags": [
+      "edit_target_not_found_step_2",
+      "missing_expected_content: 'REPLACED'"
+    ],
+    "semantic_question": "The seed content was modified by the sequence of operations above. Does the final file content correctly reflect all operations applied in order? Mechanical checks flagged: edit_target_not_found_step_2, missing_expected_content: 'REPLACED'. Focus on: line ordering correctness, offset accuracy after deletions/insertions, proper application of all edit operations, and absence of corruption or drift. Respond with PASS or FAIL and specific evidence."
+  },
+  {
+    "sequence_id": "edit-pair-0014",
+    "category": "edit_pairs",
+    "seed_content": "line 1\nline 2\nline 3\nline 4\nline 5\n",
+    "steps_summary": "viewport:open \u2192 edit:replace-all \u2192 edit:replace \u2192 file:save \u2192 viewport:close",
+    "final_content": "ROW 1\nROW 2\nROW 3\nROW 4\nROW 5\n",
+    "mechanical_flags": [
+      "edit_target_not_found_step_2",
+      "missing_expected_content: 'REPLACED'"
+    ],
+    "semantic_question": "The seed content was modified by the sequence of operations above. Does the final file content correctly reflect all operations applied in order? Mechanical checks flagged: edit_target_not_found_step_2, missing_expected_content: 'REPLACED'. Focus on: line ordering correctness, offset accuracy after deletions/insertions, proper application of all edit operations, and absence of corruption or drift. Respond with PASS or FAIL and specific evidence."
+  },
+  {
+    "sequence_id": "edit-pair-0015",
+    "category": "edit_pairs",
+    "seed_content": "line 1\nline 2\nline 3\nline 4\nline 5\n",
+    "steps_summary": "viewport:open \u2192 edit:replace-all \u2192 edit:replace-all \u2192 file:save \u2192 viewport:close",
+    "final_content": "ROW 1\nROW 2\nROW 3\nROW 4\nROW 5\n",
+    "mechanical_flags": [
+      "edit_target_not_found_step_2"
+    ],
+    "semantic_question": "The seed content was modified by the sequence of operations above. Does the final file content correctly reflect all operations applied in order? Mechanical checks flagged: edit_target_not_found_step_2. Focus on: line ordering correctness, offset accuracy after deletions/insertions, proper application of all edit operations, and absence of corruption or drift. Respond with PASS or FAIL and specific evidence."
+  },
+  {
+    "sequence_id": "edit-pair-0016",
+    "category": "edit_pairs",
+    "seed_content": "line 1\nline 2\nline 3\nline 4\nline 5\n",
+    "steps_summary": "viewport:open \u2192 edit:replace-all \u2192 edit:replace-all \u2192 file:save \u2192 viewport:close",
+    "final_content": "ROW 1\nROW 2\nROW 3\nROW 4\nROW 5\n",
+    "mechanical_flags": [
+      "edit_target_not_found_step_2"
+    ],
+    "semantic_question": "The seed content was modified by the sequence of operations above. Does the final file content correctly reflect all operations applied in order? Mechanical checks flagged: edit_target_not_found_step_2. Focus on: line ordering correctness, offset accuracy after deletions/insertions, proper application of all edit operations, and absence of corruption or drift. Respond with PASS or FAIL and specific evidence."
+  },
+  {
+    "sequence_id": "edit-pair-0038",
+    "category": "edit_pairs",
+    "seed_content": "line 1\nline 2\nline 3\nline 4\nline 5\n",
+    "steps_summary": "viewport:open \u2192 edit:delete-lines \u2192 edit:replace \u2192 file:save \u2192 viewport:close",
+    "final_content": "line 1\nline 4\nline 5\n",
+    "mechanical_flags": [
+      "edit_target_not_found_step_2",
+      "missing_expected_content: 'REPLACED'"
+    ],
+    "semantic_question": "The seed content was modified by the sequence of operations above. Does the final file content correctly reflect all operations applied in order? Mechanical checks flagged: edit_target_not_found_step_2, missing_expected_content: 'REPLACED'. Focus on: line ordering correctness, offset accuracy after deletions/insertions, proper application of all edit operations, and absence of corruption or drift. Respond with PASS or FAIL and specific evidence."
+  },
+  {
+    "sequence_id": "edit-pair-0043",
+    "category": "edit_pairs",
+    "seed_content": "line 1\nline 2\nline 3\nline 4\nline 5\n",
+    "steps_summary": "viewport:open \u2192 edit:delete-lines \u2192 edit:delete-lines \u2192 file:save \u2192 viewport:close",
+    "final_content": "line 3\nline 4\nline 5\n",
+    "mechanical_flags": [
+      "line_range_step_2"
+    ],
+    "semantic_question": "The seed content was modified by the sequence of operations above. Does the final file content correctly reflect all operations applied in order? Mechanical checks flagged: line_range_step_2. Focus on: line ordering correctness, offset accuracy after deletions/insertions, proper application of all edit operations, and absence of corruption or drift. Respond with PASS or FAIL and specific evidence."
+  },
+  {
+    "sequence_id": "edit-pair-0045",
+    "category": "edit_pairs",
+    "seed_content": "line 1\nline 2\nline 3\nline 4\nline 5\n",
+    "steps_summary": "viewport:open \u2192 edit:delete-lines \u2192 edit:swap-lines \u2192 file:save \u2192 viewport:close",
+    "final_content": "line 3\nline 4\nline 5\n",
+    "mechanical_flags": [
+      "line_range_step_2"
+    ],
+    "semantic_question": "The seed content was modified by the sequence of operations above. Does the final file content correctly reflect all operations applied in order? Mechanical checks flagged: line_range_step_2. Focus on: line ordering correctness, offset accuracy after deletions/insertions, proper application of all edit operations, and absence of corruption or drift. Respond with PASS or FAIL and specific evidence."
+  },
+  {
+    "sequence_id": "edit-pair-0047",
+    "category": "edit_pairs",
+    "seed_content": "line 1\nline 2\nline 3\nline 4\nline 5\n",
+    "steps_summary": "viewport:open \u2192 edit:delete-lines \u2192 edit:move-lines \u2192 file:save \u2192 viewport:close",
+    "final_content": "line 3\nline 4\nline 5\n",
+    "mechanical_flags": [
+      "line_range_step_2"
+    ],
+    "semantic_question": "The seed content was modified by the sequence of operations above. Does the final file content correctly reflect all operations applied in order? Mechanical checks flagged: line_range_step_2. Focus on: line ordering correctness, offset accuracy after deletions/insertions, proper application of all edit operations, and absence of corruption or drift. Respond with PASS or FAIL and specific evidence."
+  },
+  {
+    "sequence_id": "edit-pair-0048",
+    "category": "edit_pairs",
+    "seed_content": "line 1\nline 2\nline 3\nline 4\nline 5\n",
+    "steps_summary": "viewport:open \u2192 edit:delete-lines \u2192 edit:move-lines \u2192 file:save \u2192 viewport:close",
+    "final_content": "line 1\nline 4\nline 5\n",
+    "mechanical_flags": [
+      "line_range_step_2"
+    ],
+    "semantic_question": "The seed content was modified by the sequence of operations above. Does the final file content correctly reflect all operations applied in order? Mechanical checks flagged: line_range_step_2. Focus on: line ordering correctness, offset accuracy after deletions/insertions, proper application of all edit operations, and absence of corruption or drift. Respond with PASS or FAIL and specific evidence."
+  },
+  {
+    "sequence_id": "edit-pair-0073",
+    "category": "edit_pairs",
+    "seed_content": "line 1\nline 2\nline 3\nline 4\nline 5\n",
+    "steps_summary": "viewport:open \u2192 edit:replace \u2192 edit:replace \u2192 edit:replace \u2192 file:save \u2192 viewport:close",
+    "final_content": "REPLACED_1\nline 2\nline 3\nREPLACED_4\nline 5\n",
+    "mechanical_flags": [
+      "edit_target_not_found_step_3"
+    ],
+    "semantic_question": "The seed content was modified by the sequence of operations above. Does the final file content correctly reflect all operations applied in order? Mechanical checks flagged: edit_target_not_found_step_3. Focus on: line ordering correctness, offset accuracy after deletions/insertions, proper application of all edit operations, and absence of corruption or drift. Respond with PASS or FAIL and specific evidence."
+  },
+  {
+    "sequence_id": "edit-pair-0074",
+    "category": "edit_pairs",
+    "seed_content": "line 1\nline 2\nline 3\nline 4\nline 5\n",
+    "steps_summary": "viewport:open \u2192 edit:replace \u2192 edit:replace \u2192 edit:replace \u2192 file:save \u2192 viewport:close",
+    "final_content": "line 1\nREPLACED_2\nline 3\nline 4\nline 5\n",
+    "mechanical_flags": [
+      "edit_target_not_found_step_2",
+      "edit_target_not_found_step_3"
+    ],
+    "semantic_question": "The seed content was modified by the sequence of operations above. Does the final file content correctly reflect all operations applied in order? Mechanical checks flagged: edit_target_not_found_step_2, edit_target_not_found_step_3. Focus on: line ordering correctness, offset accuracy after deletions/insertions, proper application of all edit operations, and absence of corruption or drift. Respond with PASS or FAIL and specific evidence."
+  },
+  {
+    "sequence_id": "edit-pair-0075",
+    "category": "edit_pairs",
+    "seed_content": "line 1\nline 2\nline 3\nline 4\nline 5\n",
+    "steps_summary": "viewport:open \u2192 edit:delete-lines \u2192 edit:insert-lines \u2192 edit:delete-lines \u2192 file:save \u2192 viewport:close",
+    "final_content": "line 3\nline 4\nline 5\nINSERTED_4\n",
+    "mechanical_flags": [
+      "line_range_step_3"
+    ],
+    "semantic_question": "The seed content was modified by the sequence of operations above. Does the final file content correctly reflect all operations applied in order? Mechanical checks flagged: line_range_step_3. Focus on: line ordering correctness, offset accuracy after deletions/insertions, proper application of all edit operations, and absence of corruption or drift. Respond with PASS or FAIL and specific evidence."
+  }
+]

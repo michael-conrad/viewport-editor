@@ -430,7 +430,7 @@ The composite tools reuse existing ViewportManager methods. No new models, buffe
 |-------------|-----------|----------|
 | File not found (read/edit) | FileNotFoundError from viewport:open | isError, "file not found: {path}" |
 | old_text not found (edit) | ReplaceTargetNotFoundError | isError, "old text not found in {file}" |
-| Multiple matches (edit) | ReplaceAmbiguousMatchError | isError, "multiple matches — use read and a more specific old_text" |
+| Multiple matches (edit) | apply_replace_all (safe by design) | Replaces all occurrences, returns match count |
 | File changed externally | Conflict check on save | isError with conflict details |
 | Pattern not found (find) | Empty result set | "no matches found" (not an error) |
 
@@ -458,7 +458,7 @@ These 5 verbs cover >95% of file operations an agent performs. The remaining ope
 | SC-6 | `write` detects external file modification and reports conflict | `behavioral` |
 | SC-7 | `edit` replaces old_text with new_text in the specified file | `behavioral` |
 | SC-8 | `edit` returns error when old_text is not found | `behavioral` |
-| SC-9 | `edit` returns error on ambiguous matches | `behavioral` |
+| SC-9 | `edit` replaces all occurrences of `old_text` when multiple matches exist (no error — safe by design) | `behavioral` |
 | SC-10 | After `write` or `edit`, the viewport is closed (no dangling sessions) | `behavioral` |
 | SC-11 | `find` returns structured results with line numbers for substring match | `behavioral` |
 | SC-12 | `find` with regex=true returns regex match results | `behavioral` |

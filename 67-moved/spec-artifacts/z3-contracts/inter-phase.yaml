@@ -1,0 +1,8 @@
+# Inter-phase invariants
+variables:
+  P1_complete:
+    type: bool
+  P2_complete:
+    type: bool
+constraints:
+  - "P2_complete => P1_complete"   # Phase 2 must not complete before Phase 1

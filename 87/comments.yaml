@@ -1,0 +1,20 @@
+comments:
+- type: internal
+  body: '## Plan Creation Complete
+
+
+    **Status:** Plan created, validated, audited. Ready for implementation pipeline.
+
+
+    **Plan file:** `.issues/87/plan.md` — 3 phases, 67 steps, 4 SCs
+
+
+    **Validation:** PASS
+
+    **Audit-fidelity:** PASS (3 remediable findings fixed)
+
+    **Audit-concern:** PASS
+
+
+    **Next:** Create sub-issues for each phase and dispatch to implementation-pipeline.'
+  timestamp: '2026-06-26T02:20:18+00:00'

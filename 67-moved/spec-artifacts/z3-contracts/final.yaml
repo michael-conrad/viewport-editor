@@ -1,0 +1,11 @@
+variables:
+  P1_complete:
+    type: bool
+  P2_complete:
+    type: bool
+  P3_complete:
+    type: bool
+constraints:
+  - "P3_complete => (P1_complete and P2_complete)"
+  - "P2_complete => P1_complete"
+  - "z3.And(P1_complete, P2_complete, P3_complete)"

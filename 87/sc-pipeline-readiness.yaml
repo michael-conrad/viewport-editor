@@ -1,0 +1,8 @@
+status: PASS
+sc_summary: |
+  Spec #87: Allow absolute paths unconditionally. 4 success criteria:
+  SC-1: Absolute path to any file resolves correctly (behavioral)
+  SC-2: Relative path resolves against project root (behavioral)
+  SC-3: AbsolutePathError class retained (structural)
+  SC-4: PathEscapeError class retained (structural)
+phase_dependencies: []
