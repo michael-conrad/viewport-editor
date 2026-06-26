@@ -81,20 +81,15 @@ async def test_sc3_tool_descriptions_use_prose_yaml_no_json(
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc4_absolute_paths_rejected(client_session: Any) -> None:
-    # SC-4 behavioral evidence: isError=true on the Any
+async def test_sc4_absolute_paths_accepted(client_session: Any) -> None:
+    # SC-4 behavioral evidence: absolute paths are now accepted
     result = await client_session.call_tool(
         "viewport",
         arguments={"action": "open", "file_path": "/etc/passwd"},
     )
     text = _get_text(result)
-    assert result.isError, (
-        f"Expected isError=true for absolute path, got isError={result.isError}"
-    )
-    assert (
-        "error" in text.lower()
-        or "AbsolutePathError" in text
-        or "PathEscapeError" in text
+    assert not result.isError, (
+        f"Expected isError=false for absolute path, got isError={result.isError}"
     )
 
 
@@ -247,6 +242,8 @@ async def test_sc25_soft_conflict_warning_on_viewport_operations(
     assert "warning:" in scroll_text, (
         f"Expected soft conflict warning in scroll response: {scroll_text}"
     )
+    # Restore original content — this test mutates a module-scoped fixture
+    test_file.write_text("line 1\nline 2\nline 3\nline 4\nline 5\n")
 
 
 @pytest.mark.phase1
@@ -534,15 +531,14 @@ async def test_sc33_list_returns_all_fields(client_session: Any) -> None:
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc34_relative_paths_only(client_session: Any) -> None:
+async def test_sc34_absolute_and_relative_paths(client_session: Any) -> None:
     result_abs = await client_session.call_tool(
         "viewport",
         arguments={"action": "open", "file_path": "/etc/hostname"},
     )
-    assert result_abs.isError, (
-        f"Expected isError=true for absolute path, got isError={result_abs.isError}"
+    assert not result_abs.isError, (
+        f"Expected isError=false for absolute path, got isError={result_abs.isError}"
     )
-    assert "error" in _get_text(result_abs).lower()
     result_rel = await client_session.call_tool(
         "viewport",
         arguments={"action": "open", "file_path": "test_file.txt"},
@@ -550,7 +546,11 @@ async def test_sc34_relative_paths_only(client_session: Any) -> None:
     assert not result_rel.isError, (
         f"Expected isError=false for relative path, got isError={result_rel.isError}"
     )
-    assert "error" not in _get_text(result_rel).lower()
+    rel_text = _get_text(result_rel)
+    assert "error" not in rel_text.lower()
+    assert "1: line 1" in rel_text, (
+        f"Expected file content 'line 1' in response, got: {rel_text[:300]}"
+    )
 
 
 @pytest.mark.phase1
@@ -849,6 +849,39 @@ async def test_sc38_unicode_decode_noop_on_literal_text(
         arguments={"action": "open", "file_path": "test_file.txt"},
     )
     assert "error" not in _get_text(result_open)
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc2_relative_path_resolves(client_session: Any) -> None:
+    """SC-2: Relative paths resolve against project_root."""
+    result = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": "test_file.txt"},
+    )
+    text = _get_text(result)
+    assert not result.isError, (
+        f"Expected isError=false for relative path, got isError={result.isError}"
+    )
+    assert "1: line 1" in text, (
+        f"Expected file content 'line 1' in response, got: {text[:300]}"
+    )
+
+
+def test_sc1_absolute_path_resolves() -> None:
+    """SC-1: _resolve_path accepts absolute paths and returns Tuple[str, str].
+
+    RED phase: this MUST FAIL because _resolve_path currently raises
+    AbsolutePathError on absolute paths. The GREEN phase will remove
+    that restriction.
+    """
+    from viewport_editor.file_ops import _resolve_path
+
+    result = _resolve_path("/etc/hostname", "/tmp")
+    assert isinstance(result, tuple), f"Expected tuple, got {type(result)}"
+    assert len(result) == 2, f"Expected tuple of length 2, got {len(result)}"
+    assert isinstance(result[0], str), f"Expected str, got {type(result[0])}"
+    assert isinstance(result[1], str), f"Expected str, got {type(result[1])}"
 
 
 def _get_text(result: Any) -> str:

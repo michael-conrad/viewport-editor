@@ -75,9 +75,9 @@ Run directly from the tagged release — no PyPI install, no repo clone needed:
 ```jsonc
 // OpenCode
 "mcp": {
-    "viewport-editor": {
+    "editor": {
       "type": "local",
-"command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.3.3", "viewport-editor"],
+"command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.3.4", "viewport-editor"],
       "enabled": true
     }
 }
@@ -87,9 +87,9 @@ Run directly from the tagged release — no PyPI install, no repo clone needed:
 {
   // Other MCP Clients (Claude, Cursor, etc.)
   "mcpServers": {
-    "viewport-editor": {
+    "editor": {
       "command": "uvx",
-"args": ["--from", "git+https://github.com/michael-conrad/viewport-editor@v0.3.3", "viewport-editor"]
+"args": ["--from", "git+https://github.com/michael-conrad/viewport-editor@v0.3.4", "viewport-editor"]
     }
   }
 }
@@ -110,9 +110,9 @@ When adding viewport-editor as an MCP plugin, configure it in your `opencode.jso
 ```jsonc
 {
   "mcp": {
-    "viewport-editor": {
+    "editor": {
       "type": "local",
-"command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.3.3", "viewport-editor"],
+"command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.3.4", "viewport-editor"],
       "enabled": true
     }
   }
@@ -122,7 +122,7 @@ When adding viewport-editor as an MCP plugin, configure it in your `opencode.jso
 Then add the following stanza to your repository's `AGENTS.md`:
 
 ```markdown
-### viewport-editor MCP Plugin
+### editor MCP Plugin
 
 This repo uses [viewport-editor](https://github.com/michael-conrad/viewport-editor) as its editing MCP server.
 
