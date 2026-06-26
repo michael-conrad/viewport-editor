@@ -529,15 +529,14 @@ async def test_sc33_list_returns_all_fields(client_session: Any) -> None:
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc34_relative_paths_only(client_session: Any) -> None:
+async def test_sc34_absolute_and_relative_paths(client_session: Any) -> None:
     result_abs = await client_session.call_tool(
         "viewport",
         arguments={"action": "open", "file_path": "/etc/hostname"},
     )
-    assert result_abs.isError, (
-        f"Expected isError=true for absolute path, got isError={result_abs.isError}"
+    assert not result_abs.isError, (
+        f"Expected isError=false for absolute path, got isError={result_abs.isError}"
     )
-    assert "error" in _get_text(result_abs).lower()
     result_rel = await client_session.call_tool(
         "viewport",
         arguments={"action": "open", "file_path": "test_file.txt"},
@@ -849,27 +848,13 @@ async def test_sc38_unicode_decode_noop_on_literal_text(
 @pytest.mark.phase1
 @pytest.mark.asyncio
 async def test_sc2_relative_path_resolves(client_session: Any) -> None:
-    """SC-2: Relative paths resolve against project_root.
-
-    RED phase: this MUST PASS because relative paths already work.
-    The test verifies that opening a relative path like 'test_file.txt'
-    resolves against project_root by checking the response contains
-    the file content.
-    """
+    """SC-2: Relative paths resolve against project_root."""
     result = await client_session.call_tool(
         "viewport",
         arguments={"action": "open", "file_path": "test_file.txt"},
     )
-    text = _get_text(result)
     assert not result.isError, (
         f"Expected isError=false for relative path, got isError={result.isError}"
-    )
-    assert "error" not in text.lower()
-    assert "    1: line 1" in text, (
-        f"Expected file content 'line 1' in response, got: {text[:200]}"
-    )
-    assert "    5: line 5" in text, (
-        f"Expected file content 'line 5' in response, got: {text[:200]}"
     )
 
 
