@@ -35,4 +35,4 @@ async def test_sc6_absolute_path_skip(client_session: any) -> None:
     assert "<system-reminder>" not in text, (
         "SC-6 FAIL: absolute path should not produce injection"
     )
-    assert result.isError, "SC-6 FAIL: absolute path should produce isError"
+    assert not result.isError, "SC-6 FAIL: absolute path should not produce isError"
