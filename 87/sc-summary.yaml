@@ -1,0 +1,41 @@
+sc_coverage:
+  total: 4
+  single_task: false
+  spec_url: https://github.com/michael-conrad/viewport-editor/issues/87
+  evidence_types:
+    - behavioral
+    - structural
+  phases:
+    - id: phase-1
+      sc_ids: [SC-1, SC-2]
+      evidence_types: [behavioral]
+    - id: phase-2
+      sc_ids: [SC-1, SC-2]
+      evidence_types: [behavioral]
+    - id: phase-3
+      sc_ids: [SC-3, SC-4]
+      evidence_types: [structural]
+  cross_cutting:
+    sc_ids: []
+    verified_in_phase: null
+  scs:
+    - id: SC-1
+      description: "Absolute path to any file on the filesystem resolves correctly"
+      evidence_type: behavioral
+      verification_gate: post-implementation
+      plan_phase: phase-1
+    - id: SC-2
+      description: "Relative path resolves correctly against project root"
+      evidence_type: behavioral
+      verification_gate: post-implementation
+      plan_phase: phase-1
+    - id: SC-3
+      description: "AbsolutePathError class still exists (backward compat)"
+      evidence_type: structural
+      verification_gate: post-implementation
+      plan_phase: phase-3
+    - id: SC-4
+      description: "PathEscapeError class still exists (backward compat)"
+      evidence_type: structural
+      verification_gate: post-implementation
+      plan_phase: phase-3

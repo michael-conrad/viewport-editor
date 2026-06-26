@@ -1,0 +1,20 @@
+spec: https://github.com/michael-conrad/viewport-editor/issues/87
+revision_re_entry:
+  revision_scopes:
+    - scope: full
+      cascade_artifacts:
+        - plan.md
+        - sc-summary.yaml
+        - verification-consistency-contract.yaml
+      requires_re_approval: true
+      valid_re_entry_steps:
+        - step: approval-gate
+    - scope: partial
+      cascade_artifacts:
+        - plan.md
+      requires_re_approval: true
+      valid_re_entry_steps:
+        - step: writing-plans
+      constraints:
+        - "on_partial_revision: cascade_is_limited_to_affected_scs"
+        - "on_full_revision: all_artifacts_must_be_regenerated"

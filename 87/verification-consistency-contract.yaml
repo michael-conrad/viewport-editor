@@ -1,0 +1,34 @@
+spec: https://github.com/michael-conrad/viewport-editor/issues/87
+verification_consistency:
+  sc_entries:
+    - id: SC-1
+      evidence_type: behavioral
+      verification_gate: post-implementation
+      pipeline_step_binding: phase-1-green-doublecheck
+      re_entry_step: null
+      phase_binding: phase-1
+      artifact_path: .issues/87/artifacts/behavioral-evidence-SC-1.log
+    - id: SC-2
+      evidence_type: behavioral
+      verification_gate: post-implementation
+      pipeline_step_binding: phase-1-green-doublecheck
+      re_entry_step: null
+      phase_binding: phase-1
+      artifact_path: .issues/87/artifacts/behavioral-evidence-SC-2.log
+    - id: SC-3
+      evidence_type: structural
+      verification_gate: post-implementation
+      pipeline_step_binding: phase-3-green-doublecheck
+      re_entry_step: null
+      phase_binding: phase-3
+      artifact_path: .issues/87/artifacts/structural-evidence-SC-3.log
+    - id: SC-4
+      evidence_type: structural
+      verification_gate: post-implementation
+      pipeline_step_binding: phase-3-green-doublecheck
+      re_entry_step: null
+      phase_binding: phase-3
+      artifact_path: .issues/87/artifacts/structural-evidence-SC-4.log
+  constraints:
+    - "for_every_sc: evidence_type_is_consistent_with_verification_gate"
+    - "for_every_sc: pipeline_step_binding_is_valid_for_phase"
