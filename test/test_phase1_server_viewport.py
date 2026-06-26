@@ -851,6 +851,22 @@ async def test_sc38_unicode_decode_noop_on_literal_text(
     assert "error" not in _get_text(result_open)
 
 
+def test_sc1_absolute_path_resolves() -> None:
+    """SC-1: _resolve_path accepts absolute paths and returns Tuple[str, str].
+
+    RED phase: this MUST FAIL because _resolve_path currently raises
+    AbsolutePathError on absolute paths. The GREEN phase will remove
+    that restriction.
+    """
+    from viewport_editor.file_ops import _resolve_path
+
+    result = _resolve_path("/etc/hostname", "/tmp")
+    assert isinstance(result, tuple), f"Expected tuple, got {type(result)}"
+    assert len(result) == 2, f"Expected tuple of length 2, got {len(result)}"
+    assert isinstance(result[0], str), f"Expected str, got {type(result[0])}"
+    assert isinstance(result[1], str), f"Expected str, got {type(result[1])}"
+
+
 def _get_text(result: Any) -> str:
     parts: list[str] = []
     if result.content:

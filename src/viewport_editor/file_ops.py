@@ -13,7 +13,6 @@ import tempfile
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from .buffer import Buffer
-from .exceptions import AbsolutePathError, PathEscapeError
 
 if TYPE_CHECKING:
     from .viewport import ViewportEntry
@@ -21,13 +20,9 @@ if TYPE_CHECKING:
 
 def _resolve_path(file_path: str, project_root: str) -> Tuple[str, str]:
     if file_path.startswith("/"):
-        raise AbsolutePathError(file_path)
-    resolved = os.path.normpath(os.path.join(project_root, file_path))
-    resolved_str = str(resolved)
-    norm_root = os.path.normpath(project_root)
-    if not resolved_str.startswith(str(norm_root)):
-        raise PathEscapeError(file_path)
-    return resolved_str, file_path
+        return os.path.realpath(file_path), file_path
+    resolved = os.path.realpath(os.path.join(project_root, file_path))
+    return resolved, file_path
 
 
 def create_new_file(file_path: str, project_root: str) -> str:
