@@ -81,20 +81,15 @@ async def test_sc3_tool_descriptions_use_prose_yaml_no_json(
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc4_absolute_paths_rejected(client_session: Any) -> None:
-    # SC-4 behavioral evidence: isError=true on the Any
+async def test_sc4_absolute_paths_accepted(client_session: Any) -> None:
+    # SC-4 behavioral evidence: absolute paths are now accepted
     result = await client_session.call_tool(
         "viewport",
         arguments={"action": "open", "file_path": "/etc/passwd"},
     )
     text = _get_text(result)
-    assert result.isError, (
-        f"Expected isError=true for absolute path, got isError={result.isError}"
-    )
-    assert (
-        "error" in text.lower()
-        or "AbsolutePathError" in text
-        or "PathEscapeError" in text
+    assert not result.isError, (
+        f"Expected isError=false for absolute path, got isError={result.isError}"
     )
 
 
@@ -849,6 +844,33 @@ async def test_sc38_unicode_decode_noop_on_literal_text(
         arguments={"action": "open", "file_path": "test_file.txt"},
     )
     assert "error" not in _get_text(result_open)
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc2_relative_path_resolves(client_session: Any) -> None:
+    """SC-2: Relative paths resolve against project_root.
+
+    RED phase: this MUST PASS because relative paths already work.
+    The test verifies that opening a relative path like 'test_file.txt'
+    resolves against project_root by checking the response contains
+    the file content.
+    """
+    result = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": "test_file.txt"},
+    )
+    text = _get_text(result)
+    assert not result.isError, (
+        f"Expected isError=false for relative path, got isError={result.isError}"
+    )
+    assert "error" not in text.lower()
+    assert "    1: line 1" in text, (
+        f"Expected file content 'line 1' in response, got: {text[:200]}"
+    )
+    assert "    5: line 5" in text, (
+        f"Expected file content 'line 5' in response, got: {text[:200]}"
+    )
 
 
 def test_sc1_absolute_path_resolves() -> None:
