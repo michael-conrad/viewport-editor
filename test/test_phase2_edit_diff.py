@@ -118,7 +118,7 @@ async def test_sc10_diff_show_returns_unified_diff(
     """
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "file_path": "edit_test.txt"},
+        arguments={"action": "open", "file_path": "edit_test.txt", "autosave": False},
     )
     vpid = _extract_vpid(_get_text(result_open))
 
@@ -160,7 +160,7 @@ async def test_sc11_file_save_rejects_stale_mtime(
     """
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "file_path": "save_test.txt"},
+        arguments={"action": "open", "file_path": "save_test.txt", "autosave": False},
     )
     vpid = _extract_vpid(_get_text(result_open))
 
@@ -189,7 +189,7 @@ async def test_sc11_file_save_rejects_missing_file(
     """SC-11: file:save on missing file returns isError."""
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "file_path": "save_test.txt"},
+        arguments={"action": "open", "file_path": "save_test.txt", "autosave": False},
     )
     vpid = _extract_vpid(_get_text(result_open))
 
@@ -218,7 +218,7 @@ async def test_sc11_file_save_force_overrides_stale(
     """SC-11: file:save with force=true overrides stale mtime/size check."""
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "file_path": "save_test.txt"},
+        arguments={"action": "open", "file_path": "save_test.txt", "autosave": False},
     )
     vpid = _extract_vpid(_get_text(result_open))
 
@@ -349,7 +349,7 @@ async def test_sc18_replace_all_multi_occurrence(client_session: Any) -> None:
     """SC-18: replace-all replaces all occurrences of old_text in the buffer."""
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "file_path": "multi.txt"},
+        arguments={"action": "open", "file_path": "multi.txt", "autosave": False},
     )
     vpid = _extract_vpid(_get_text(result_open))
 
@@ -426,7 +426,7 @@ async def test_sc20_delete_lines_at_position(client_session: Any) -> None:
     """SC-20: delete-lines removes lines at specified range."""
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "file_path": "lines.txt"},
+        arguments={"action": "open", "file_path": "lines.txt", "autosave": False},
     )
     vpid = _extract_vpid(_get_text(result_open))
 
@@ -510,7 +510,7 @@ async def test_sc22_move_lines(client_session: Any) -> None:
     """SC-22: move-lines moves a line range to another position in the buffer."""
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "file_path": "lines.txt"},
+        arguments={"action": "open", "file_path": "lines.txt", "autosave": False},
     )
     vpid = _extract_vpid(_get_text(result_open))
 

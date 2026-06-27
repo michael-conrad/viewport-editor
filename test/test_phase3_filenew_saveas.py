@@ -93,8 +93,8 @@ async def test_sc15_file_new_creates_file_and_opens_viewport(
         arguments={"action": "list"},
     )
     list_text = _get_text(list_result)
-    assert "autosave: False" in list_text or "autosave: false" in list_text.lower(), (
-        f"SC-15 FAIL: file:new viewport should have autosave=False: {list_text[:300]}"
+    assert "autosave: True" in list_text or "autosave: true" in list_text.lower(), (
+        f"SC-15 FAIL: file:new viewport should have autosave=True: {list_text[:300]}"
     )
 
 
@@ -405,8 +405,8 @@ async def test_sc_lf3_file_new_opens_with_newline_empty(
         arguments={"action": "list"},
     )
     list_text = _get_text(list_result)
-    assert "autosave: False" in list_text or "autosave: false" in list_text.lower(), (
-        f"SC-LF-3 FAIL: file:new viewport should have autosave=False: {list_text[:300]}"
+    assert "autosave: True" in list_text or "autosave: true" in list_text.lower(), (
+        f"SC-LF-3 FAIL: file:new viewport should have autosave=True: {list_text[:300]}"
     )
 
 

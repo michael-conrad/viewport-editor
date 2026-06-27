@@ -43,7 +43,7 @@ class ViewportEntry:
     line_end: int
     mtime: Optional[float] = None
     size: Optional[int] = None
-    autosave: bool = False
+    autosave: bool = True
     dirty: bool = False
     line_ending: str = "\n"
     display_mode: str = "hide"
@@ -109,7 +109,7 @@ class ViewportManager:
         file_path: str,
         line_start: int = 1,
         line_end: int = 100,
-        autosave: bool = False,
+        autosave: bool = True,
     ) -> ViewportEntry:
         resolved_path, _ = file_ops._resolve_path(file_path, self.project_root)
         if not __import__("os").path.isfile(resolved_path):
@@ -398,7 +398,7 @@ class ViewportManager:
             line_end=0,
             mtime=buffer.mtime,
             size=0,
-            autosave=False,
+            autosave=True,
             line_ending="\n",
             display_mode="hide",
         )
