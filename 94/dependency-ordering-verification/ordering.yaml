@@ -1,0 +1,5 @@
+schema_version: "1.0"
+generated_at: "20260627155543"
+phases:
+  - name: phase-1-autosave-default-on
+    depends_on: []

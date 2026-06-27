@@ -1,0 +1,10 @@
+schema_version: "1.0"
+generated_at: "20260627155543"
+variables:
+  p1:
+    type: bool
+    description: "phase-1-autosave-default-on complete"
+phases:
+  - name: phase-1-autosave-default-on
+    depends_on: []
+    concern: "Change default autosave from False to True"

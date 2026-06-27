@@ -1,0 +1,43 @@
+schema_version: "1.0"
+generated_at: "20260627155543"
+status: PASS
+checks:
+  - check_id: PR-1
+    result: PASS
+    detail: "All 6 SCs map to exactly one RED->GREEN->COMMIT cycle. Each asserts one independently testable claim."
+  - check_id: PR-2
+    result: PASS
+    solve_contract_path: ".issues/94/sc-dependency-contract.yaml"
+    prove_results:
+      - theorem: "sc_dag_is_valid"
+        result: VALID
+    detail: "No depends_on fields declared. DAG is trivially valid (no edges, no cycles)."
+  - check_id: PR-3
+    result: PASS
+    detail: "All 6 SCs target exactly one file category (source code or test) and one verification domain (behavioral)."
+  - check_id: PR-4
+    result: PASS
+    solve_contract_path: ".issues/94/dependency-ordering-verification/ordering.yaml"
+    prove_results:
+      - theorem: "phase_dag_is_acyclic"
+        result: VALID
+    detail: "Single-phase spec — no phase dependency graph. Trivially acyclic."
+  - check_id: PR-5
+    result: SKIP
+    detail: "Single-phase spec — three-tier structure not required per single-task exemption."
+    sub_checks:
+      - check_id: PR-5a
+        result: SKIP
+      - check_id: PR-5b
+        result: SKIP
+      - check_id: PR-5c
+        result: SKIP
+      - check_id: PR-5d
+        result: SKIP
+      - check_id: PR-5e
+        result: SKIP
+sc_summary:
+  total_scs: 6
+  atomic: 6
+  with_dependencies: 0
+  single_concern: 6

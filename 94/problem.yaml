@@ -1,0 +1,22 @@
+domain: autosave-default-on
+types:
+  - name: phase
+objects:
+  - name: phase-1-autosave-default-on
+    type: phase
+fluents:
+  - name: completed
+    params:
+      - name: p
+        type: phase
+actions:
+  - name: complete-phase
+    params:
+      - name: p
+        type: phase
+    preconditions: []
+    effects:
+      - completed(p)
+init: []
+goals:
+  - completed(phase-1-autosave-default-on)

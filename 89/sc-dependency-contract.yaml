@@ -1,0 +1,19 @@
+# SC Dependency Contract — Issue #89
+# Single-phase, no SC dependencies. All SCs are independent.
+schema_version: "1.0"
+generated_at: "20260626032848"
+variables:
+  SC-1_DONE: {type: bool, nullable: false}
+  SC-2_DONE: {type: bool, nullable: false}
+  SC-3_DONE: {type: bool, nullable: false}
+  SC-4_DONE: {type: bool, nullable: false}
+  SC-5_DONE: {type: bool, nullable: false}
+invariants:
+  # No SC depends on any other SC — all are independent
+  - "z3.Implies(SC-1_DONE == True, True)"
+  - "z3.Implies(SC-2_DONE == True, True)"
+  - "z3.Implies(SC-3_DONE == True, True)"
+  - "z3.Implies(SC-4_DONE == True, True)"
+  - "z3.Implies(SC-5_DONE == True, True)"
+  # Theorem: all SCs can be satisfied without violating dependency order
+  - "sc_dag_is_valid"

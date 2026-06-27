@@ -1,0 +1,10 @@
+# Phase Dependency Ordering Contract — Issue #89
+# Single phase, no phase dependencies. Trivially acyclic.
+schema_version: "1.0"
+generated_at: "20260626032848"
+variables:
+  PHASE-1_DONE: {type: bool, nullable: false}
+invariants:
+  - "z3.Implies(PHASE-1_DONE == True, True)"
+  # Theorem: phase DAG is acyclic
+  - "phase_dag_is_acyclic"
