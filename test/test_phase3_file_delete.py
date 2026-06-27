@@ -107,7 +107,7 @@ async def test_file_delete_dirty_buffer_rejects(
     """
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "file_path": "dirty_delete_target.txt"},
+        arguments={"action": "open", "file_path": "dirty_delete_target.txt", "autosave": False},
     )
     text_open = _get_text(result_open)
     vpid = _extract_vpid(text_open)

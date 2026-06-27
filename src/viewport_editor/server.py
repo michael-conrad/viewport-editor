@@ -756,7 +756,7 @@ def _action_open(
         file_path=file_path,
         line_start=line_start or 1,
         line_end=line_end or 100,
-        autosave=autosave or False,
+        autosave=autosave if autosave is not None else True,
     )
     entry_data = result.to_dict()
     visible = _manager.get_visible_lines(session_id, result)

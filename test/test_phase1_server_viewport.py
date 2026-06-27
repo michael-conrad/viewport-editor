@@ -135,7 +135,7 @@ async def test_sc5_open_returns_entry_with_all_fields(
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc6_open_accepts_autosave_param_defaults_off(
+async def test_sc6_open_accepts_autosave_param_defaults_on(
     client_session: Any,
 ) -> None:
     result_on = await client_session.call_tool(
@@ -147,7 +147,7 @@ async def test_sc6_open_accepts_autosave_param_defaults_off(
         "viewport",
         arguments={"action": "open", "file_path": "test_file.txt"},
     )
-    assert "autosave: False" in _get_text(result_off)
+    assert "autosave: True" in _get_text(result_off)
 
 
 @pytest.mark.phase1
@@ -807,7 +807,7 @@ async def test_sc38_unicode_decode_in_edit_replace(
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "file_path": file_path_str},
+        arguments={"action": "open", "file_path": file_path_str, "autosave": False},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
