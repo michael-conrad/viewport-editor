@@ -135,7 +135,7 @@ async def test_sc5_open_returns_entry_with_all_fields(
 
 @pytest.mark.phase1
 @pytest.mark.asyncio
-async def test_sc6_open_accepts_autosave_param_defaults_off(
+async def test_sc6_open_accepts_autosave_param_defaults_on(
     client_session: Any,
 ) -> None:
     result_on = await client_session.call_tool(
@@ -147,7 +147,7 @@ async def test_sc6_open_accepts_autosave_param_defaults_off(
         "viewport",
         arguments={"action": "open", "file_path": "test_file.txt"},
     )
-    assert "autosave: False" in _get_text(result_off)
+    assert "autosave: True" in _get_text(result_off)
 
 
 @pytest.mark.phase1
@@ -239,8 +239,8 @@ async def test_sc25_soft_conflict_warning_on_viewport_operations(
         arguments={"action": "scroll", "viewport_id": vpid, "lines": 1},
     )
     scroll_text = _get_text(result_scroll)
-    assert "warning:" in scroll_text, (
-        f"Expected soft conflict warning in scroll response: {scroll_text}"
+    assert "notice:" in scroll_text or "auto-reloaded" in scroll_text, (
+        f"Expected auto-reload notice in scroll response: {scroll_text}"
     )
     # Restore original content — this test mutates a module-scoped fixture
     test_file.write_text("line 1\nline 2\nline 3\nline 4\nline 5\n")
@@ -807,7 +807,7 @@ async def test_sc38_unicode_decode_in_edit_replace(
 
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "file_path": file_path_str},
+        arguments={"action": "open", "file_path": file_path_str, "autosave": False},
     )
     assert "error" not in _get_text(result_open)
     vpid = _extract_vpid(_get_text(result_open))
@@ -868,6 +868,220 @@ async def test_sc2_relative_path_resolves(client_session: Any) -> None:
     )
 
 
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc1_auto_reload_on_reopen_after_external_modification(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-1: Re-opening a viewport after external file modification auto-reloads
+    the buffer content and returns an auto-reload notice.
+
+    RED: _action_open does not call auto-reload yet — this test MUST FAIL
+    because the response content will still show the old file state and no
+    auto-reload notice will be present.
+    """
+    file_path = test_project_root / "test_file.txt"
+    original_content = file_path.read_text()
+
+    # 1. Open the file via MCP client
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": str(file_path)},
+    )
+    text = _get_text(result_open)
+    assert "error" not in text.lower(), f"Open failed: {text}"
+    assert "1: line 1" in text, f"Expected original content, got: {text[:200]}"
+
+    # 2. Modify the file externally (write new content to disk)
+    new_content = "replacement line 1\nreplacement line 2\nreplacement line 3\n"
+    file_path.write_text(new_content)
+    time.sleep(0.05)  # ensure mtime changes beyond the 10ms threshold
+
+    # 3. Open the same file again
+    result_reopen = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": str(file_path)},
+    )
+    reopen_text = _get_text(result_reopen)
+
+    # 4. Verify the response content reflects the new disk state
+    assert "replacement line 1" in reopen_text, (
+        f"SC-1 FAIL: expected new content 'replacement line 1' in reopen response, "
+        f"got: {reopen_text[:300]}"
+    )
+    assert "1: line 1" not in reopen_text, (
+        f"SC-1 FAIL: old content 'line 1' should not appear after auto-reload, "
+        f"got: {reopen_text[:300]}"
+    )
+
+    # 5. Verify the response includes the auto-reload notice
+    assert "auto-reload" in reopen_text.lower() or "reloaded" in reopen_text.lower(), (
+        f"SC-1 FAIL: expected auto-reload notice in reopen response, "
+        f"got: {reopen_text[:300]}"
+    )
+
+    # Restore original content
+    file_path.write_text(original_content)
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc2_auto_reload_on_scroll_after_external_modification(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-2: Auto-reload fires on scroll when buffer is clean and file changed externally.
+
+    RED: scroll/jump/page-up/page-down don't call auto-reload yet — this test MUST FAIL
+    because the response content will still show the old file state and no
+    auto-reload notice will be present.
+    """
+    file_path = test_project_root / "test_file.txt"
+    original_content = file_path.read_text()
+
+    # 1. Open the file via MCP client
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": str(file_path)},
+    )
+    text = _get_text(result_open)
+    assert "error" not in text.lower(), f"Open failed: {text}"
+    vpid = _extract_vpid(text)
+
+    # 2. Modify the file externally
+    new_content = "replacement line 1\nreplacement line 2\nreplacement line 3\n"
+    file_path.write_text(new_content)
+    time.sleep(0.05)
+
+    # 3. Call scroll — should trigger auto-reload
+    result_scroll = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "scroll", "viewport_id": vpid, "lines": 1},
+    )
+    scroll_text = _get_text(result_scroll)
+
+    # 4. Verify the response shows new content + auto-reload notice
+    assert "replacement line 1" in scroll_text, (
+        f"SC-2 FAIL: expected new content 'replacement line 1' in scroll response, "
+        f"got: {scroll_text[:300]}"
+    )
+    assert "1: line 1" not in scroll_text, (
+        f"SC-2 FAIL: old content 'line 1' should not appear after auto-reload, "
+        f"got: {scroll_text[:300]}"
+    )
+    assert "auto-reloaded" in scroll_text.lower(), (
+        f"SC-2 FAIL: expected auto-reload notice in scroll response, "
+        f"got: {scroll_text[:300]}"
+    )
+
+    # Restore original content
+    file_path.write_text(original_content)
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc2_auto_reload_on_jump_after_external_modification(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-2: Auto-reload fires on jump when buffer is clean and file changed externally."""
+    file_path = test_project_root / "test_file.txt"
+    original_content = file_path.read_text()
+
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": str(file_path)},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+
+    new_content = "replacement line 1\nreplacement line 2\nreplacement line 3\n"
+    file_path.write_text(new_content)
+    time.sleep(0.05)
+
+    result_jump = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "jump", "viewport_id": vpid, "target": "top"},
+    )
+    jump_text = _get_text(result_jump)
+
+    assert "replacement line 1" in jump_text, (
+        f"SC-2 FAIL: expected new content in jump response, got: {jump_text[:300]}"
+    )
+    assert "auto-reloaded" in jump_text.lower(), (
+        f"SC-2 FAIL: expected auto-reload notice in jump response, got: {jump_text[:300]}"
+    )
+
+    file_path.write_text(original_content)
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc2_auto_reload_on_page_up_after_external_modification(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-2: Auto-reload fires on page-up when buffer is clean and file changed externally."""
+    file_path = test_project_root / "test_file.txt"
+    original_content = file_path.read_text()
+
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": str(file_path)},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+
+    new_content = "replacement line 1\nreplacement line 2\nreplacement line 3\n"
+    file_path.write_text(new_content)
+    time.sleep(0.05)
+
+    result_up = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "page-up", "viewport_id": vpid},
+    )
+    up_text = _get_text(result_up)
+
+    assert "replacement line 1" in up_text, (
+        f"SC-2 FAIL: expected new content in page-up response, got: {up_text[:300]}"
+    )
+    assert "auto-reloaded" in up_text.lower(), (
+        f"SC-2 FAIL: expected auto-reload notice in page-up response, got: {up_text[:300]}"
+    )
+
+    file_path.write_text(original_content)
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc2_auto_reload_on_page_down_after_external_modification(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-2: Auto-reload fires on page-down when buffer is clean and file changed externally."""
+    file_path = test_project_root / "test_file.txt"
+    original_content = file_path.read_text()
+
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": str(file_path)},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+
+    new_content = "replacement line 1\nreplacement line 2\nreplacement line 3\n"
+    file_path.write_text(new_content)
+    time.sleep(0.05)
+
+    result_down = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "page-down", "viewport_id": vpid},
+    )
+    down_text = _get_text(result_down)
+
+    assert "replacement line 1" in down_text, (
+        f"SC-2 FAIL: expected new content in page-down response, got: {down_text[:300]}"
+    )
+    assert "auto-reloaded" in down_text.lower(), (
+        f"SC-2 FAIL: expected auto-reload notice in page-down response, got: {down_text[:300]}"
+    )
+
+    file_path.write_text(original_content)
+
+
 def test_sc1_absolute_path_resolves() -> None:
     """SC-1: _resolve_path accepts absolute paths and returns Tuple[str, str].
 
@@ -891,6 +1105,199 @@ def _get_text(result: Any) -> str:
             if hasattr(item, "text") and item.text:
                 parts.append(item.text)
     return "\n".join(parts)
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc3_list_shows_updated_metadata_after_auto_reload(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-3: Open file, modify externally, list — verify metadata shows new mtime/size + notice."""
+    file_path = test_project_root / "test_file.txt"
+    original_content = file_path.read_text()
+
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": str(file_path)},
+    )
+    text = _get_text(result_open)
+    assert "error" not in text.lower()
+    vpid = _extract_vpid(text)
+
+    new_content = "replacement line 1\nreplacement line 2\n"
+    file_path.write_text(new_content)
+    time.sleep(0.05)
+
+    # Trigger auto-reload via scroll (updates entry metadata)
+    result_scroll = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "scroll", "viewport_id": vpid, "lines": 1},
+    )
+    scroll_text = _get_text(result_scroll)
+    assert "auto-reloaded" in scroll_text.lower()
+
+    # List — verify metadata shows new mtime/size
+    result_list = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "list"},
+    )
+    list_text = _get_text(result_list)
+    st = file_path.stat()
+    assert f"mtime: {st.st_mtime}" in list_text, (
+        f"SC-3 FAIL: expected mtime {st.st_mtime} in list, got: {list_text[:300]}"
+    )
+    assert f"size: {st.st_size}" in list_text, (
+        f"SC-3 FAIL: expected size {st.st_size} in list, got: {list_text[:300]}"
+    )
+
+    file_path.write_text(original_content)
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc4_notice_on_autosave_after_external_modification(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-4: Open file, modify externally, toggle autosave — verify notice present."""
+    file_path = test_project_root / "test_file.txt"
+    original_content = file_path.read_text()
+
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": str(file_path)},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+
+    new_content = "replacement line 1\nreplacement line 2\n"
+    file_path.write_text(new_content)
+    time.sleep(0.05)
+
+    result = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "autosave", "viewport_id": vpid, "autosave_enabled": False},
+    )
+    text = _get_text(result)
+    assert "auto-reloaded" in text.lower(), (
+        f"SC-4 FAIL: expected auto-reload notice in autosave response, got: {text[:300]}"
+    )
+
+    file_path.write_text(original_content)
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc4_notice_on_set_display_mode_after_external_modification(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-4: Open file, modify externally, set-display-mode — verify notice present."""
+    file_path = test_project_root / "test_file.txt"
+    original_content = file_path.read_text()
+
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": str(file_path)},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+
+    new_content = "replacement line 1\nreplacement line 2\n"
+    file_path.write_text(new_content)
+    time.sleep(0.05)
+
+    result = await client_session.call_tool(
+        "viewport",
+        arguments={
+            "action": "set-display-mode",
+            "viewport_id": vpid,
+            "display_mode": "show",
+        },
+    )
+    text = _get_text(result)
+    assert "auto-reloaded" in text.lower(), (
+        f"SC-4 FAIL: expected auto-reload notice in set-display-mode response, got: {text[:300]}"
+    )
+
+    file_path.write_text(original_content)
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc9_notice_exact_string(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-9: Verify auto-reload notice contains exact string."""
+    file_path = test_project_root / "test_file.txt"
+    original_content = file_path.read_text()
+
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": str(file_path)},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+
+    new_content = "replacement line 1\nreplacement line 2\n"
+    file_path.write_text(new_content)
+    time.sleep(0.05)
+
+    result = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "scroll", "viewport_id": vpid, "lines": 1},
+    )
+    text = _get_text(result)
+    assert "file auto-reloaded (external change detected)" in text, (
+        f"SC-9 FAIL: expected exact notice string in response, got: {text[:300]}"
+    )
+
+    file_path.write_text(original_content)
+
+
+@pytest.mark.phase1
+@pytest.mark.asyncio
+async def test_sc11_metadata_matches_os_stat_after_auto_reload(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-11: Open file, modify externally, auto-reload, check entry metadata matches os.stat."""
+    file_path = test_project_root / "test_file.txt"
+    original_content = file_path.read_text()
+
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": str(file_path)},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+
+    new_content = "replacement line 1\nreplacement line 2\n"
+    file_path.write_text(new_content)
+    time.sleep(0.05)
+
+    # Trigger auto-reload via scroll
+    result_scroll = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "scroll", "viewport_id": vpid, "lines": 1},
+    )
+    scroll_text = _get_text(result_scroll)
+    assert "auto-reloaded" in scroll_text.lower()
+
+    # List to get stored metadata
+    result_list = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "list"},
+    )
+    list_text = _get_text(result_list)
+    st = file_path.stat()
+
+    mtime_line = [l for l in list_text.splitlines() if "mtime:" in l][0]
+    size_line = [l for l in list_text.splitlines() if "size:" in l][0]
+    stored_mtime = float(mtime_line.split("mtime:")[1].strip())
+    stored_size = int(size_line.split("size:")[1].strip())
+
+    assert stored_mtime == st.st_mtime, (
+        f"SC-11 FAIL: mtime mismatch — stored={stored_mtime}, os.stat={st.st_mtime}"
+    )
+    assert stored_size == st.st_size, (
+        f"SC-11 FAIL: size mismatch — stored={stored_size}, os.stat={st.st_size}"
+    )
+
+    file_path.write_text(original_content)
 
 
 def _extract_vpid(text: str) -> str:
