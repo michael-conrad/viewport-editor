@@ -56,7 +56,7 @@ Papers live in `papers/<slug>/`. Each paper has:
 
 ## Release Checklist (MANDATORY)
 
-When creating a tagged release (dev → main PR), the agent MUST perform ALL of the following. Skipping any step is a process-integrity failure.
+When creating a tagged release, the agent MUST perform ALL of the following. Skipping any step is a process-integrity failure.
 
 | Step | Action | Verification |
 |------|--------|-------------|
@@ -66,7 +66,7 @@ When creating a tagged release (dev → main PR), the agent MUST perform ALL of 
 | 3 | Bump `version` in `pyproject.toml` to match the release tag | `grep 'version =' pyproject.toml` |
 | 4 | Bump `__version__` in `src/viewport_editor/__init__.py` to match | `grep __version__ src/viewport_editor/__init__.py` |
 | 5 | Verify all version sources are consistent | Confirm `pyproject.toml`, `__init__.py` versions and all `@v` references match the new tag |
-| 6 | Commit the version bumps on `dev` before creating the release branch | `git diff --stat` confirms only version files changed |
+| 6 | Commit the version bumps before creating the release branch | `git diff --stat` confirms only version files changed |
 | 7 | Create release branch and PR targeting `main` | PR body documents changes since last release |
 | 8 | After PR merge, create a GitHub Release with release notes | `gh release create <tag> --notes "..."` |
 | 9 | Clean up merged release branch | `git branch -D`, `git push origin --delete` |
