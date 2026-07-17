@@ -22,7 +22,11 @@ When the buffer has pending edits (`dirty=True`), the warning format is identica
 
 ## Root Cause Analysis
 
-The conflict detection system (`check_conflict` → `format_conflict_warning` → `_check_file_conflict`) is a unified path: it detects conflicts identically regardless of dirty state. The caller (`server.py` functions) receives an `Optional[str]` warning and appends it to the response. There is no branching on `entry.dirty` at the conflict-detection call sites. The 9 call sites of `_check_file_conflict` in `server.py` all follow the same pattern: check conflict → if warning, append `warning:\n{warning}`. None auto-reloads; none emits a differentiated signal.
+The conflict detection system (`check_conflict` → `format_conflict_warning` → `_check_file_conflict`) is a unified path: it detects conflicts identically regardless of dirty state. There are 8 call sites of `_check_file_conflict` in `server.py` across read and edit actions (`_action_open`, `_action_scroll`, `_action_page_up`, `_action_page_down`, `_action_jump`, `_action_autosave`, `_action_set_display_mode`, and `_handle_edit_action`). All 8 follow the same pattern: check conflict → if warning, append `warning:\n{warning}` to the response parts.
+
+Separately, the save-path composite tools — `write_file` (line 416), `edit_text` (line 468), and `file:save` (line 1077) — call `_manager.check_conflict()` directly (not via `_check_file_conflict`) and raise errors on conflict instead of appending warnings. `_action_list` does NOT currently check for conflicts at all — it will need a conflict check added.
+
+None of the existing call sites auto-reload; none emits a differentiated signal based on dirty state.
 
 ## Alternatives Considered & Why Discarded
 
@@ -54,7 +58,7 @@ Introduce a bifurcated conflict response routed through `entry.dirty`:
 | `src/viewport_editor/viewport.py` | `ViewportManager.check_conflict()` at line 376 | Delegates to `file_ops.check_conflict()` |
 | `src/viewport_editor/viewport.py` | `ViewportManager.format_conflict_warning()` at line 463 | Delegates to `file_ops.format_conflict_warning()` |
 | `src/viewport_editor/viewport.py` | `ViewportEntry.dirty` field at line 47 | Boolean flag for pending edits |
-| `src/viewport_editor/server.py` | `_check_file_conflict()` at line 658 | 9 call sites for read actions (scroll, jump, page-up, etc.) |
+| `src/viewport_editor/server.py` | `_check_file_conflict()` at line 658 | 8 call sites across read and edit actions; `_action_list` lacks conflict check |
 | `src/viewport_editor/server.py` | `file:save` at line 1077 | Save path with conflict check |
 | `src/viewport_editor/server.py` | `write_file` at line 416 | Composite write with conflict check |
 | `src/viewport_editor/server.py` | `edit_text` at line 468 | Composite edit with conflict check |
@@ -101,8 +105,10 @@ conflict:
 ### Call Site Changes in `server.py`
 
 - Replace `_check_file_conflict()` with `_check_and_maybe_reload()` that calls `_manager.auto_reload_if_clean()`
-- Read-action call sites (scroll, jump, page, list, autosave, set_display_mode, open) — the 7 non-save call sites: append notice or warning to response
-- Save-path call sites (file:save, write_file, edit_text) — on conflict+dirty: raise error with stronger signal; on conflict+clean: auto-reload then proceed with save
+- Read-action call sites (open, scroll, page-up, page-down, jump, autosave, set-display-mode) — these 7 existing `_check_file_conflict` call sites: replace with `_check_and_maybe_reload()`, append notice or warning to response
+- `_action_list` (no current conflict check) — **new behavior**: add `_check_and_maybe_reload()` call, append notice or warning
+- `_handle_edit_action` (existing `_check_file_conflict` call site) — replace with `_check_and_maybe_reload()`, append notice or warning
+- Save-path call sites (file:save, write_file, edit_text) — these call `_manager.check_conflict()` directly: on conflict+dirty raise ViewportError with stronger signal; on conflict+clean auto-reload then proceed
 
 ## Anti-Lobotomization SC
 
@@ -137,7 +143,7 @@ After this spec is approved, invoke `writing-plans` to create `.issues/96/plan.m
 1. Add `format_external_modification_warning()` to `file_ops.py`
 2. Add `auto_reload_if_clean()` to `ViewportManager` in `viewport.py`
 3. Replace `_check_file_conflict()` with `_check_and_maybe_reload()` in `server.py`
-4. Update all 7 read-action call sites (open, scroll, jump, page-up, page-down, list, autosave, set-display-mode)
+4. Update all 8 existing `_check_file_conflict()` call sites (open, scroll, page-up, page-down, jump, autosave, set-display-mode, _handle_edit_action) and add conflict check to `_action_list` (new behavior)
 5. Write behavioral tests for SC-1, SC-2, SC-3, SC-4, SC-9, SC-11
 
 ### Phase 2: Save-Path Dirty Awareness
@@ -170,7 +176,7 @@ No known interdependencies with other open issues.
 |---|---|---|
 | Direct source search | `grep` for `check_conflict` in `src/` | Verify existing conflict detection API |
 | Direct source search | `grep` for `format_conflict_warning` in `src/` | Verify existing warning format function |
-| Direct source search | `grep` for `_check_file_conflict` in `src/` | Verify all 9 call sites |
+| Direct source search | `grep` for `_check_file_conflict` in `src/` | Verify 8 call sites via helper + 3 direct calls to `_manager.check_conflict()` |
 | Direct source search | `grep` for `auto_reload_if_clean` in `src/` | Confirm method does not exist yet |
 | Direct source search | `grep` for `refresh_if_changed` in `src/` | Verify BufferManager refresh API exists |
 | Direct source search | `glob` for test files in `test/` | Verify referenced test files exist |

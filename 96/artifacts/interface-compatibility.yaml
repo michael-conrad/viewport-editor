@@ -1,0 +1,73 @@
+spec: https://github.com/michael-conrad/viewport-editor/issues/96
+generated_at: 2026-07-17T13:00:00Z
+interface_compatibility:
+  interfaces:
+    - name: ViewportManager.auto_reload_if_clean(session_id, viewport_id) -> Optional[str]
+      status: new
+      compatibility: internal_only
+      consumers:
+        - server.py _check_and_maybe_reload
+    - name: ViewportManager.check_conflict(file_path, stored_mtime, stored_size) -> Optional[dict]
+      status: unchanged
+      compatibility: backward_compatible
+      consumers:
+        - server.py (internal use via auto_reload_if_clean)
+        - ViewportManager.auto_reload_if_clean
+    - name: ViewportManager.format_conflict_warning(warning) -> str
+      status: unchanged
+      compatibility: backward_compatible
+      consumers:
+        - server.py (existing call sites preserved for direct use)
+    - name: file_ops.format_external_modification_warning(warning) -> str
+      status: new
+      compatibility: internal_only
+      consumers:
+        - ViewportManager.auto_reload_if_clean (dirty branch)
+        - ViewportManager (delegate)
+    - name: file_ops.format_conflict_warning(warning) -> str
+      status: unchanged
+      compatibility: backward_compatible
+      consumers:
+        - ViewportManager.format_conflict_warning
+    - name: file_ops.check_conflict(file_path, project_root, stored_mtime, stored_size) -> Optional[dict]
+      status: unchanged
+      compatibility: backward_compatible
+      consumers:
+        - ViewportManager.check_conflict
+    - name: _check_file_conflict(file_path, entry) -> Optional[str]
+      status: removed
+      compatibility: breaking_change
+      consumers:
+        - Replaced by _check_and_maybe_reload at all call sites
+        - Existing direct references removed
+    - name: _check_and_maybe_reload(file_path, entry) -> Optional[str]
+      status: new
+      compatibility: internal_only
+      consumers:
+        - _action_open, _action_scroll, _action_jump, _action_page_up, _action_page_down
+        - _action_autosave, _action_set_display_mode
+        - _handle_edit_action (Phase 2)
+        - _handle_file_action (Phase 2 save path)
+    - name: BufferManager.refresh_if_changed(session_id, file_path, resolved_path) -> None
+      status: unchanged
+      compatibility: backward_compatible
+      consumers:
+        - ViewportManager.auto_reload_if_clean
+    - name: ViewportEntry.dirty (field)
+      status: unchanged
+      compatibility: backward_compatible
+      consumers:
+        - ViewportManager.auto_reload_if_clean
+        - server.py save-path branching (Phase 2)
+    - name: _handle_file_action(action, session_id, viewport_id, file_path, force) -> str
+      status: modified
+      compatibility: breaking_change
+      consumers:
+        - file:save MCP tool handler
+        - conflict response format changes from passive warning to auto-reload-or-reject
+    - name: _handle_edit_action(action, session_id, viewport_id, ...) -> str
+      status: modified
+      compatibility: breaking_change
+      consumers:
+        - write_file and edit_text MCP tool handlers
+        - conflict response format changes from passive warning to auto-reload-or-reject

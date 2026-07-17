@@ -1,0 +1,103 @@
+spec: https://github.com/michael-conrad/viewport-editor/issues/96
+generated_at: 2026-07-17T13:00:00Z
+blast_radius:
+  phases:
+    - phase: phase-1-read-actions
+      affected_components:
+        - component: server.py
+          impact: direct
+          description: >
+            Replace _check_file_conflict() with _check_and_maybe_reload() affecting
+            7 read-action call sites (open, scroll, jump, page-up, page-down, list,
+            autosave, set-display-mode). Each call site replaces the passive
+            warning-append pattern with auto-reload-or-warning branching.
+          ripple_effects:
+            - All MCP tool responses now include auto-reload notice instead of conflict warning when buffer is clean
+            - Agent workflow changes: no manual discard+reopen needed for clean buffers
+            - Existing conflict detection tests must be updated
+        - component: viewport.py
+          impact: direct
+          description: >
+            Add auto_reload_if_clean() method to ViewportManager. Delegates to
+            file_ops.check_conflict() then branches on entry.dirty to either
+            auto-reload via buffer_mgr.refresh_if_changed() or emit stronger warning.
+            Modifies ViewportManager's public API surface.
+          ripple_effects:
+            - New public method on ViewportManager consumed by server.py
+            - get_entry() called internally for dirty check
+            - refresh_if_changed() called on BufferManager
+        - component: file_ops.py
+          impact: direct
+          description: >
+            Add format_external_modification_warning() function that produces
+            stronger YAML conflict signal with severity: external_modification
+            key and prose note about overwriting external changes.
+          ripple_effects:
+            - ViewportManager.format_conflict_warning delegate path unchanged
+            - New warning format consumed by auto_reload_if_clean() dirty branch
+        - component: buffer.py
+          impact: indirect
+          description: >
+            refresh_if_changed() is called by auto_reload_if_clean() to reload
+            buffer content and update metadata. No changes to buffer.py itself.
+          ripple_effects:
+            - BufferManager internal state is updated via existing refresh_if_changed API
+        - component: test/test_phase1_server_viewport.py
+          impact: direct
+          description: >
+            Behavioral tests for SC-1 through SC-4, SC-9, SC-11 added.
+            Existing passing tests must not regress.
+          ripple_effects:
+            - SC-1: auto-reload on open with external change
+            - SC-2: auto-reload on scroll/jump/page
+            - SC-3: auto-reload on list
+            - SC-4: auto-reload on autosave/set-display-mode
+            - SC-9: string check for notice format
+            - SC-11: entry metadata updated after reload
+        - component: test/test_phase2_edit_diff.py
+          impact: indirect
+          description: >
+            Some existing edit/diff tests call _check_file_conflict indirectly
+            through server.py. May need fixture adjustment if auto-reload changes
+            conflict behavior.
+          ripple_effects:
+            - Existing edit-path tests may need conflict fixture updates
+      risk_level: medium
+    - phase: phase-2-save-paths
+      affected_components:
+        - component: server.py
+          impact: direct
+          description: >
+            Update _handle_file_action (file:save path) and _handle_edit_action
+            (write_file/edit_text path) to branch on dirty+conflict. Clean+conflict:
+            auto-reload then proceed. Dirty+conflict: raise error with
+            external_modification severity.
+          ripple_effects:
+            - file:save with dirty+conflict now raises stronger error (breaking change in response format)
+            - write_file/edit_text with dirty+conflict now rejects with new signal
+            - Clean+conflict saves no longer rejected — auto-reloads transparently
+        - component: viewport.py
+          impact: indirect
+          description: >
+            auto_reload_if_clean() reused from Phase 1 for save-path conflict
+            handling. No new changes to viewport.py.
+          ripple_effects: []
+        - component: file_ops.py
+          impact: indirect
+          description: >
+            format_external_modification_warning() reused from Phase 1. No new
+            changes to file_ops.py.
+          ripple_effects: []
+        - component: test/test_phase2_edit_diff.py
+          impact: direct
+          description: >
+            Behavioral tests for SC-5 through SC-8, SC-10 added. Full regression
+            test (SC-12) via uv run pytest test/. Anti-lobotomization audit
+            (SC-13).
+          ripple_effects:
+            - SC-5: file:save clean+conflict succeeds
+            - SC-6: file:save dirty+conflict rejected with stronger warning
+            - SC-7: write_file/edit_text clean+conflict succeeds
+            - SC-8: write_file/edit_text dirty+conflict rejected
+            - "SC-10: string check for severity: external_modification"
+      risk_level: low

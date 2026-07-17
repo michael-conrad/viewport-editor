@@ -1,0 +1,42 @@
+spec: https://github.com/michael-conrad/viewport-editor/issues/96
+generated_at: 2026-07-17T13:00:00Z
+cross_cutting_matrix:
+  concerns:
+    - concern: auto_reload_if_clean method definition
+      affects_phases: [phase-1-read-actions, phase-2-save-paths]
+      description: >
+        The auto_reload_if_clean() method is defined in Phase 1 and reused by
+        Phase 2 save-path call sites. Its interface must be stable before Phase 2
+        begins. Any interface changes require re-testing both phases.
+      coordination_required: true
+    - concern: format_external_modification_warning definition
+      affects_phases: [phase-1-read-actions, phase-2-save-paths]
+      description: >
+        Defined in Phase 1 file_ops.py, used as the stronger conflict signal in
+        both Phase 1 (dirty read-actions) and Phase 2 (dirty save-path rejections).
+        Output format (severity field, prose note) must be consistent across
+        both phases.
+      coordination_required: true
+    - concern: entry.dirty flag correctness
+      affects_phases: [phase-1-read-actions, phase-2-save-paths]
+      description: >
+        The branching condition entry.dirty is the sole discriminator between
+        auto-reload and stronger-warning behavior. False-positive dirty suppresses
+        auto-reload (safe: shows stronger warning). False-negative dirty causes
+        silent auto-reload overwriting edits (data loss). Correctness of dirty
+        flag tracking is critical to both phases.
+      coordination_required: true
+    - concern: SC-12 full regression suite
+      affects_phases: [phase-2-save-paths]
+      description: >
+        SC-12 (no behavior change when no conflict detected) is verified once in
+        Phase 2 but applies to all changes from both phases. Must run full
+        pytest suite and confirm zero regressions.
+      coordination_required: false
+    - concern: Existing test fixture compatibility
+      affects_phases: [phase-1-read-actions, phase-2-save-paths]
+      description: >
+        Existing tests that set up conflict scenarios (mtime/size mismatch) may
+        need fixture updates when behavior changes from passive-warning to
+        auto-reload. Both phases potentially affect existing test expectations.
+      coordination_required: true

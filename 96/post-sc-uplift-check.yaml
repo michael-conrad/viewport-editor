@@ -1,0 +1,28 @@
+# Post-SC Uplift Check — Issue #96
+# Generated: 2026-07-17
+# Status: PASS
+
+## Summary
+- Total SCs: 13
+- Uplifted: 0
+- Downgrade-flagged: 0
+- PASS: 13
+
+## Per-SC Classification
+
+SC-1: behavior-change=YES, declared=behavioral → PASS
+SC-2: behavior-change=YES, declared=behavioral → PASS
+SC-3: behavior-change=YES, declared=behavioral → PASS
+SC-4: behavior-change=YES, declared=behavioral → PASS
+SC-5: behavior-change=YES, declared=behavioral → PASS
+SC-6: behavior-change=YES, declared=behavioral → PASS
+SC-7: behavior-change=YES, declared=behavioral → PASS
+SC-8: behavior-change=YES, declared=behavioral → PASS
+SC-9: behavior-change=NO, declared=string → PASS (format constant does not alter runtime behavior)
+SC-10: behavior-change=NO, declared=string → PASS (format string does not alter runtime behavior)
+SC-11: behavior-change=YES, declared=behavioral → PASS
+SC-12: behavior-change=NO, declared=string → PASS (regression check via test suite)
+SC-13: behavior-change=YES (implementation discipline), declared=behavioral → PASS
+
+## Findings
+None — all SCs correctly classified.

@@ -1,0 +1,62 @@
+spec: https://github.com/michael-conrad/viewport-editor/issues/96
+generated_at: 2026-07-17T13:00:00Z
+code_path_inventory:
+  phases:
+    - phase: phase-1-read-actions
+      files:
+        - path: src/viewport_editor/file_ops.py
+          reason: Add new function format_external_modification_warning() — stronger YAML conflict signal
+          changes: >
+            Define format_external_modification_warning() at module level, co-located
+            with existing format_conflict_warning(). Output format includes
+            severity: external_modification key and prose note about overwriting
+            external changes.
+        - path: src/viewport_editor/viewport.py
+          reason: Add auto_reload_if_clean() method to ViewportManager
+          changes: >
+            Add auto_reload_if_clean(self, session_id, viewport_id) -> Optional[str]
+            method. Logic: get_entry → check_conflict → if no conflict return None →
+            if not entry.dirty: refresh buffer via buffer_mgr, update entry
+            mtime/size, return info notice → if dirty: return
+            format_external_modification_warning(warning).
+        - path: src/viewport_editor/server.py
+          reason: Replace _check_file_conflict with _check_and_maybe_reload across 7 read-action call sites
+          changes: >
+            Define _check_and_maybe_reload(file_path, entry) -> Optional[str] that
+            calls _manager.auto_reload_if_clean() instead of old
+            _check_file_conflict pattern. Update 7 call sites: _action_open,
+            _action_scroll, _action_jump, _action_page_up, _action_page_down,
+            _action_autosave, _action_set_display_mode. Each site appends the
+            returned notice/warning to response.
+        - path: test/test_phase1_server_viewport.py
+          reason: Add behavioral tests for Phase 1 SCs
+          changes: >
+            Add tests for SC-1 (open+external change), SC-2 (scroll/jump/page),
+            SC-3 (list), SC-4 (autosave/set-display-mode), SC-9 (notice format
+            string), SC-11 (entry metadata after reload).
+        - path: test/test_phase2_edit_diff.py
+          reason: Existing tests may need conflict fixture updates for Phase 1 changes
+          changes: >
+            Update existing test fixtures that call _check_file_conflict directly
+            or rely on its passive-warning format. No behavioral changes to existing
+            tests expected, but mtime/size setup may need adjustment.
+      new_files: []
+    - phase: phase-2-save-paths
+      files:
+        - path: src/viewport_editor/server.py
+          reason: Branch _handle_file_action and _handle_edit_action on dirty+conflict
+          changes: >
+            In _handle_file_action (file:save): after conflict check, branch on
+            entry.dirty. If clean+conflict: call auto_reload_if_clean, then proceed
+            with save. If dirty+conflict: raise error with
+            format_external_modification_warning. In _handle_edit_action (edit
+            composite tools: write_file, edit_text): same branching logic for the
+            conflict preamble before edit execution.
+        - path: test/test_phase2_edit_diff.py
+          reason: Add behavioral tests for Phase 2 SCs and full regression
+          changes: >
+            Add tests for SC-5 (file:save clean+conflict succeeds), SC-6 (file:save
+            dirty+conflict rejected), SC-7 (write_file/edit_text clean+conflict),
+            SC-8 (write_file/edit_text dirty+conflict), SC-10 (severity string),
+            SC-12 (full regression suite), SC-13 (anti-lobotomization audit).
+      new_files: []

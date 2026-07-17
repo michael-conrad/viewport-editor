@@ -1,0 +1,38 @@
+spec: https://github.com/michael-conrad/viewport-editor/issues/96
+generated_at: 2026-07-17T13:00:00Z
+testability_assessment:
+  phases:
+    - phase: phase-1-read-actions
+      test_strategy: behavioral
+      key_test_scenarios:
+        - "Open file, modify externally, open again — verify content reflects new disk state and notice present (SC-1)"
+        - "Open file, modify externally, scroll — verify new content shown + notice (SC-2)"
+        - "Open file, modify externally, page-up/page-down — verify new content + notice (SC-2)"
+        - "Open file, modify externally, jump — verify new content + notice (SC-2)"
+        - "Open file, modify externally, list — verify metadata shows new mtime/size + notice (SC-3)"
+        - "Open file, modify externally, toggle autosave — verify notice present (SC-4)"
+        - "Open file, modify externally, set display mode — verify notice present (SC-4)"
+        - "Verify auto-reload notice contains exact string 'file auto-reloaded (external change detected)' (SC-9)"
+        - "Verify entry.mtime and entry.size match os.stat after auto-reload (SC-11)"
+      testability_concerns:
+        - "External modification timing: tests must reliably create mtime/size mismatch without race conditions"
+        - "clean-buffer state must be ensured (no pending edits) — dirty flag may be set by previous test actions"
+        - "Autosave-enabled viewports may auto-flush between test steps, changing dirty state"
+        - "Existing tests that set up conflict scenarios may need fixture updates when _check_file_conflict is replaced"
+    - phase: phase-2-save-paths
+      test_strategy: behavioral
+      key_test_scenarios:
+        - "file:save with clean buffer + external change — auto-reload triggers, save succeeds (SC-5)"
+        - "file:save with dirty buffer + external change — rejected with external_modification severity (SC-6)"
+        - "write_file with clean buffer + external change — auto-reload triggers, write succeeds (SC-7)"
+        - "write_file with dirty buffer + external change — rejected with external_modification severity (SC-8)"
+        - "edit_text with clean buffer + external change — auto-reload triggers, edit succeeds (SC-7)"
+        - "edit_text with dirty buffer + external change — rejected with external_modification severity (SC-8)"
+        - "Verify stronger conflict format includes 'severity: external_modification' (SC-10)"
+        - "Full regression: uv run pytest test/ — zero failures (SC-12)"
+        - "Audit: verify no SC was downgraded from behavioral to lower type (SC-13)"
+      testability_concerns:
+        - "Autosave interaction: if autosave fires between external change and agent action, buffer may auto-flush before conflict check"
+        - "file:save and write_file/edit_text have different server.py dispatch paths — must be tested independently"
+        - "Regression test (SC-12) covers both phases — must run after Phase 2 changes"
+        - "SC-13 requires post-implementation audit of all SC evidence types — no behavioral SC may be weakened"

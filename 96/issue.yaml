@@ -1,0 +1,212 @@
+body: "---\ntitle: Auto-reload viewport buffer on external file change when clean\n\
+  status: draft\ncreated: 2026-07-17\nlicense: MIT\nprovenance: AI-generated\nissue:\
+  \ 96\nauthors:\n  - OpenCode (deepseek-v4-flash)\n---\n\n**STATUS:** DRAFT\n**CREATED:**\
+  \ 2026-07-17\n\n> **Compliance Requirement:** All steps and sub-steps in this document\
+  \ MUST be followed in order. Failure to comply with any step — including but not\
+  \ limited to verification gates, test phases, audit checkpoints, and review steps\
+  \ — will result in the feature branch being rejected and discarded, requiring a\
+  \ full rework from scratch and loss of all prior work. There is no valid reason\
+  \ to skip, compress, reorder, or omit any step. If a step appears redundant or unnecessary,\
+  \ follow it anyway — the cost of following an extra step is negligible compared\
+  \ to the cost of rework from a skipped step.\n\n## Problem\n\nWhen a file changes\
+  \ externally (e.g., git checkout, another tool writes it), viewport-editor detects\
+  \ the mtime/size mismatch via `check_conflict()` (in `src/viewport_editor/file_ops.py:130`\
+  \ and `src/viewport_editor/viewport.py:376`) and appends a passive YAML warning\
+  \ to the response. But the buffer retains stale content. The agent must manually\
+  \ discard changes and reopen to see fresh data — even when there are zero pending\
+  \ edits (`dirty=False`). This wastes a round-trip and means the agent works against\
+  \ stale data until it notices the warning.\n\nWhen the buffer has pending edits\
+  \ (`dirty=True`), the warning format is identical to the clean case — a single `warning:`\
+  \ YAML block with no urgency differentiation. The agent has no way to distinguish\
+  \ \"safe to reload\" from \"reload would overwrite edits.\"\n\n## Root Cause Analysis\n\
+  \nThe conflict detection system (`check_conflict` → `format_conflict_warning` →\
+  \ `_check_file_conflict`) is a unified path: it detects conflicts identically regardless\
+  \ of dirty state. There are 8 call sites of `_check_file_conflict` in `server.py`\
+  \ across read and edit actions (`_action_open`, `_action_scroll`, `_action_page_up`,\
+  \ `_action_page_down`, `_action_jump`, `_action_autosave`, `_action_set_display_mode`,\
+  \ and `_handle_edit_action`). All 8 follow the same pattern: check conflict → if\
+  \ warning, append `warning:\\n{warning}` to the response parts.\n\nSeparately, the\
+  \ save-path composite tools — `write_file` (line 416), `edit_text` (line 468), and\
+  \ `file:save` (line 1077) — call `_manager.check_conflict()` directly (not via `_check_file_conflict`)\
+  \ and raise errors on conflict instead of appending warnings. `_action_list` does\
+  \ NOT currently check for conflicts at all — it will need a conflict check added.\n\
+  \nNone of the existing call sites auto-reload; none emits a differentiated signal\
+  \ based on dirty state.\n\n## Alternatives Considered & Why Discarded\n\n| Alternative\
+  \ | Rationale for Discarding |\n|---|---|\n| Auto-reload unconditionally (ignore\
+  \ dirty state) | Would silently overwrite pending edits — data loss risk |\n| Add\
+  \ a separate polling mechanism (watcher thread) | Over-engineered for a single-user\
+  \ editor; `check_conflict` already runs inline on every action |\n| Make auto-reload\
+  \ opt-in via config flag | Adds configuration surface for what should be safe default\
+  \ behavior; clean buffer + conflict = always safe to reload |\n| Keep single warning\
+  \ format, add dirty flag to warning output | Agent must parse YAML to distinguish\
+  \ cases; differentiated severity is more visible |\n\n## Anti-Lobotomization\n\n\
+  Tests MUST NOT be lobotomized. Removing or weakening a behavioral test assertion\
+  \ to work around a timeout, failure, or infrastructure issue is a CRITICAL VIOLATION.\
+  \ SCs must achieve 100% clean PASS. No SC may be weakened, deferred, or reclassified\
+  \ to a lower evidence type to evade implementation. Read [Test Integrity Mandate](guidelines/080-code-standards.md).\n\
+  \n## Solution\n\nIntroduce a bifurcated conflict response routed through `entry.dirty`:\n\
+  \n| Condition | Behavior |\n|---|---|\n| Conflict detected + buffer clean (`dirty=False`)\
+  \ | Auto-reload buffer from disk, update entry mtime/size, include an info notice\
+  \ |\n| Conflict detected + buffer dirty (`dirty=True`) | No reload — emit stronger\
+  \ conflict signal with `severity: external_modification` |\n\n### Affected Files\
+  \ + Anchors\n\n| File | Existing Anchor | What Exists |\n|---|---|---|\n| `src/viewport_editor/file_ops.py`\
+  \ | `format_conflict_warning()` at line 178 | Formats conflict dict → YAML warning\
+  \ string |\n| `src/viewport_editor/viewport.py` | `ViewportManager.check_conflict()`\
+  \ at line 376 | Delegates to `file_ops.check_conflict()` |\n| `src/viewport_editor/viewport.py`\
+  \ | `ViewportManager.format_conflict_warning()` at line 463 | Delegates to `file_ops.format_conflict_warning()`\
+  \ |\n| `src/viewport_editor/viewport.py` | `ViewportEntry.dirty` field at line 47\
+  \ | Boolean flag for pending edits |\n| `src/viewport_editor/server.py` | `_check_file_conflict()`\
+  \ at line 658 | 8 call sites across read and edit actions; `_action_list` lacks\
+  \ conflict check |\n| `src/viewport_editor/server.py` | `file:save` at line 1077\
+  \ | Save path with conflict check |\n| `src/viewport_editor/server.py` | `write_file`\
+  \ at line 416 | Composite write with conflict check |\n| `src/viewport_editor/server.py`\
+  \ | `edit_text` at line 468 | Composite edit with conflict check |\n| `src/viewport_editor/buffer.py`\
+  \ | `refresh_if_changed()` at line 55 | Reloads buffer from disk if mtime changed\
+  \ |\n| `src/viewport_editor/buffer.py` | `get_buffer_ref()` at line 76 | Gets live\
+  \ buffer reference |\n\n### New Method: `ViewportManager.auto_reload_if_clean()`\n\
+  \nAdd to `viewport.py`. Signature:\n\n```python\ndef auto_reload_if_clean(\n   \
+  \ self, session_id: str, viewport_id: str\n) -> Optional[str]:\n```\n\nLogic:\n\
+  1. Get entry via `self.get_entry(session_id, viewport_id)`\n2. Call `self.check_conflict(entry.file,\
+  \ entry.mtime, entry.size)`\n3. If no conflict: return None\n4. If `not entry.dirty`:\
+  \ reload buffer via `self._buffer_mgr.refresh_if_changed()`, update `entry.mtime`/`entry.size`\
+  \ from refreshed buffer, return info notice\n5. If `entry.dirty`: return `format_external_modification_warning()`\
+  \ (stronger signal)\n\n### New Function: `file_ops.format_external_modification_warning()`\n\
+  \nSignature:\n\n```python\ndef format_external_modification_warning(warning: dict)\
+  \ -> str:\n```\n\nOutput format:\n\n```\nconflict:\n  severity: external_modification\n\
+  \  note: file changed on disk while buffer has uncommitted edits — save will overwrite\
+  \ external changes\n  file: <path>\n  mtime:\n    stored: <value>\n    current:\
+  \ <value>\n```\n\n### Call Site Changes in `server.py`\n\n- Replace `_check_file_conflict()`\
+  \ with `_check_and_maybe_reload()` that calls `_manager.auto_reload_if_clean()`\n\
+  - Read-action call sites (open, scroll, page-up, page-down, jump, autosave, set-display-mode)\
+  \ — these 7 existing `_check_file_conflict` call sites: replace with `_check_and_maybe_reload()`,\
+  \ append notice or warning to response\n- `_action_list` (no current conflict check)\
+  \ — **new behavior**: add `_check_and_maybe_reload()` call, append notice or warning\n\
+  - `_handle_edit_action` (existing `_check_file_conflict` call site) — replace with\
+  \ `_check_and_maybe_reload()`, append notice or warning\n- Save-path call sites\
+  \ (file:save, write_file, edit_text) — these call `_manager.check_conflict()` directly:\
+  \ on conflict+dirty raise ViewportError with stronger signal; on conflict+clean\
+  \ auto-reload then proceed\n\n## Anti-Lobotomization SC\n\nSC-13 explicitly forbids\
+  \ test lobotomization. Evidence type: behavioral.\n\n## Success Criteria\n\n| ID\
+  \ | Criterion | Evidence Type | Verification Method | Remediation | Pipeline Step\
+  \ Binding | Artifact Path | Requirement Traceability | Phase Binding | Verification\
+  \ Gate | Integration Mode | Affinity Group | Re-Entry Step | Test File | Phase Mapping\
+  \ |\n|----|-----------|---------------|---------------------|-------------|----------------------|--------------|-------------------------|--------------|-----------------|----------------|--------------|-------------|-----------|--------------|\n\
+  | SC-1 | Auto-reload fires on open when buffer exists from prior session and file\
+  \ changed externally | behavioral | Test: open file, modify externally, open again\
+  \ — content reflects new disk state, response includes auto-reload notice | On FAIL:\
+  \ verify refresh_if_changed is called; fix branching in auto_reload_if_clean | RED/GREEN\
+  \ | `.issues/96/test/behavioral/` | Root cause: no dirty-branching in conflict path\
+  \ | Phase 1 | pre-commit | green | — | — | `test_phase2_edit_diff.py` | Phase 1\
+  \ |\n| SC-2 | Auto-reload fires on scroll/jump/page-up/page-down when buffer is\
+  \ clean and file changed externally | behavioral | Test: open, modify externally,\
+  \ scroll — response shows new content + notice | On FAIL: verify _check_and_maybe_reload\
+  \ is called at each call site | RED/GREEN | `.issues/96/test/behavioral/` | Root\
+  \ cause: 7 read-action call sites lack dirty-branching | Phase 1 | pre-commit |\
+  \ green | — | — | `test_phase2_edit_diff.py` | Phase 1 |\n| SC-3 | Auto-reload fires\
+  \ on list when buffer is clean and file changed externally | behavioral | Test:\
+  \ open, modify externally, list — entry metadata shows new mtime/size, notice present\
+  \ | On FAIL: verify list action calls _check_and_maybe_reload | RED/GREEN | `.issues/96/test/behavioral/`\
+  \ | Root cause: _action_list lacks auto-reload | Phase 1 | pre-commit | green |\
+  \ SC-2 | — | `test_phase1_server_viewport.py` | Phase 1 |\n| SC-4 | Auto-reload\
+  \ fires on autosave/set-display-mode when buffer is clean and file changed externally\
+  \ | behavioral | Test: open, modify externally, toggle autosave — notice present\
+  \ | On FAIL: verify _action_autosave and _action_set_display_mode call auto-reload\
+  \ path | RED/GREEN | `.issues/96/test/behavioral/` | Root cause: autosave+display-mode\
+  \ actions lack dirty-branching | Phase 1 | pre-commit | green | SC-2 | — | `test_phase2_edit_diff.py`\
+  \ | Phase 1 |\n| SC-5 | file:save (autosave off) auto-reloads before saving when\
+  \ buffer is clean and conflict detected — save succeeds | behavioral | Test: open,\
+  \ save (clean), modify externally, file:save — succeeds, no conflict error | On\
+  \ FAIL: verify save-path checks dirty before raising conflict | RED/GREEN | `.issues/96/test/behavioral/`\
+  \ | Root cause: save path raises on any conflict regardless of dirty | Phase 2 |\
+  \ pre-commit | green | — | — | `test_phase2_edit_diff.py` | Phase 2 |\n| SC-6 |\
+  \ file:save (autosave off) emits stronger warning when buffer is dirty and conflict\
+  \ detected — save rejected | behavioral | Test: open, edit (dirty), modify externally,\
+  \ file:save — rejected with external_modification severity | On FAIL: verify format_external_modification_warning\
+  \ is called | RED/GREEN | `.issues/96/test/behavioral/` | Root cause: save path\
+  \ lacks dirty-branching for stronger signal | Phase 2 | pre-commit | green | — |\
+  \ — | `test_phase2_edit_diff.py` | Phase 2 |\n| SC-7 | write_file/edit_text auto-reload\
+  \ before saving when buffer is clean and conflict detected | behavioral | Test:\
+  \ write_file with clean buffer + external change — succeeds, no conflict error |\
+  \ On FAIL: verify composite tool paths call auto_reload_if_clean | RED/GREEN | `.issues/96/test/behavioral/`\
+  \ | Root cause: write_file/edit_text raise on any conflict regardless of dirty |\
+  \ Phase 2 | pre-commit | green | SC-5 | — | `test_phase2_edit_diff.py` | Phase 2\
+  \ |\n| SC-8 | write_file/edit_text rejects with stronger warning when buffer is\
+  \ dirty and conflict detected | behavioral | Test: write_file with dirty buffer\
+  \ + external change — rejected with external_modification severity | On FAIL: verify\
+  \ format_external_modification_warning is called in dirty path | RED/GREEN | `.issues/96/test/behavioral/`\
+  \ | Root cause: write_file/edit_text lack dirty-branching for stronger signal |\
+  \ Phase 2 | pre-commit | green | SC-6 | — | `test_phase2_edit_diff.py` | Phase 2\
+  \ |\n| SC-9 | Auto-reload notice format: `file auto-reloaded (external change detected)`\
+  \ | string | grep for the exact string in source | On FAIL: fix notice string constant\
+  \ | code | `.issues/96/test/string/` | Solution spec: defined notice format | Phase\
+  \ 1 | pre-commit | string | — | — | — | Phase 1 |\n| SC-10 | Stronger dirty conflict\
+  \ format includes `severity: external_modification` and a prose note about overwriting\
+  \ external changes | string | grep for `severity: external_modification` in source\
+  \ | On FAIL: fix format_external_modification_warning output | code | `.issues/96/test/string/`\
+  \ | Solution spec: defined stronger signal format | Phase 2 | pre-commit | string\
+  \ | — | — | — | Phase 2 |\n| SC-11 | After auto-reload, entry.mtime and entry.size\
+  \ reflect current disk state | behavioral | Test: open, modify externally, auto-reload,\
+  \ check entry metadata matches os.stat | On FAIL: verify entry metadata is updated\
+  \ after reload | RED/GREEN | `.issues/96/test/behavioral/` | Root cause: entry metadata\
+  \ stale after external change | Phase 1 | pre-commit | green | — | — | `test_phase2_edit_diff.py`\
+  \ | Phase 1 |\n| SC-12 | No behavior change when no conflict detected — existing\
+  \ responses unchanged | string | Existing test suite passes (`uv run pytest test/`)\
+  \ | On FAIL: identify regressed test and fix | CI | `.issues/96/test/regression/`\
+  \ | Safety: must not break existing behavior | Phase 2 | ci | regression | — | Phase\
+  \ 1 | — | Phase 2 |\n| SC-13 | No SC may be weakened, deferred, or reclassified\
+  \ to a lower evidence type to evade implementation | behavioral | Assert no SC was\
+  \ changed from behavioral to lower type during implementation | On FAIL: revert\
+  \ SC weakening, re-implement correctly | audit | `.issues/96/test/audit/` | Anti-lobotomization\
+  \ | Phase 2 | pre-approval-gate | audit | — | — | — | Phase 2 |\n\n> **Compliance\
+  \ Requirement:** All steps and sub-steps in this document MUST be followed in order.\
+  \ Failure to comply with any step — including but not limited to verification gates,\
+  \ test phases, audit checkpoints, and review steps — will result in the feature\
+  \ branch being rejected and discarded, requiring a full rework from scratch and\
+  \ loss of all prior work. There is no valid reason to skip, compress, reorder, or\
+  \ omit any step. If a step appears redundant or unnecessary, follow it anyway —\
+  \ the cost of following an extra step is negligible compared to the cost of rework\
+  \ from a skipped step.\n\n## Implementation Approach\n\nAfter this spec is approved,\
+  \ invoke `writing-plans` to create `.issues/96/plan.md` before implementation begins.\n\
+  \n### Phase 1: Read-Action Auto-Reload\n\n1. Add `format_external_modification_warning()`\
+  \ to `file_ops.py`\n2. Add `auto_reload_if_clean()` to `ViewportManager` in `viewport.py`\n\
+  3. Replace `_check_file_conflict()` with `_check_and_maybe_reload()` in `server.py`\n\
+  4. Update all 8 existing `_check_file_conflict()` call sites (open, scroll, page-up,\
+  \ page-down, jump, autosave, set-display-mode, _handle_edit_action) and add conflict\
+  \ check to `_action_list` (new behavior)\n5. Write behavioral tests for SC-1, SC-2,\
+  \ SC-3, SC-4, SC-9, SC-11\n\n### Phase 2: Save-Path Dirty Awareness\n\n1. Update\
+  \ file:save path to branch on dirty+conflict\n2. Update write_file/edit_text paths\
+  \ to branch on dirty+conflict\n3. Write behavioral tests for SC-5, SC-6, SC-7, SC-8,\
+  \ SC-10, SC-12, SC-13\n4. Run full test suite for regression check (SC-12)\n\n###\
+  \ Plan Format Requirements\n\nEvery dispatch step in the plan MUST use the canonical\
+  \ `skill({name: \"...\"})` → `task(..., prompt: \"execute <task> task from <skill>\"\
+  )` form. Plan steps MUST NOT contain inline procedure text. The full implementation\
+  \ pipeline must be enumerated with no skipped or combined steps: coherence gate,\
+  \ pre-red-baseline, RED/GREEN per item, VbC, audit, cross-validate, regression check,\
+  \ finishing checklist, review-prep, cleanup.\n\n## Risk and Edge Cases\n\n| Risk\
+  \ | Likelihood | Impact | Mitigation |\n|---|---|---|---|\n| Auto-reload races with\
+  \ concurrent external write | Low | Data loss on clean buffer | `refresh_if_changed`\
+  \ reads atomically; window is same as manual reopen |\n| Dirty flag incorrectly\
+  \ set (false positive) | Medium | Spurious stronger warning | Auto-reload only when\
+  \ `dirty=False`; false-positive dirty means user sees stronger signal (safe) |\n\
+  | Dirty flag incorrectly clear (false negative) | Medium | Silent data loss | Existing\
+  \ `dirty` tracking is well-tested via autosave/flush; auto-reload only when explicitly\
+  \ `dirty=False` |\n| Autosave fires between external change and agent action | Low\
+  \ | Buffer saved before reload detected | Autosave path includes conflict check;\
+  \ will auto-reload if clean at that point |\n\n## Interdependency\n\nNo known interdependencies\
+  \ with other open issues.\n\n## Documentation Sources\n\n| Source Category | What\
+  \ Was Consulted | Purpose |\n|---|---|---|\n| Direct source search | `grep` for\
+  \ `check_conflict` in `src/` | Verify existing conflict detection API |\n| Direct\
+  \ source search | `grep` for `format_conflict_warning` in `src/` | Verify existing\
+  \ warning format function |\n| Direct source search | `grep` for `_check_file_conflict`\
+  \ in `src/` | Verify 8 call sites via helper + 3 direct calls to `_manager.check_conflict()`\
+  \ |\n| Direct source search | `grep` for `auto_reload_if_clean` in `src/` | Confirm\
+  \ method does not exist yet |\n| Direct source search | `grep` for `refresh_if_changed`\
+  \ in `src/` | Verify BufferManager refresh API exists |\n| Direct source search\
+  \ | `glob` for test files in `test/` | Verify referenced test files exist |\n| Live\
+  \ verification | `editor_read_file` for `server.py:650-680` | Read `_check_file_conflict`\
+  \ implementation |\n| Live verification | `editor_read_file` for `server.py:1065-1120`\
+  \ | Read file:save conflict handling |\n| Live verification | `editor_read_file`\
+  \ for `server.py:400-500` | Read write_file/edit_text conflict handling |\n\n##\
+  \ Cross-Cutting SCs\n\nSC-12 (regression) — verified once in Phase 2, applies to\
+  \ all phases.\n\n\U0001F916 Co-authored with AI: OpenCode (deepseek-v4-flash)\n"
+updated_at: '2026-07-17T13:08:13+00:00'

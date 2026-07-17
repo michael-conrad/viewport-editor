@@ -1,0 +1,41 @@
+spec: https://github.com/michael-conrad/viewport-editor/issues/96
+generated_at: 2026-07-17T13:00:00Z
+concern_map:
+  phases:
+    - phase: phase-1-read-actions
+      primary_concern: "Auto-reload clean buffers on read actions when external change detected"
+      boundaries:
+        - "Only affects read-only actions: open, scroll, jump, page-up, page-down, list, autosave, set-display-mode"
+        - "Only triggers when buffer is clean (dirty=False) AND file has external mtime/size mismatch"
+        - "No change to save paths (file:save, write_file, edit_text) — those are Phase 2"
+        - "No change to edit operations (replace, insert, delete, swap, move) — those already have conflict handling"
+        - "No change to clipboard, search, diff, or viewport-management actions"
+        - "No change to buffer.py or BufferManager — refresh_if_changed reused as-is"
+        - "Does not modify the format of existing conflict warnings for dirty buffers"
+      separation_rationale: >
+        Read actions and save paths are separate call sites in server.py with
+        distinct response semantics. Read actions append warnings/notices to
+        response output; save paths raise errors or append to response. The
+        branching on entry.dirty is a shared concern, but the call-site
+        transformation for read actions (7 sites) is isolated from save-path
+        transformation (2 sites: _handle_file_action, _handle_edit_action).
+        Phase 1 establishes the auto_reload_if_clean() method and
+        format_external_modification_warning() function that Phase 2 reuses.
+    - phase: phase-2-save-paths
+      primary_concern: "Branch save-path conflict handling on dirty state with appropriate error signaling"
+      boundaries:
+        - "Only affects save paths: file:save (_handle_file_action), write_file and edit_text (_handle_edit_action)"
+        - "Only triggers when conflict is detected — no change to no-conflict path"
+        - "When clean+conflict: auto-reload via Phase 1 method, then proceed with save"
+        - "When dirty+conflict: reject with stronger severity: external_modification signal"
+        - "Does not affect read-action call sites — those remain unchanged from Phase 1"
+        - "Does not change existing no-conflict behavior — tests must pass unmodified"
+        - "Does not introduce new warning format — reuses format_external_modification_warning from Phase 1"
+      separation_rationale: >
+        Save paths have fundamentally different response semantics from read
+        paths: they mutate disk state and must enforce data integrity. The
+        conflict handling for save paths is a strict superset of read paths
+        (same auto-reload for clean, plus rejection for dirty). Separating into
+        Phase 2 allows Phase 1 to be validated independently before affecting
+        the higher-risk save path changes. SC-12 (full regression suite) is
+        verified in Phase 2.
