@@ -388,7 +388,7 @@ async def test_sc19_insert_lines_at_position(client_session: Any) -> None:
     """SC-19: insert-lines inserts lines at specified line position."""
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "file_path": "lines.txt"},
+        arguments={"action": "open", "file_path": "lines.txt", "autosave": False},
     )
     vpid = _extract_vpid(_get_text(result_open))
 
@@ -467,7 +467,7 @@ async def test_sc21_swap_lines(client_session: Any) -> None:
     """SC-21: swap-lines swaps two line ranges in the buffer."""
     result_open = await client_session.call_tool(
         "viewport",
-        arguments={"action": "open", "file_path": "lines.txt"},
+        arguments={"action": "open", "file_path": "lines.txt", "autosave": False},
     )
     vpid = _extract_vpid(_get_text(result_open))
 
