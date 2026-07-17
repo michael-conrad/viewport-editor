@@ -1,0 +1,17 @@
+spec: https://github.com/michael-conrad/viewport-editor/issues/96
+generated_at: 2026-07-17T12:58:00Z
+sc_coverage_total: 13
+decomposition_classification: multi-phase
+phase_count: 2
+status: complete
+artifacts:
+  - path: .issues/96/spec.md
+    required: true
+  - path: .issues/96/sc-summary.yaml
+    required: true
+  - path: .issues/96/verification-consistency-contract.yaml
+    required: true
+  - path: .issues/96/revision-re-entry-contract.yaml
+    required: true
+  - path: .issues/96/spec-to-plan-handoff.yaml
+    required: true

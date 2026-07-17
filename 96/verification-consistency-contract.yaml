@@ -1,0 +1,97 @@
+spec: https://github.com/michael-conrad/viewport-editor/issues/96
+verification_consistency:
+  sc_entries:
+    - id: SC-1
+      evidence_type: behavioral
+      verification_gate: pre-commit
+      pipeline_step_binding: red-green
+      re_entry_step: null
+      phase_binding: phase-1-read-actions
+      artifact_path: .issues/96/test/behavioral/
+    - id: SC-2
+      evidence_type: behavioral
+      verification_gate: pre-commit
+      pipeline_step_binding: red-green
+      re_entry_step: null
+      phase_binding: phase-1-read-actions
+      artifact_path: .issues/96/test/behavioral/
+    - id: SC-3
+      evidence_type: behavioral
+      verification_gate: pre-commit
+      pipeline_step_binding: red-green
+      re_entry_step: null
+      phase_binding: phase-1-read-actions
+      artifact_path: .issues/96/test/behavioral/
+    - id: SC-4
+      evidence_type: behavioral
+      verification_gate: pre-commit
+      pipeline_step_binding: red-green
+      re_entry_step: null
+      phase_binding: phase-1-read-actions
+      artifact_path: .issues/96/test/behavioral/
+    - id: SC-5
+      evidence_type: behavioral
+      verification_gate: pre-commit
+      pipeline_step_binding: red-green
+      re_entry_step: null
+      phase_binding: phase-2-save-paths
+      artifact_path: .issues/96/test/behavioral/
+    - id: SC-6
+      evidence_type: behavioral
+      verification_gate: pre-commit
+      pipeline_step_binding: red-green
+      re_entry_step: null
+      phase_binding: phase-2-save-paths
+      artifact_path: .issues/96/test/behavioral/
+    - id: SC-7
+      evidence_type: behavioral
+      verification_gate: pre-commit
+      pipeline_step_binding: red-green
+      re_entry_step: null
+      phase_binding: phase-2-save-paths
+      artifact_path: .issues/96/test/behavioral/
+    - id: SC-8
+      evidence_type: behavioral
+      verification_gate: pre-commit
+      pipeline_step_binding: red-green
+      re_entry_step: null
+      phase_binding: phase-2-save-paths
+      artifact_path: .issues/96/test/behavioral/
+    - id: SC-9
+      evidence_type: string
+      verification_gate: pre-commit
+      pipeline_step_binding: code
+      re_entry_step: null
+      phase_binding: phase-1-read-actions
+      artifact_path: .issues/96/test/string/
+    - id: SC-10
+      evidence_type: string
+      verification_gate: pre-commit
+      pipeline_step_binding: code
+      re_entry_step: null
+      phase_binding: phase-2-save-paths
+      artifact_path: .issues/96/test/string/
+    - id: SC-11
+      evidence_type: behavioral
+      verification_gate: pre-commit
+      pipeline_step_binding: red-green
+      re_entry_step: null
+      phase_binding: phase-1-read-actions
+      artifact_path: .issues/96/test/behavioral/
+    - id: SC-12
+      evidence_type: string
+      verification_gate: ci
+      pipeline_step_binding: ci
+      re_entry_step: phase-1-read-actions
+      phase_binding: phase-2-save-paths
+      artifact_path: .issues/96/test/regression/
+    - id: SC-13
+      evidence_type: behavioral
+      verification_gate: pre-approval-gate
+      pipeline_step_binding: audit
+      re_entry_step: null
+      phase_binding: phase-2-save-paths
+      artifact_path: .issues/96/test/audit/
+  constraints:
+    - "for_every_sc: evidence_type_is_consistent_with_verification_gate"
+    - "for_every_sc: pipeline_step_binding_is_valid_for_phase"
