@@ -131,6 +131,10 @@ SC-13 explicitly forbids test lobotomization. Evidence type: behavioral.
 | SC-11 | After auto-reload, entry.mtime and entry.size reflect current disk state | behavioral | Test: open, modify externally, auto-reload, check entry metadata matches os.stat | On FAIL: verify entry metadata is updated after reload | RED/GREEN | `.issues/96/test/behavioral/` | Root cause: entry metadata stale after external change | Phase 1 | pre-commit | green | — | — | `test_phase2_edit_diff.py` | Phase 1 |
 | SC-12 | No behavior change when no conflict detected — existing responses unchanged | string | Existing test suite passes (`uv run pytest test/`) | On FAIL: identify regressed test and fix | CI | `.issues/96/test/regression/` | Safety: must not break existing behavior | Phase 2 | ci | regression | — | Phase 1 | — | Phase 2 |
 | SC-13 | No SC may be weakened, deferred, or reclassified to a lower evidence type to evade implementation | behavioral | Assert no SC was changed from behavioral to lower type during implementation | On FAIL: revert SC weakening, re-implement correctly | audit | `.issues/96/test/audit/` | Anti-lobotomization | Phase 2 | pre-approval-gate | audit | — | — | — | Phase 2 |
+| SC-14 | `format_external_modification_warning()` produces `severity: external_modification` and overwrite note | behavioral | Unit test: pass conflict dict, verify output YAML structure | On FAIL: fix function output to match spec | RED/GREEN | `.issues/96/test/unit/` | Solution spec: defined stronger signal format | Phase 1 | pre-commit | green | — | — | `test_auto_reload_unit.py` | Phase 1 |
+| SC-15 | `auto_reload_if_clean()` returns None when no conflict | behavioral | Unit test: mock check_conflict → None, assert returns None | On FAIL: verify early-return logic in auto_reload_if_clean | RED/GREEN | `.issues/96/test/unit/` | Design: no-conflict short-circuit | Phase 1 | pre-commit | green | — | — | `test_auto_reload_unit.py` | Phase 1 |
+| SC-16 | `auto_reload_if_clean()` auto-reloads when clean+conflict | behavioral | Unit test: mock conflict + dirty=False, assert refresh called + notice returned | On FAIL: verify dirty-check branching and refresh_if_changed call | RED/GREEN | `.issues/96/test/unit/` | Design: clean+conflict → auto-reload | Phase 1 | pre-commit | green | SC-15 | — | `test_auto_reload_unit.py` | Phase 1 |
+| SC-17 | `auto_reload_if_clean()` returns strong warning when dirty+conflict | behavioral | Unit test: mock conflict + dirty=True, assert no refresh, warning returned | On FAIL: verify dirty-check branching and format_external_modification_warning call | RED/GREEN | `.issues/96/test/unit/` | Design: dirty+conflict → stronger signal | Phase 1 | pre-commit | green | SC-16 | — | `test_auto_reload_unit.py` | Phase 1 |
 
 > **Compliance Requirement:** All steps and sub-steps in this document MUST be followed in order. Failure to comply with any step — including but not limited to verification gates, test phases, audit checkpoints, and review steps — will result in the feature branch being rejected and discarded, requiring a full rework from scratch and loss of all prior work. There is no valid reason to skip, compress, reorder, or omit any step. If a step appears redundant or unnecessary, follow it anyway — the cost of following an extra step is negligible compared to the cost of rework from a skipped step.
 
@@ -144,14 +148,45 @@ After this spec is approved, invoke `writing-plans` to create `.issues/96/plan.m
 2. Add `auto_reload_if_clean()` to `ViewportManager` in `viewport.py`
 3. Replace `_check_file_conflict()` with `_check_and_maybe_reload()` in `server.py`
 4. Update all 8 existing `_check_file_conflict()` call sites (open, scroll, page-up, page-down, jump, autosave, set-display-mode, _handle_edit_action) and add conflict check to `_action_list` (new behavior)
-5. Write behavioral tests for SC-1, SC-2, SC-3, SC-4, SC-9, SC-11
+5. Write unit tests for `format_external_modification_warning()`, `auto_reload_if_clean()`, and `_check_and_maybe_reload()` (SC-14 through SC-17)
+6. Write behavioral integration tests for SC-1, SC-2, SC-3, SC-4, SC-9, SC-11
 
 ### Phase 2: Save-Path Dirty Awareness
 
 1. Update file:save path to branch on dirty+conflict
 2. Update write_file/edit_text paths to branch on dirty+conflict
-3. Write behavioral tests for SC-5, SC-6, SC-7, SC-8, SC-10, SC-12, SC-13
+3. Write behavioral integration tests for SC-5, SC-6, SC-7, SC-8, SC-10, SC-12, SC-13
 4. Run full test suite for regression check (SC-12)
+
+## Unit Test Plan
+
+In addition to behavioral integration tests (which exercise the full MCP server tool surface), isolated unit tests verify each new function's branching logic directly — without server/client infrastructure.
+
+### Test File
+
+`test/test_auto_reload_unit.py` — following the pattern established by `test_viewport_id_unit.py` (direct imports from source, no conftest fixtures, minimal mocking).
+
+### Unit Tests
+
+| SC | Function Under Test | Test Description | Evidence Type |
+|----|-------------------|------------------|---------------|
+| SC-14 | `format_external_modification_warning(warning)` | Pass a conflict dict; verify output YAML contains `severity: external_modification` and the prose note about overwriting external changes. Verify no other severity variant is emitted. | behavioral (pytest) |
+| SC-15 | `auto_reload_if_clean()` — no conflict path | Mock `check_conflict()` to return `None`. Call `auto_reload_if_clean()`. Assert: returns `None`, `refresh_if_changed()` not called, entry metadata unchanged. | behavioral (pytest) |
+| SC-16 | `auto_reload_if_clean()` — conflict + clean path | Mock `check_conflict()` to return a conflict dict, set `entry.dirty=False`. Call `auto_reload_if_clean()`. Assert: `refresh_if_changed()` called, `entry.mtime`/`entry.size` updated, returns info notice string. | behavioral (pytest) |
+| SC-17 | `auto_reload_if_clean()` — conflict + dirty path | Mock `check_conflict()` to return a conflict dict, set `entry.dirty=True`. Call `auto_reload_if_clean()`. Assert: `refresh_if_changed()` not called, returns `format_external_modification_warning()` output. | behavioral (pytest) |
+
+### Mocking Strategy
+
+- Use `unittest.mock.patch` or `pytest.monkeypatch` to isolate `ViewportManager.check_conflict()` and `BufferManager.refresh_if_changed()`
+- Use a real `ViewportEntry` instance with controlled `.dirty` value and known `.mtime`/`.size`
+- No MCP server, no `Client`, no conftest fixtures — pure function-level tests
+
+### RED/GREEN for Unit Tests
+
+Each unit test follows the same TDD cycle as behavioral tests:
+- **RED**: Write the unit test first; it fails because the function doesn't exist yet
+- **GREEN**: Implement the function; test passes
+- **REFACTOR**: Verify no cross-test interference
 
 ### Plan Format Requirements
 
