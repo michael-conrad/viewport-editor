@@ -373,6 +373,27 @@ class ViewportManager:
         entry = self.get_entry(session_id, viewport_id)
         return self._buffer_mgr.get_diff(session_id, entry.file, self.project_root)
 
+    def auto_reload_if_clean(
+        self, session_id: str, viewport_id: str
+    ) -> Optional[str]:
+        """Reload buffer from disk if the file has no external conflict.
+
+        Returns None when no conflict (no-op for clean path).
+        Returns a notice string when the file was auto-reloaded.
+        """
+        entry = self.get_entry(session_id, viewport_id)
+        conflict = self.check_conflict(entry.file, entry.mtime, entry.size)
+        if conflict is None:
+            return None
+        if not entry.dirty:
+            resolved_path, _ = file_ops._resolve_path(entry.file, self.project_root)
+            self._buffer_mgr.refresh_if_changed(session_id, entry.file, resolved_path)
+            st = os.stat(resolved_path)
+            entry.mtime = st.st_mtime
+            entry.size = st.st_size
+            return "file auto-reloaded (external change detected)"
+        return file_ops.format_external_modification_warning(conflict)
+
     def check_conflict(
         self, file_path: str, stored_mtime: Optional[float], stored_size: Optional[int]
     ) -> Optional[dict]:
@@ -462,6 +483,9 @@ class ViewportManager:
 
     def format_conflict_warning(self, warning: dict) -> str:
         return file_ops.format_conflict_warning(warning)
+
+    def format_external_modification_warning(self, warning: dict) -> str:
+        return file_ops.format_external_modification_warning(warning)
 
     def apply_diff(self, session_id: str, viewport_id: str, patch: str) -> dict:
         """Apply a unified diff patch to the buffer for the given viewport.

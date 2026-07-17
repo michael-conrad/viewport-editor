@@ -415,8 +415,13 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         # Check for external conflict before save
         conflict_warning = _manager.check_conflict(entry.file, entry.mtime, entry.size)
         if conflict_warning and not entry.autosave:
-            warning_str = _manager.format_conflict_warning(conflict_warning)
-            return f"error: conflict detected\n{warning_str}"
+            if entry.dirty:
+                warning_str = _manager.format_external_modification_warning(conflict_warning)
+                return f"error: conflict detected\n{warning_str}"
+            # Clean+conflict: auto-reload then proceed with save
+            _manager.auto_reload_if_clean(session_id, entry.viewport_id)
+            # Re-fetch entry after reload
+            entry = _manager.get_entry(session_id, entry.viewport_id)
 
         # Flush to disk and close viewport
         _manager.flush_entry(session_id, entry)
@@ -467,9 +472,13 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         # Check for external conflict before save
         conflict_warning = _manager.check_conflict(entry.file, entry.mtime, entry.size)
         if conflict_warning and not entry.autosave:
-            _manager.discard_buffer_changes(session_id, entry.viewport_id)
-            warning_str = _manager.format_conflict_warning(conflict_warning)
-            return f"error: conflict detected\n{warning_str}"
+            if entry.dirty:
+                _manager.discard_buffer_changes(session_id, entry.viewport_id)
+                warning_str = _manager.format_external_modification_warning(conflict_warning)
+                return f"error: conflict detected\n{warning_str}"
+            # Clean+conflict: auto-reload then proceed with save
+            _manager.auto_reload_if_clean(session_id, entry.viewport_id)
+            entry = _manager.get_entry(session_id, entry.viewport_id)
 
         # Flush to disk and close viewport
         _manager.flush_entry(session_id, entry)
@@ -664,6 +673,12 @@ def _check_file_conflict(file_path: str, entry: Any) -> Optional[str]:
     return None
 
 
+def _check_and_maybe_reload(session_id: str, file_path: str, entry: Any) -> Optional[str]:
+    if _manager is None:
+        return None
+    return _manager.auto_reload_if_clean(session_id, entry.viewport_id)
+
+
 def _render_content_line(display_text: str, display_mode: str) -> str:
     """Render a single content line according to display mode.
 
@@ -759,7 +774,14 @@ def _action_open(
         autosave=autosave if autosave is not None else True,
     )
     entry_data = result.to_dict()
-    visible = _manager.get_visible_lines(session_id, result)
+    # Check for external modification and auto-reload before assembling content
+    reload_notice = _check_and_maybe_reload(session_id, result.file, result)
+    if reload_notice and "auto-reloaded" in reload_notice:
+        # Buffer was auto-reloaded — re-fetch entry data and visible lines
+        entry_data = result.to_dict()
+        visible = _manager.get_visible_lines(session_id, result)
+    else:
+        visible = _manager.get_visible_lines(session_id, result)
     content_block = _format_content_block(
         visible, result.line_start, result.display_mode
     )
@@ -778,9 +800,8 @@ def _action_open(
         lines.append(f"  mtime: {entry_data['mtime']}")
     if entry_data["size"] is not None:
         lines.append(f"  size: {entry_data['size']}")
-    conflict_msg = _check_file_conflict(result.file, result)
-    if conflict_msg:
-        lines.append(f"  warning:\n{conflict_msg}")
+    if reload_notice:
+        lines.append(f"  notice:\n{reload_notice}")
     response = "\n".join(lines)
     return _inject_agents_notice(file_path, session_id, response)
 
@@ -838,15 +859,18 @@ def _action_scroll(
     entry = _manager.scroll(session_id, viewport_id, lines)
     visible = _manager.get_visible_lines(session_id, entry)
     content_block = _format_content_block(visible, entry.line_start)
-    conflict_msg = _check_file_conflict(entry.file, entry)
+    reload_notice = _check_and_maybe_reload(session_id, entry.file, entry)
+    if reload_notice and "auto-reloaded" in reload_notice:
+        visible = _manager.get_visible_lines(session_id, entry)
+        content_block = _format_content_block(visible, entry.line_start)
     parts = [
         f"scrolled viewport {viewport_id} by {lines} lines:",
         f"  line_start: {entry.line_start}",
         f"  line_end: {entry.line_end}",
         content_block,
     ]
-    if conflict_msg:
-        parts.append(f"  warning:\n{conflict_msg}")
+    if reload_notice:
+        parts.append(f"  notice:\n{reload_notice}")
     return "\n".join(parts)
 
 
@@ -862,15 +886,18 @@ def _action_page_up(
     entry = _manager.page_up(session_id, viewport_id)
     visible = _manager.get_visible_lines(session_id, entry)
     content_block = _format_content_block(visible, entry.line_start)
-    conflict_msg = _check_file_conflict(entry.file, entry)
+    reload_notice = _check_and_maybe_reload(session_id, entry.file, entry)
+    if reload_notice and "auto-reloaded" in reload_notice:
+        visible = _manager.get_visible_lines(session_id, entry)
+        content_block = _format_content_block(visible, entry.line_start)
     parts = [
         f"paged up viewport {viewport_id}:",
         f"  line_start: {entry.line_start}",
         f"  line_end: {entry.line_end}",
         content_block,
     ]
-    if conflict_msg:
-        parts.append(f"  warning:\n{conflict_msg}")
+    if reload_notice:
+        parts.append(f"  notice:\n{reload_notice}")
     return "\n".join(parts)
 
 
@@ -886,15 +913,18 @@ def _action_page_down(
     entry = _manager.page_down(session_id, viewport_id)
     visible = _manager.get_visible_lines(session_id, entry)
     content_block = _format_content_block(visible, entry.line_start)
-    conflict_msg = _check_file_conflict(entry.file, entry)
+    reload_notice = _check_and_maybe_reload(session_id, entry.file, entry)
+    if reload_notice and "auto-reloaded" in reload_notice:
+        visible = _manager.get_visible_lines(session_id, entry)
+        content_block = _format_content_block(visible, entry.line_start)
     parts = [
         f"paged down viewport {viewport_id}:",
         f"  line_start: {entry.line_start}",
         f"  line_end: {entry.line_end}",
         content_block,
     ]
-    if conflict_msg:
-        parts.append(f"  warning:\n{conflict_msg}")
+    if reload_notice:
+        parts.append(f"  notice:\n{reload_notice}")
     return "\n".join(parts)
 
 
@@ -913,15 +943,18 @@ def _action_jump(
     entry = _manager.jump(session_id, viewport_id, target)
     visible = _manager.get_visible_lines(session_id, entry)
     content_block = _format_content_block(visible, entry.line_start)
-    conflict_msg = _check_file_conflict(entry.file, entry)
+    reload_notice = _check_and_maybe_reload(session_id, entry.file, entry)
+    if reload_notice and "auto-reloaded" in reload_notice:
+        visible = _manager.get_visible_lines(session_id, entry)
+        content_block = _format_content_block(visible, entry.line_start)
     parts = [
         f"jumped to '{target}' in viewport {viewport_id}:",
         f"  line_start: {entry.line_start}",
         f"  line_end: {entry.line_end}",
         content_block,
     ]
-    if conflict_msg:
-        parts.append(f"  warning:\n{conflict_msg}")
+    if reload_notice:
+        parts.append(f"  notice:\n{reload_notice}")
     return "\n".join(parts)
 
 
@@ -938,11 +971,11 @@ def _action_autosave(
     if autosave_enabled is None:
         return "error: autosave_enabled is required"
     entry = _manager.get_entry(session_id, viewport_id)
-    conflict_msg = _check_file_conflict(entry.file, entry)
+    reload_notice = _check_and_maybe_reload(session_id, entry.file, entry)
     _manager.set_autosave(session_id, viewport_id, autosave_enabled)
     parts = [f"autosave set to {autosave_enabled} for viewport {viewport_id}"]
-    if conflict_msg:
-        parts.append(f"  warning:\n{conflict_msg}")
+    if reload_notice:
+        parts.append(f"  notice:\n{reload_notice}")
     return "\n".join(parts)
 
 
@@ -961,15 +994,18 @@ def _action_set_display_mode(
     entry = _manager.set_display_mode(session_id, viewport_id, display_mode)
     visible = _manager.get_visible_lines(session_id, entry)
     content_block = _format_content_block(visible, entry.line_start, entry.display_mode)
-    conflict_msg = _check_file_conflict(entry.file, entry)
+    reload_notice = _check_and_maybe_reload(session_id, entry.file, entry)
+    if reload_notice and "auto-reloaded" in reload_notice:
+        visible = _manager.get_visible_lines(session_id, entry)
+        content_block = _format_content_block(visible, entry.line_start, entry.display_mode)
     parts = [
         f"display_mode set to {display_mode} for viewport {viewport_id}:",
         f"  viewport_id: {entry.viewport_id}",
         f"  display_mode: {entry.display_mode}",
         content_block,
     ]
-    if conflict_msg:
-        parts.append(f"  warning:\n{conflict_msg}")
+    if reload_notice:
+        parts.append(f"  notice:\n{reload_notice}")
     return "\n".join(parts)
 
 
@@ -990,7 +1026,7 @@ def _handle_edit_action(
         return "error: server not initialized"
 
     entry = _manager.get_entry(session_id, viewport_id)
-    conflict_warning = _check_file_conflict(entry.file, entry)
+    reload_notice = _check_and_maybe_reload(session_id, entry.file, entry)
 
     # Decode \\uNNNN escapes in text parameters so agents in show mode
     # can input \\uNNNN to match/insert real characters
@@ -1050,8 +1086,8 @@ def _handle_edit_action(
     else:
         raise ViewportError(f"unknown edit action: {action}")
 
-    if conflict_warning:
-        parts.append(f"  warning:\n{conflict_warning}")
+    if reload_notice:
+        parts.append(f"  notice:\n{reload_notice}")
 
     return "\n".join(parts)
 
@@ -1076,8 +1112,12 @@ def _handle_file_action(
             )
         conflict_warning = _manager.check_conflict(entry.file, entry.mtime, entry.size)
         if conflict_warning and not force:
-            warning_str = _manager.format_conflict_warning(conflict_warning)
-            raise ViewportError(f"stale mtime/size conflict\n{warning_str}")
+            if entry.dirty:
+                warning_str = _manager.format_external_modification_warning(conflict_warning)
+                raise ViewportError(f"stale mtime/size conflict\n{warning_str}")
+            # Clean+conflict: auto-reload then proceed with save
+            _manager.auto_reload_if_clean(session_id, entry.viewport_id)
+            entry = _manager.get_entry(session_id, entry.viewport_id)
         _manager.flush_entry(session_id, entry)
         return (
             f"saved viewport {viewport_id}:"

@@ -188,3 +188,19 @@ def format_conflict_warning(warning: dict) -> str:
         lines.append(f"    stored: {vals['stored']}")
         lines.append(f"    current: {vals['current']}")
     return "\n".join(lines)
+
+
+def format_external_modification_warning(warning: dict) -> str:
+    """Format a conflict dict into an external-modification YAML warning string."""
+    mtime = warning.get("conflicts", {}).get("mtime", {})
+    lines = [
+        "conflict:",
+        "  severity: external_modification",
+        "  note: file changed on disk while buffer has uncommitted edits"
+        " — save will overwrite external changes",
+        f"  file: {warning['file']}",
+        "  mtime:",
+        f"    stored: {mtime.get('stored', '')}",
+        f"    current: {mtime.get('current', '')}",
+    ]
+    return "\n".join(lines)
