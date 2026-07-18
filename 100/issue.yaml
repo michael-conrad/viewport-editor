@@ -3,6 +3,124 @@ status: open
 labels:
 - SPEC-FIX
 - approved-for-pr
-body: ''
+body: '## Problem
+
+
+  The `VIEWPORT_PROJECT_ROOT` environment variable exists in three locations but was
+  never specified in any spec. It is scope creep — an undocumented affordance added
+  during implementation that bypasses the spec-first workflow.
+
+
+  ## Current State
+
+
+  The env var is read in two source locations and documented in two docs files:
+
+
+  | Location | Usage |
+
+  |----------|-------|
+
+  | `src/viewport_editor/__main__.py:19` | `--project-root` CLI arg defaults to `os.environ.get("VIEWPORT_PROJECT_ROOT",
+  os.getcwd())` |
+
+  | `src/viewport_editor/server.py:31` | `_get_project_root()` reads `os.environ.get("VIEWPORT_PROJECT_ROOT",
+  os.getcwd())` |
+
+  | `README.md:151` | Documents `VIEWPORT_PROJECT_ROOT` as override mechanism |
+
+  | `test/tool_selection/AGENTS.md:30` | References `VIEWPORT_PROJECT_ROOT` as path
+  resolution source |
+
+
+  ## Scope
+
+
+  The `--project-root` CLI argument itself is fine — it was spec''d. Only the env
+  var fallback (`os.environ.get("VIEWPORT_PROJECT_ROOT", ...)`) needs removal. The
+  `_get_project_root()` function can be simplified to just `os.getcwd()`.
+
+
+  ### Phase 1: Remove env var fallback from `__main__.py`
+
+
+  - `__main__.py:19`: Change `os.environ.get("VIEWPORT_PROJECT_ROOT", os.getcwd())`
+  → `os.getcwd()`
+
+  - `__main__.py:20`: Update help text to remove `$VIEWPORT_PROJECT_ROOT` reference
+
+
+  ### Phase 2: Simplify `_get_project_root()` in `server.py`
+
+
+  - `server.py:30-31`: Replace `os.environ.get("VIEWPORT_PROJECT_ROOT", os.getcwd())`
+  → just `os.getcwd()`
+
+  - The function can be inlined or kept for clarity
+
+
+  ### Phase 3: Remove from README
+
+
+  - `README.md:151`: Remove the `VIEWPORT_PROJECT_ROOT` bullet
+
+
+  ### Phase 4: Remove from test AGENTS.md
+
+
+  - `test/tool_selection/AGENTS.md:30`: Remove `VIEWPORT_PROJECT_ROOT` reference
+
+
+  ## Files Changed
+
+
+  - `src/viewport_editor/__main__.py`
+
+  - `src/viewport_editor/server.py`
+
+  - `README.md`
+
+  - `test/tool_selection/AGENTS.md`
+
+
+  ## Success Criteria
+
+
+  | ID | Criterion | Evidence Type |
+
+  |----|-----------|---------------|
+
+  | SC-1 | `VIEWPORT_PROJECT_ROOT` removed as default in `__main__.py` — `--project-root`
+  still exists but defaults to `os.getcwd()` | `string` — grep confirms no `VIEWPORT_PROJECT_ROOT`
+  in file |
+
+  | SC-2 | `_get_project_root()` in `server.py` no longer reads env var | `string`
+  — grep confirms no `VIEWPORT_PROJECT_ROOT` in file |
+
+  | SC-3 | `README.md` no longer documents the env var | `string` — grep confirms
+  no `VIEWPORT_PROJECT_ROOT` in file |
+
+  | SC-4 | `test/tool_selection/AGENTS.md` no longer references the env var | `string`
+  — grep confirms no `VIEWPORT_PROJECT_ROOT` in file |
+
+  | SC-5 | `--project-root` CLI arg still exists and functions correctly | `behavioral`
+  — `uv run python -m viewport_editor --help` shows `--project-root` flag |
+
+  | SC-6 | Server starts without env var set | `behavioral` — test script launches
+  server with `VIEWPORT_PROJECT_ROOT` unset, confirms startup |
+
+
+  ## Design Notes
+
+
+  - The `--project-root` CLI argument is **kept** — only the env var fallback is removed
+
+  - `os.getcwd()` is the sole default for `--project-root`
+
+  - No behavioral change to the `create_server(project_root=...)` API — callers still
+  pass project_root explicitly
+
+  - The `_get_project_root()` function in `server.py:30-31` can be simplified to just
+  `os.getcwd()` or inlined'
 created_at: '2026-07-18T02:17:32+00:00'
-updated_at: '2026-07-18T02:17:32+00:00'
+updated_at: '2026-07-18T02:18:14+00:00'
