@@ -350,8 +350,14 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
         except (ViewportError, FileNotFoundError, PermissionError) as exc:
             return f"error: {exc}"
 
-        visible = _manager.get_visible_lines(session_id, entry)
-        entry_data = entry.to_dict()
+        # Check for external modification and auto-reload before reading
+        reload_notice = _check_and_maybe_reload(session_id, file_path, entry)
+        if reload_notice and "auto-reloaded" in reload_notice:
+            entry_data = entry.to_dict()
+            visible = _manager.get_visible_lines(session_id, entry)
+        else:
+            visible = _manager.get_visible_lines(session_id, entry)
+            entry_data = entry.to_dict()
 
         content_block = _format_content_block(
             visible, entry.line_start, entry.display_mode
@@ -371,6 +377,8 @@ def create_server(project_root: Optional[str] = None) -> FastMCP:
             lines.append(f"  mtime: {entry_data['mtime']}")
         if entry_data["size"] is not None:
             lines.append(f"  size: {entry_data['size']}")
+        if reload_notice:
+            lines.append(f"  notice:\n{reload_notice}")
         response = "\n".join(lines)
         return _inject_agents_notice(file_path, session_id, response)
 
@@ -1209,6 +1217,9 @@ def _handle_diff_action(
         else:
             raise ViewportError("viewport_id or file_path is required for apply action")
 
+        # Check for external modification before applying patch
+        _check_and_maybe_reload(session_id, entry.file, entry)
+
         try:
             result = _manager.apply_diff(session_id, vpid, patch)
         except DiffApplyError as exc:
@@ -1261,6 +1272,7 @@ def _handle_clipboard_action(
             return "error: line_end must be >= line_start"
 
         entry = _manager.get_entry(session_id, viewport_id)
+        _check_and_maybe_reload(session_id, entry.file, entry)
         file_lines = _manager._buffer_mgr.get_lines(session_id, entry.file)
         line_ending = _manager.get_line_ending(session_id, entry.file)
 
@@ -1302,6 +1314,7 @@ def _handle_clipboard_action(
             return "error: line_end must be >= line_start"
 
         entry = _manager.get_entry(session_id, viewport_id)
+        _check_and_maybe_reload(session_id, entry.file, entry)
         buf = _manager._buffer_mgr.get_buffer_ref(session_id, entry.file)
         file_lines = _manager._buffer_mgr.get_lines(session_id, entry.file)
         line_ending = _manager.get_line_ending(session_id, entry.file)
@@ -1363,6 +1376,7 @@ def _handle_clipboard_action(
             return "error: target_line is required for paste"
 
         entry = _manager.get_entry(session_id, viewport_id)
+        _check_and_maybe_reload(session_id, entry.file, entry)
         buf = _manager._buffer_mgr.get_buffer_ref(session_id, entry.file)
         file_lines = _manager._buffer_mgr.get_lines(session_id, entry.file)
         line_ending = _manager.get_line_ending(session_id, entry.file)
@@ -1641,6 +1655,7 @@ def _action_find(
         if not viewport_id:
             return "error: viewport_id is required for scope=viewport"
         entry = _manager.get_entry(session_id, viewport_id)
+        _check_and_maybe_reload(session_id, entry.file, entry)
         content = _manager._buffer_mgr.get_raw_content(session_id, entry.file)
         matches = _search_in_content(content, pattern, regex)
         parts = [f"find results for '{pattern}' in viewport {viewport_id}:"]
@@ -1662,6 +1677,7 @@ def _action_find(
         total_matches: list[dict] = []
         file_results: dict[str, list[dict]] = {}
         for vp_id, vp_entry in _manager._entries[session_id].items():
+            _check_and_maybe_reload(session_id, vp_entry.file, vp_entry)
             try:
                 content = _manager._buffer_mgr.get_raw_content(
                     session_id, vp_entry.file
