@@ -1,0 +1,8 @@
+title: '[SPEC-FIX] Remove VIEWPORT_PROJECT_ROOT env var — never spec''d scope creep'
+status: open
+labels:
+- SPEC-FIX
+- approved-for-pr
+body: ''
+created_at: '2026-07-18T02:17:32+00:00'
+updated_at: '2026-07-18T02:17:32+00:00'
