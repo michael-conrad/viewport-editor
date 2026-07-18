@@ -28,7 +28,7 @@ from .viewport import ViewportManager
 
 
 def _get_project_root() -> str:
-    return os.environ.get("VIEWPORT_PROJECT_ROOT", os.getcwd())
+    return os.getcwd()
 
 
 _manager: Optional[ViewportManager] = None
