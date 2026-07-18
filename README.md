@@ -77,7 +77,7 @@ Run directly from the tagged release — no PyPI install, no repo clone needed:
 "mcp": {
     "editor": {
       "type": "local",
-"command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.4.0", "viewport-editor"],
+"command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.4.1", "viewport-editor"],
       "enabled": true
     }
 }
@@ -89,7 +89,7 @@ Run directly from the tagged release — no PyPI install, no repo clone needed:
   "mcpServers": {
     "editor": {
       "command": "uvx",
-"args": ["--from", "git+https://github.com/michael-conrad/viewport-editor@v0.4.0", "viewport-editor"]
+"args": ["--from", "git+https://github.com/michael-conrad/viewport-editor@v0.4.1", "viewport-editor"]
     }
   }
 }
@@ -112,7 +112,7 @@ When adding viewport-editor as an MCP plugin, configure it in your `opencode.jso
   "mcp": {
     "editor": {
       "type": "local",
-"command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.4.0", "viewport-editor"],
+"command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.4.1", "viewport-editor"],
       "enabled": true
     }
   }
@@ -148,7 +148,6 @@ This repo uses [viewport-editor](https://github.com/michael-conrad/viewport-edit
 - Use `viewport` + `edit` + `file` for multi-step editing with diff review
 - Always call `diff:show` before `file:save` to verify staged changes
 - File paths are relative to project root (MCP resolver defaults to `os.getcwd()`)
-- The `VIEWPORT_PROJECT_ROOT` environment variable overrides the project root if needed
 - Session management is automatic (MCP framework handles session IDs)
 - Conflict detection: server tracks file mtime+size externally; stale-file soft warning on reads, hard block on `file:save` (use `force: true` override if change is intentional)
 ```

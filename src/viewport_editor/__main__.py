@@ -16,8 +16,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="viewport-editor MCP server")
     parser.add_argument(
         "--project-root",
-        default=os.environ.get("VIEWPORT_PROJECT_ROOT", os.getcwd()),
-        help="Root directory for file operations (default: cwd or $VIEWPORT_PROJECT_ROOT)",
+        default=os.getcwd(),
+        help="Root directory for file operations (default: cwd)",
     )
     args = parser.parse_args()
 

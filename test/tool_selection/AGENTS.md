@@ -27,7 +27,7 @@ Multi-turn sessions are supported via `opencode-cli run --continue` (resume last
 
 ## File Path Resolution
 
-MCP tool handlers resolve file paths relative to the test project root (`VIEWPORT_PROJECT_ROOT` or `os.getcwd()`). Fixtures must be created inside the test project directory, never in the main project root.
+MCP tool handlers resolve file paths relative to the test project root (`os.getcwd()`). Fixtures must be created inside the test project directory, never in the main project root.
 
 ## Model Set (6 models)
 

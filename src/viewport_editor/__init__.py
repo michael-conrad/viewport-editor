@@ -6,4 +6,4 @@
 Co-authored with AI: OpenCode (deepseek-v4-flash)
 """
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
