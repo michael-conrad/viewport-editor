@@ -1,0 +1,5 @@
+variables:
+  PHASE_1_DONE: {type: bool, nullable: false}
+  PHASE_2_DONE: {type: bool, nullable: false}
+invariants:
+  - "z3.Implies(PHASE_2_DONE == True, PHASE_1_DONE == True)"

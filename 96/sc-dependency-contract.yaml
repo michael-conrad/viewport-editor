@@ -1,0 +1,25 @@
+variables:
+  SC_1_DONE: {type: bool, nullable: false}
+  SC_2_DONE: {type: bool, nullable: false}
+  SC_3_DONE: {type: bool, nullable: false}
+  SC_4_DONE: {type: bool, nullable: false}
+  SC_5_DONE: {type: bool, nullable: false}
+  SC_6_DONE: {type: bool, nullable: false}
+  SC_7_DONE: {type: bool, nullable: false}
+  SC_8_DONE: {type: bool, nullable: false}
+  SC_9_DONE: {type: bool, nullable: false}
+  SC_10_DONE: {type: bool, nullable: false}
+  SC_11_DONE: {type: bool, nullable: false}
+  SC_12_DONE: {type: bool, nullable: false}
+  SC_13_DONE: {type: bool, nullable: false}
+  SC_14_DONE: {type: bool, nullable: false}
+  SC_15_DONE: {type: bool, nullable: false}
+  SC_16_DONE: {type: bool, nullable: false}
+  SC_17_DONE: {type: bool, nullable: false}
+invariants:
+  - "z3.Implies(SC_3_DONE == True, SC_2_DONE == True)"
+  - "z3.Implies(SC_4_DONE == True, SC_2_DONE == True)"
+  - "z3.Implies(SC_7_DONE == True, SC_5_DONE == True)"
+  - "z3.Implies(SC_8_DONE == True, SC_6_DONE == True)"
+  - "z3.Implies(SC_16_DONE == True, SC_15_DONE == True)"
+  - "z3.Implies(SC_17_DONE == True, SC_16_DONE == True)"

@@ -1,0 +1,49 @@
+schema_version: "1.0"
+generated_at: "20260717133557"
+status: PASS
+checks:
+  - check_id: PR-1
+    result: PASS
+    detail: "All 17 SCs map to exactly one RED->GREEN->COMMIT cycle. No SC bundles multiple independently testable claims."
+  - check_id: PR-2
+    result: PASS
+    solve_contract_path: ".issues/96/sc-dependency-contract.yaml"
+    prove_results:
+      - theorem: "sc_dag_is_valid"
+        result: VALID
+    detail: "6 dependency edges (SC-3->SC-2, SC-4->SC-2, SC-7->SC-5, SC-8->SC-6, SC-16->SC-15, SC-17->SC-16). All referenced SC-IDs defined. Z3 prove VALID — no cycles or contradictions."
+  - check_id: PR-3
+    result: PASS
+    detail: "All 17 SCs target exactly one file category and one verification domain. No single-concern violations."
+  - check_id: PR-3a
+    result: PASS
+    detail: "All 17 SCs have singular problem domains. No SC bundles two distinct concerns."
+  - check_id: PR-3b
+    result: PASS
+    detail: "All 17 SCs meet decomposition-depth mandate — each maps to exactly one RED->GREEN->COMMIT cycle."
+  - check_id: PR-4
+    result: PASS
+    solve_contract_path: ".issues/96/dependency-ordering-verification/ordering.yaml"
+    prove_results:
+      - theorem: "phase_dag_is_acyclic"
+        result: VALID
+    detail: "2 phases (Phase 1: Read-Action Auto-Reload, Phase 2: Save-Path Dirty Awareness). Phase 2 depends on Phase 1. Z3 prove VALID — no cycles."
+  - check_id: PR-5
+    result: SKIP
+    detail: "Spec has 2 phases. Three-tier structure (pre-phase, per-file phases, post-phase) requires at least 3 phases to be meaningful. The 2-phase decomposition is natural for this spec's 2 concerns (read-actions and save-paths)."
+    sub_checks:
+      - check_id: PR-5a
+        result: SKIP
+      - check_id: PR-5b
+        result: SKIP
+      - check_id: PR-5c
+        result: SKIP
+      - check_id: PR-5d
+        result: SKIP
+      - check_id: PR-5e
+        result: SKIP
+sc_summary:
+  total_scs: 17
+  atomic: 17
+  with_dependencies: 6
+  single_concern: 17

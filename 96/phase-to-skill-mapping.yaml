@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2026 Michael Conrad
+# SPDX-License-Identifier: MIT
+# Provenance: AI-generated
+#
+# Phase-to-skill mapping for spec #96 plan creation.
+schema_version: "1.0"
+issue_number: 96
+generated_at: "2026-07-17T13:00:00Z"
+phases:
+  - phase: 0
+    name: global-pre-phase
+    description: "Branch setup, baseline verification, environment readiness"
+    skill: git-workflow
+    task: pre-work
+    depends_on: []
+  - phase: 1a
+    name: file-ops-format-warning
+    description: "Add format_external_modification_warning() to file_ops.py"
+    skill: implementation-pipeline
+    task: execute
+    depends_on: [0]
+    scs: [SC-9, SC-10, SC-14]
+  - phase: 1b
+    name: viewport-auto-reload
+    description: "Add auto_reload_if_clean() to ViewportManager in viewport.py"
+    skill: implementation-pipeline
+    task: execute
+    depends_on: [1a]
+    scs: [SC-15, SC-16, SC-17]
+  - phase: 1c
+    name: server-read-action-reload
+    description: "Replace _check_file_conflict with _check_and_maybe_reload in server.py read-action call sites"
+    skill: implementation-pipeline
+    task: execute
+    depends_on: [1b]
+    scs: [SC-1, SC-2, SC-3, SC-4, SC-11]
+  - phase: 1d
+    name: unit-tests
+    description: "Write unit tests for new functions (test_auto_reload_unit.py)"
+    skill: test-driven-development
+    task: execute
+    depends_on: [1c]
+    scs: [SC-14, SC-15, SC-16, SC-17]
+  - phase: 1e
+    name: behavioral-tests-phase1
+    description: "Write behavioral integration tests for Phase 1 SCs"
+    skill: test-driven-development
+    task: execute
+    depends_on: [1d]
+    scs: [SC-1, SC-2, SC-3, SC-4, SC-9, SC-11]
+  - phase: 2a
+    name: server-save-path-branching
+    description: "Branch save-path conflict handling on dirty state in server.py"
+    skill: implementation-pipeline
+    task: execute
+    depends_on: [1e]
+    scs: [SC-5, SC-6, SC-7, SC-8]
+  - phase: 2b
+    name: behavioral-tests-phase2
+    description: "Write behavioral integration tests for Phase 2 SCs and full regression"
+    skill: test-driven-development
+    task: execute
+    depends_on: [2a]
+    scs: [SC-5, SC-6, SC-7, SC-8, SC-10, SC-12, SC-13]
+  - phase: 3
+    name: global-post-phase
+    description: "Full regression, audit, finishing checklist, review-prep, cleanup"
+    skill: finishing-a-development-branch
+    task: checklist
+    depends_on: [2b]
+    scs: [SC-12, SC-13]

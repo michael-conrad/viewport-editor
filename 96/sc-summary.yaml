@@ -1,5 +1,5 @@
 sc_coverage:
-  total: 13
+  total: 21
   single_task: false
   spec_url: https://github.com/michael-conrad/viewport-editor/issues/96
   evidence_types:
@@ -7,11 +7,14 @@ sc_coverage:
     - string
   phases:
     - id: phase-1-read-actions
-      sc_ids: [SC-1, SC-2, SC-3, SC-4, SC-9, SC-11]
+      sc_ids: [SC-1, SC-2, SC-3, SC-4, SC-9, SC-11, SC-14, SC-15, SC-16, SC-17]
       evidence_types: [behavioral, string]
     - id: phase-2-save-paths
       sc_ids: [SC-5, SC-6, SC-7, SC-8, SC-10, SC-12, SC-13]
       evidence_types: [behavioral, string]
+    - id: phase-3-trunk-migration
+      sc_ids: [SC-18, SC-19, SC-20, SC-21]
+      evidence_types: [string]
   cross_cutting:
     sc_ids: [SC-12]
     verified_in_phase: phase-2-save-paths
@@ -81,3 +84,43 @@ sc_coverage:
       evidence_type: behavioral
       verification_gate: pre-approval-gate
       plan_phase: phase-2-save-paths
+    - id: SC-14
+      description: "format_external_modification_warning() produces severity: external_modification and overwrite note"
+      evidence_type: behavioral
+      verification_gate: pre-commit
+      plan_phase: phase-1-read-actions
+    - id: SC-15
+      description: "auto_reload_if_clean() returns None when no conflict"
+      evidence_type: behavioral
+      verification_gate: pre-commit
+      plan_phase: phase-1-read-actions
+    - id: SC-16
+      description: "auto_reload_if_clean() auto-reloads when clean+conflict"
+      evidence_type: behavioral
+      verification_gate: pre-commit
+      plan_phase: phase-1-read-actions
+    - id: SC-17
+      description: "auto_reload_if_clean() returns strong warning when dirty+conflict"
+      evidence_type: behavioral
+      verification_gate: pre-commit
+      plan_phase: phase-1-read-actions
+    - id: SC-18
+      description: "dev branch merged into main with all commits preserved"
+      evidence_type: string
+      verification_gate: pre-commit
+      plan_phase: phase-3-trunk-migration
+    - id: SC-19
+      description: "dev branch deleted locally and on remote"
+      evidence_type: string
+      verification_gate: pre-commit
+      plan_phase: phase-3-trunk-migration
+    - id: SC-20
+      description: "AGENTS.md updated to reflect trunk-based development"
+      evidence_type: string
+      verification_gate: pre-commit
+      plan_phase: phase-3-trunk-migration
+    - id: SC-21
+      description: "All non-historical dev branch references removed from project files"
+      evidence_type: string
+      verification_gate: pre-commit
+      plan_phase: phase-3-trunk-migration

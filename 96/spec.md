@@ -16,7 +16,7 @@ authors:
 
 ## Problem
 
-When a file changes externally (e.g., git checkout, another tool writes it), viewport-editor detects the mtime/size mismatch via `check_conflict()` (in `src/viewport_editor/file_ops.py:130` and `src/viewport_editor/viewport.py:376`) and appends a passive YAML warning to the response. But the buffer retains stale content. The agent must manually discard changes and reopen to see fresh data — even when there are zero pending edits (`dirty=False`). This wastes a round-trip and means the agent works against stale data until it notices the warning.
+When a file changes externally (e.g., git checkout, another tool writes it), viewport-editor detects the mtime/size mismatch via `check_conflict()` (in `src/viewport_editor/file_ops.py` and `src/viewport_editor/viewport.py`) and appends a passive YAML warning to the response. But the buffer retains stale content. The agent must manually discard changes and reopen to see fresh data — even when there are zero pending edits (`dirty=False`). This wastes a round-trip and means the agent works against stale data until it notices the warning.
 
 When the buffer has pending edits (`dirty=True`), the warning format is identical to the clean case — a single `warning:` YAML block with no urgency differentiation. The agent has no way to distinguish "safe to reload" from "reload would overwrite edits."
 
@@ -24,7 +24,7 @@ When the buffer has pending edits (`dirty=True`), the warning format is identica
 
 The conflict detection system (`check_conflict` → `format_conflict_warning` → `_check_file_conflict`) is a unified path: it detects conflicts identically regardless of dirty state. There are 8 call sites of `_check_file_conflict` in `server.py` across read and edit actions (`_action_open`, `_action_scroll`, `_action_page_up`, `_action_page_down`, `_action_jump`, `_action_autosave`, `_action_set_display_mode`, and `_handle_edit_action`). All 8 follow the same pattern: check conflict → if warning, append `warning:\n{warning}` to the response parts.
 
-Separately, the save-path composite tools — `write_file` (line 416), `edit_text` (line 468), and `file:save` (line 1077) — call `_manager.check_conflict()` directly (not via `_check_file_conflict`) and raise errors on conflict instead of appending warnings. `_action_list` does NOT currently check for conflicts at all — it will need a conflict check added.
+Separately, the save-path composite tools — `write_file` action, `edit_text` action, and `file:save` handler — call `_manager.check_conflict()` directly (not via `_check_file_conflict`) and raise errors on conflict instead of appending warnings. `_action_list` does NOT currently check for conflicts at all — it will need a conflict check added.
 
 None of the existing call sites auto-reload; none emits a differentiated signal based on dirty state.
 
@@ -54,16 +54,16 @@ Introduce a bifurcated conflict response routed through `entry.dirty`:
 
 | File | Existing Anchor | What Exists |
 |---|---|---|
-| `src/viewport_editor/file_ops.py` | `format_conflict_warning()` at line 178 | Formats conflict dict → YAML warning string |
-| `src/viewport_editor/viewport.py` | `ViewportManager.check_conflict()` at line 376 | Delegates to `file_ops.check_conflict()` |
-| `src/viewport_editor/viewport.py` | `ViewportManager.format_conflict_warning()` at line 463 | Delegates to `file_ops.format_conflict_warning()` |
-| `src/viewport_editor/viewport.py` | `ViewportEntry.dirty` field at line 47 | Boolean flag for pending edits |
-| `src/viewport_editor/server.py` | `_check_file_conflict()` at line 658 | 8 call sites across read and edit actions; `_action_list` lacks conflict check |
-| `src/viewport_editor/server.py` | `file:save` at line 1077 | Save path with conflict check |
-| `src/viewport_editor/server.py` | `write_file` at line 416 | Composite write with conflict check |
-| `src/viewport_editor/server.py` | `edit_text` at line 468 | Composite edit with conflict check |
-| `src/viewport_editor/buffer.py` | `refresh_if_changed()` at line 55 | Reloads buffer from disk if mtime changed |
-| `src/viewport_editor/buffer.py` | `get_buffer_ref()` at line 76 | Gets live buffer reference |
+| `src/viewport_editor/file_ops.py` | `format_conflict_warning()` | Formats conflict dict → YAML warning string |
+| `src/viewport_editor/viewport.py` | `ViewportManager.check_conflict()` | Delegates to `file_ops.check_conflict()` |
+| `src/viewport_editor/viewport.py` | `ViewportManager.format_conflict_warning()` | Delegates to `file_ops.format_conflict_warning()` |
+| `src/viewport_editor/viewport.py` | `ViewportEntry.dirty` field | Boolean flag for pending edits |
+| `src/viewport_editor/server.py` | `_check_file_conflict()` | 8 call sites across read and edit actions; `_action_list` lacks conflict check |
+| `src/viewport_editor/server.py` | `file:save` handler | Save path with conflict check |
+| `src/viewport_editor/server.py` | `write_file` action handler | Composite write with conflict check |
+| `src/viewport_editor/server.py` | `edit_text` action handler | Composite edit with conflict check |
+| `src/viewport_editor/buffer.py` | `refresh_if_changed()` | Reloads buffer from disk if mtime changed |
+| `src/viewport_editor/buffer.py` | `get_buffer_ref()` | Gets live buffer reference |
 
 ### New Method: `ViewportManager.auto_reload_if_clean()`
 
@@ -135,6 +135,10 @@ SC-13 explicitly forbids test lobotomization. Evidence type: behavioral.
 | SC-15 | `auto_reload_if_clean()` returns None when no conflict | behavioral | Unit test: mock check_conflict → None, assert returns None | On FAIL: verify early-return logic in auto_reload_if_clean | RED/GREEN | `.issues/96/test/unit/` | Design: no-conflict short-circuit | Phase 1 | pre-commit | green | — | — | `test_auto_reload_unit.py` | Phase 1 |
 | SC-16 | `auto_reload_if_clean()` auto-reloads when clean+conflict | behavioral | Unit test: mock conflict + dirty=False, assert refresh called + notice returned | On FAIL: verify dirty-check branching and refresh_if_changed call | RED/GREEN | `.issues/96/test/unit/` | Design: clean+conflict → auto-reload | Phase 1 | pre-commit | green | SC-15 | — | `test_auto_reload_unit.py` | Phase 1 |
 | SC-17 | `auto_reload_if_clean()` returns strong warning when dirty+conflict | behavioral | Unit test: mock conflict + dirty=True, assert no refresh, warning returned | On FAIL: verify dirty-check branching and format_external_modification_warning call | RED/GREEN | `.issues/96/test/unit/` | Design: dirty+conflict → stronger signal | Phase 1 | pre-commit | green | SC-16 | — | `test_auto_reload_unit.py` | Phase 1 |
+| SC-18 | `dev` branch merged into `main` with all commits preserved | string | Verify `git log main` contains all commits from `dev`; `git branch -d dev` succeeds | On FAIL: re-attempt merge preserving history | code | — | Trunk-based migration: no losing existing work | Phase 3 | pre-commit | string | — | — | — | Phase 3 |
+| SC-19 | `dev` branch deleted locally and on remote | string | `git branch -a` shows no `dev` branch; `git push origin --delete dev` confirmed | On FAIL: delete remaining dev refs | code | — | Trunk-based migration: dev removed | Phase 3 | pre-commit | string | — | — | — | Phase 3 |
+| SC-20 | `AGENTS.md` updated to reflect trunk-based development (no `dev` branch, feature branches target `main`, release from `main`) | string | grep for `dev` references in AGENTS.md — only historical release tags remain; `DEFAULT_BRANCH` references point to `main` | On FAIL: update stale dev references | code | — | Trunk-based migration: docs updated | Phase 3 | pre-commit | string | — | — | — | Phase 3 |
+| SC-21 | All non-historical references to `dev` as a development branch removed from project files (pyproject.toml, CI configs, scripts, docs) | string | grep for branch references in project config files — no active `dev` branch references remain | On FAIL: update stale dev references | code | — | Trunk-based migration: no stale dev refs | Phase 3 | pre-commit | string | — | — | — | Phase 3 |
 
 > **Compliance Requirement:** All steps and sub-steps in this document MUST be followed in order. Failure to comply with any step — including but not limited to verification gates, test phases, audit checkpoints, and review steps — will result in the feature branch being rejected and discarded, requiring a full rework from scratch and loss of all prior work. There is no valid reason to skip, compress, reorder, or omit any step. If a step appears redundant or unnecessary, follow it anyway — the cost of following an extra step is negligible compared to the cost of rework from a skipped step.
 
@@ -157,6 +161,15 @@ After this spec is approved, invoke `writing-plans` to create `.issues/96/plan.m
 2. Update write_file/edit_text paths to branch on dirty+conflict
 3. Write behavioral integration tests for SC-5, SC-6, SC-7, SC-8, SC-10, SC-12, SC-13
 4. Run full test suite for regression check (SC-12)
+
+### Phase 3: Trunk-Based Migration
+
+1. Merge `dev` into `main` preserving all commits — `git checkout main && git merge dev --no-ff`
+2. Delete `dev` branch locally and on remote — `git branch -d dev && git push origin --delete dev`
+3. Update `AGENTS.md` — replace all `dev` branch references with `main` as the trunk; update Release Checklist to target `main` directly; remove `dev → main PR` workflow
+4. Update `pyproject.toml`, CI configs, scripts, and docs — replace stale `dev` branch references with `main`
+5. Update `DEFAULT_BRANCH` references in `.opencode/` to point to `main`
+6. Verify no stale `dev` references remain (SC-18 through SC-21)
 
 ## Unit Test Plan
 
@@ -215,9 +228,9 @@ No known interdependencies with other open issues.
 | Direct source search | `grep` for `auto_reload_if_clean` in `src/` | Confirm method does not exist yet |
 | Direct source search | `grep` for `refresh_if_changed` in `src/` | Verify BufferManager refresh API exists |
 | Direct source search | `glob` for test files in `test/` | Verify referenced test files exist |
-| Live verification | `editor_read_file` for `server.py:650-680` | Read `_check_file_conflict` implementation |
-| Live verification | `editor_read_file` for `server.py:1065-1120` | Read file:save conflict handling |
-| Live verification | `editor_read_file` for `server.py:400-500` | Read write_file/edit_text conflict handling |
+| Live verification | `editor_read_file` for `server.py` `_check_file_conflict()` | Read `_check_file_conflict` implementation |
+| Live verification | `editor_read_file` for `server.py` `file:save` handler | Read file:save conflict handling |
+| Live verification | `editor_read_file` for `server.py` `write_file`/`edit_text` handlers | Read write_file/edit_text conflict handling |
 
 ## Cross-Cutting SCs
 
