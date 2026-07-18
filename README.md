@@ -148,7 +148,6 @@ This repo uses [viewport-editor](https://github.com/michael-conrad/viewport-edit
 - Use `viewport` + `edit` + `file` for multi-step editing with diff review
 - Always call `diff:show` before `file:save` to verify staged changes
 - File paths are relative to project root (MCP resolver defaults to `os.getcwd()`)
-- The `VIEWPORT_PROJECT_ROOT` environment variable overrides the project root if needed
 - Session management is automatic (MCP framework handles session IDs)
 - Conflict detection: server tracks file mtime+size externally; stale-file soft warning on reads, hard block on `file:save` (use `force: true` override if change is intentional)
 ```
