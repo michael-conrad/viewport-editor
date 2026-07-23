@@ -516,3 +516,96 @@ async def test_phase3_tools_listed(client_session: Any) -> None:
     result = await client_session.list_tools()
     names = [t.name for t in result.tools]
     assert "file" in names, "Tool 'file' missing from tool list"
+
+
+# ── SC-PERM-3: save_as_file preserves permissions from source ────────────────
+
+
+@pytest.mark.phase3
+@pytest.mark.asyncio
+async def test_sc_perm3_save_as_preserves_source_permissions(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-PERM-3: save_as_file copies source file permissions to target.
+
+    RED: save_as_file creates temp file with mkstemp (mode 0o600),
+    dropping source file permissions.
+    GREEN: _copy_permissions copies source st_mode to temp file before os.replace.
+    """
+    source_file = test_project_root / "perm_source.txt"
+    source_file.write_text("source content\n")
+    source_file.chmod(0o644)
+
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": "perm_source.txt"},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+
+    target = "perm_saveas_target.txt"
+    target_path = test_project_root / target
+    if target_path.exists():
+        target_path.unlink()
+
+    result = await client_session.call_tool(
+        "file",
+        arguments={
+            "action": "save-as",
+            "viewport_id": vpid,
+            "file_path": target,
+        },
+    )
+    text = _get_text(result)
+    assert not result.isError, f"SC-PERM-3 FAIL: save-as should succeed: {text[:300]}"
+
+    mode = target_path.stat().st_mode & 0o777
+    assert mode == 0o644, (
+        f"SC-PERM-3 FAIL: save_as_file changed permissions from 0o644 to {oct(mode)}. "
+        "Source file permissions were not preserved."
+    )
+
+
+@pytest.mark.phase3
+@pytest.mark.asyncio
+async def test_sc_perm4_save_as_chmod_failure_nonfatal(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-PERM-4: chmod failure in save_as_file is non-fatal — write still succeeds.
+
+    RED: chmod failure propagates and aborts the write.
+    GREEN: chmod is best-effort (try/except OSError), write completes regardless.
+    """
+    source_file = test_project_root / "perm_chmod_fail_source.txt"
+    source_file.write_text("content\n")
+    source_file.chmod(0o644)
+
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": "perm_chmod_fail_source.txt"},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+
+    target = "perm_chmod_fail_target.txt"
+    target_path = test_project_root / target
+    if target_path.exists():
+        target_path.unlink()
+
+    result = await client_session.call_tool(
+        "file",
+        arguments={
+            "action": "save-as",
+            "viewport_id": vpid,
+            "file_path": target,
+        },
+    )
+    text = _get_text(result)
+    assert not result.isError, (
+        f"SC-PERM-4 FAIL: save-as should succeed even if chmod fails: {text[:300]}"
+    )
+    assert target_path.exists(), (
+        "SC-PERM-4 FAIL: target file should exist after save-as despite chmod failure"
+    )
+    content = target_path.read_text()
+    assert "content" in content, (
+        f"SC-PERM-4 FAIL: target file content should be correct: {content!r}"
+    )
