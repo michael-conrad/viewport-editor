@@ -77,7 +77,7 @@ Run directly from the tagged release — no PyPI install, no repo clone needed:
 "mcp": {
     "editor": {
       "type": "local",
-"command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.4.2", "viewport-editor"],
+"command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.5.0", "viewport-editor"],
       "enabled": true
     }
 }
@@ -89,7 +89,7 @@ Run directly from the tagged release — no PyPI install, no repo clone needed:
   "mcpServers": {
     "editor": {
       "command": "uvx",
-"args": ["--from", "git+https://github.com/michael-conrad/viewport-editor@v0.4.2", "viewport-editor"]
+"args": ["--from", "git+https://github.com/michael-conrad/viewport-editor@v0.5.0", "viewport-editor"]
     }
   }
 }
@@ -112,7 +112,7 @@ When adding viewport-editor as an MCP plugin, configure it in your `opencode.jso
   "mcp": {
     "editor": {
       "type": "local",
-"command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.4.2", "viewport-editor"],
+"command": ["uvx", "--from", "git+https://github.com/michael-conrad/viewport-editor@v0.5.0", "viewport-editor"],
       "enabled": true
     }
   }
