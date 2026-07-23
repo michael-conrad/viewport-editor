@@ -9,6 +9,7 @@ Co-authored with AI: OpenCode (deepseek-v4-flash)
 from __future__ import annotations
 
 import os
+import stat
 import tempfile
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
@@ -23,6 +24,15 @@ def _resolve_path(file_path: str, project_root: str) -> Tuple[str, str]:
         return os.path.realpath(file_path), file_path
     resolved = os.path.realpath(os.path.join(project_root, file_path))
     return resolved, file_path
+
+
+def _copy_permissions(src: str, dst: str) -> None:
+    """Copy file permissions (st_mode & 0o777) from src to dst, best-effort."""
+    try:
+        st = os.stat(src)
+        os.chmod(dst, stat.S_IMODE(st.st_mode))
+    except OSError:
+        pass
 
 
 def create_new_file(file_path: str, project_root: str) -> str:
@@ -54,6 +64,16 @@ def save_as_file(
     try:
         with os.fdopen(fd, "w", newline="") as f:
             f.write(buffer_content)
+        resolved_source, _ = _resolve_path(source_file, project_root)
+        if os.path.isfile(resolved_source):
+            _copy_permissions(resolved_source, tmp)
+        else:
+            try:
+                current_umask = os.umask(0)
+                os.umask(current_umask)
+                os.chmod(tmp, 0o666 & ~current_umask)
+            except OSError:
+                pass
         os.replace(tmp, resolved_target)
     except BaseException:
         try:
@@ -98,6 +118,7 @@ def flush_entry(buffer: Buffer, entry: "ViewportEntry", project_root: str) -> No
     try:
         with os.fdopen(fd, "w", newline="") as f:
             f.write(buffer.content)
+        _copy_permissions(resolved_path, tmp)
         os.replace(tmp, resolved_path)
     except BaseException:
         try:

@@ -753,6 +753,87 @@ async def test_sc_tmp1_flush_entry_uses_mkstemp(
     )
 
 
+# ── SC-PERM-1: flush_entry preserves file permissions ────────────────────────
+
+
+@pytest.mark.phase2
+@pytest.mark.asyncio
+async def test_sc_perm1_flush_entry_preserves_permissions(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-PERM-1: flush_entry preserves original file permissions (st_mode).
+
+    RED: flush_entry uses tempfile.mkstemp (mode 0o600) + os.replace,
+    which drops executable bit and group/other permissions.
+    GREEN: _copy_permissions copies st_mode to temp file before os.replace.
+    """
+    file_path_str = "perm_test_exec.sh"
+    file_path = test_project_root / file_path_str
+    file_path.write_text("#!/bin/sh\necho hello\n")
+    file_path.chmod(0o755)
+
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": file_path_str, "autosave": True},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+
+    # Trigger save via edit (autosave=on)
+    await client_session.call_tool(
+        "edit",
+        arguments={
+            "action": "replace",
+            "viewport_id": vpid,
+            "old_text": "hello",
+            "new_text": "world",
+        },
+    )
+
+    mode = file_path.stat().st_mode & 0o777
+    assert mode == 0o755, (
+        f"SC-PERM-1 FAIL: flush_entry changed permissions from 0o755 to {oct(mode)}. "
+        "Executable bit was dropped."
+    )
+
+
+@pytest.mark.phase2
+@pytest.mark.asyncio
+async def test_sc_perm2_flush_entry_preserves_group_other(
+    client_session: Any, test_project_root: Path
+) -> None:
+    """SC-PERM-2: flush_entry preserves group/other permission bits.
+
+    RED: flush_entry drops group/other permissions (mkstemp creates 0o600).
+    GREEN: _copy_permissions copies all st_mode bits before os.replace.
+    """
+    file_path_str = "perm_test_group.txt"
+    file_path = test_project_root / file_path_str
+    file_path.write_text("group readable content\n")
+    file_path.chmod(0o664)
+
+    result_open = await client_session.call_tool(
+        "viewport",
+        arguments={"action": "open", "file_path": file_path_str, "autosave": True},
+    )
+    vpid = _extract_vpid(_get_text(result_open))
+
+    await client_session.call_tool(
+        "edit",
+        arguments={
+            "action": "replace",
+            "viewport_id": vpid,
+            "old_text": "group",
+            "new_text": "GROUP",
+        },
+    )
+
+    mode = file_path.stat().st_mode & 0o777
+    assert mode == 0o664, (
+        f"SC-PERM-2 FAIL: flush_entry changed permissions from 0o664 to {oct(mode)}. "
+        "Group/other bits were dropped."
+    )
+
+
 # ── SC-24: viewport:close with dirty autosave=on flushes to disk ─────────────
 
 
